@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
@@ -14,6 +15,7 @@
 
 #include "include/Algos/Integer.h"
 
+#include "include/Helpers/Simd.h"
 #include "include/Helpers/Templating.h"
 
 namespace Helpers::Numeric::Floating::DigitsPrecision
@@ -26,263 +28,246 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
     FLOOR
   };
 
-  template <RoundingBehavior BEHAVE, int32_t PRECISION, typename T>
-  struct CharArrayImpl;
+  template <RoundingBehavior BEHAVE, typename T>
+  struct ToStrWriteBuffReturnLenImpl;
 
-  template <Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior BEHAVE, uint32_t PRECISION, typename T>
+  template <Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior BEHAVE, typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  static auto ToStrCharArray(const T &input)
+  static unsigned ToStrWriteBuffReturnLen(char *__restrict__ ptr, const T &input, int PRECISION)
   {
-    return Helpers::Numeric::Floating::DigitsPrecision::CharArrayImpl<BEHAVE, PRECISION, T>::ToStr(input);
+    return Helpers::Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLenImpl<BEHAVE, T>::ToStr(ptr, input, PRECISION);
   }
 
-  template <int32_t PRECISION, typename T>
+  template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  struct CharArrayImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, PRECISION, T>
+  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, T>
   {
-    static auto ToStr(const T &input)
+    static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION);
+  };
+
+  template <>
+  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, float>
+  {
+    static unsigned ToStr(char *__restrict__ buff, const float &input, int PRECISION)
     {
-      using Floating = Constants::Tables::Floating<T>;
-
-      static const constinit auto FloatingStruct = Floating();
-      static const constinit auto &table = FloatingStruct.DIGITS;
-
-      // 1 for '+/-' also 1 for '.' also 1 for whatever
-      static const constexpr auto SIZE_OF_BUFF = Floating::MAX_DIGITS10 + std::numeric_limits<T>::max_exponent10 + PRECISION + 3;
-
-      Helpers::Numeric::Integral::char_array<SIZE_OF_BUFF> buff;
-
-      buff.start_idx = SIZE_OF_BUFF;
-
-      const auto frexpp = Helpers::Math::IEEE754<T>(input);
-      const auto &exp = frexpp.exponent;
-      const auto &mantissa = frexpp.mantissa;
-
-      if(exp == std::numeric_limits<decltype(frexpp.exponent)>::max()) [[unlikely]]
-      {
-        buff.start_idx -= 3;
-        if(mantissa == T{ 0 })
-        {
-          std::memcpy(&buff.array[buff.start_idx], "nan", 3);
-        }
-        else if(mantissa > T{ 0 })
-        {
-          std::memcpy(&buff.array[buff.start_idx], "inf", 3);
-        }
-        else if(mantissa == T{ -1 })
-        {
-          buff.start_idx--;
-          std::memcpy(&buff.array[buff.start_idx], "-inf", 4);
-        }
-        else
-        {
-          buff.start_idx -= PRECISION;
-          std::memset(&buff.array[buff.start_idx], '0', PRECISION);
-          buff.array[--buff.start_idx] = '.';
-          buff.array[--buff.start_idx] = '0';
-        }
-
-        return buff;
-      }
-
-      const auto exp_2 = table[exp + Floating::BIAS];
-
-      using base_type = std::remove_cvref_t<decltype(Constants::Tables::Floating<T>::pair_uint64_uint16::hig)>;
-
-      const auto digits_10 = static_cast<base_type>(mantissa * exp_2);
-
-      static const constexpr auto precision = Helpers::Math::Constexpr::pow(base_type{ 10 }, Floating::MAX_DIGITS10);
-
-      int exp_shft = (digits_10 < precision) ? -1 : 0;
-
-      const auto exp_base_10_int = ((exp * 78'913) >> 18) + exp_shft;
-
-      auto res_buff = Helpers::Numeric::Integral::ToStrCharArray<false>(digits_10);
-
-      if(exp_base_10_int < 0)
-      {
-        const auto exp_10_abs = std::abs(exp_base_10_int + 1);
-
-        if(exp_10_abs >= PRECISION)
-        {
-          buff.start_idx -= PRECISION;
-          std::memset(&buff.array[buff.start_idx--], '0', PRECISION);
-        }
-        else
-        {
-          const auto quantity = PRECISION - exp_10_abs;
-          buff.start_idx -= quantity;
-          std::memcpy(&buff.array[buff.start_idx], &res_buff.array[res_buff.start_idx], quantity);
-          buff.start_idx -= exp_10_abs;
-          std::memset(&buff.array[buff.start_idx--], '0', exp_10_abs);
-        }
-
-        buff.array[buff.start_idx--] = '.';
-        buff.array[buff.start_idx] = '0';
-      }
-      else
-      {
-        if(exp_base_10_int <= Floating::MAX_DIGITS10)
-        {
-          std::cout << "WE are HEREEE \n\n";
-          buff.start_idx -= PRECISION;
-          std::memset(&buff.array[buff.start_idx], '0', PRECISION);
-          const auto pres_after_dot = Floating::MAX_DIGITS10 - exp_base_10_int;
-          std::memcpy(&buff.array[buff.start_idx--], &res_buff.array[res_buff.start_idx + exp_base_10_int], pres_after_dot);
-          buff.array[buff.start_idx--] = '.';
-          buff.start_idx -= exp_base_10_int;
-          std::memcpy(&buff.array[buff.start_idx--], &res_buff.array[res_buff.start_idx], exp_base_10_int);
-        }
-        else
-        {
-          buff.start_idx -= PRECISION;
-          std::memset(&buff.array[buff.start_idx], '0', PRECISION);
-          buff.array[buff.start_idx--] = '.';
-          const auto missing = Floating::MAX_DIGITS10 - exp_base_10_int;
-          buff.start_idx -= missing;
-          std::memset(&buff.array[buff.start_idx--], '0', missing);
-          buff.start_idx -= Floating::MAX_DIGITS10;
-          std::memcpy(&buff.array[buff.start_idx--], &res_buff.array[res_buff.start_idx], Floating::MAX_DIGITS10);
-        }
-      }
-
-      return buff;
+      return 0U;
     }
   };
 
-  template <int32_t PRECISION, typename T>
-    requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  struct CharArrayImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, PRECISION, T>
+  template <>
+  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, double>
   {
-    static auto ToStr(const T &input)
+    static unsigned ToStr(char *__restrict__ buff, const double &input, int PRECISION)
     {
-      using FloatingStruct = Constants::Tables::Floating<T>;
+      return 0U;
+    }
+  };
 
-      // 1 for '+/-' also 1 for '.' also 1 for whatever
-      static const constexpr auto SIZE_OF_BUFF = FloatingStruct::MAX_DIGITS10 + std::numeric_limits<T>::max_exponent10 + PRECISION + 3;
+  template <typename T>
+    requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
+  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, T>
+  {
+    static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION);
+  };
 
-      Helpers::Numeric::Integral::char_array<SIZE_OF_BUFF> buff;
+  template <>
+  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, float>
+  {
+    static unsigned ToStr(char *__restrict__ buff, const float &input, int PRECISION)
+    {
+      using Floating = Constants::Tables::Floating<double>;
 
-      buff.start_idx = SIZE_OF_BUFF;
+      const constexpr unsigned BASE = 10U;
+      const constexpr unsigned DEC8 = 100'000'000U;
+      const constexpr unsigned ROUNDING_FACTOR = 5U;
 
-      const auto frexpp = Helpers::Math::IEEE754<T>(input);
-      const auto &exp = frexpp.exponent;
-      const auto &mantissa = frexpp.mantissa;
+      const constexpr auto MIN_PRECISION = Helpers::Math::Constexpr::ipow(10U, std::numeric_limits<unsigned>::digits10 - 1);
+      const constexpr auto MAX_PRECISION = Helpers::Math::Constexpr::ipow(10U, std::numeric_limits<unsigned>::digits10);
 
-      if(exp == std::numeric_limits<decltype(frexpp.exponent)>::max()) [[unlikely]]
+      const constexpr auto PRECISION_TABLE = Constants::Tables::Fixed::GetPrecistionTable<unsigned>();
+
+      unsigned len = 0;
+      unsigned mantissa;
+      int exp_base_10_int;
+      if(Helpers::Math::IEEE754::GetMantissaExponent<float>(input, mantissa, exp_base_10_int)) [[unlikely]]
       {
-        if(mantissa == T{ 0 })
+        if(mantissa == 0)
         {
-          buff.start_idx -= 3;
-          std::memcpy(&buff.array[buff.start_idx], "nan", 3);
+          len = 3;
+          std::memcpy(&buff[0], "nan", 3);
         }
-        else if(mantissa > T{ 0 })
+        else if(mantissa == 1)
         {
-          buff.start_idx -= 3;
-          std::memcpy(&buff.array[buff.start_idx], "inf", 3);
+          len = 3;
+          std::memcpy(&buff[0], "inf", 3);
         }
-        else if(mantissa == T{ -1 })
+        else if(mantissa == 2)
         {
-          buff.start_idx -= 4;
-          std::memcpy(&buff.array[buff.start_idx], "-inf", 4);
+          len = 4;
+          std::memcpy(&buff[0], "-inf", 4);
         }
         else
         {
-          buff.start_idx -= PRECISION;
-          std::memset(&buff.array[buff.start_idx], '0', PRECISION);
-          buff.array[--buff.start_idx] = '.';
-          buff.array[--buff.start_idx] = '0';
+          len = 2;
+          std::memcpy(&buff[0], "0.", len);
+          std::memset(&buff[len], '0', PRECISION);
+          len += PRECISION;
         }
 
-        return buff;
+        return len;
       }
 
-      using base_type = std::remove_cvref_t<decltype(Constants::Tables::Floating<T>::pair_uint64_uint16::hig)>;
-
-      static const constexpr auto min_precision = Helpers::Math::Constexpr::ipow(base_type{ 10 }, std::numeric_limits<base_type>::digits10 - 1);
-
-      const auto exp_2 = Constants::Tables::Floating<T>::DIGITS[exp + FloatingStruct::BIAS];
-
-      // const auto [rounding_results, digits_10] = Helpers::Math::IEEE754<T>::Multiply(mantissa, exp_2);
-      const auto digits_10 = Helpers::Math::IEEE754<T>::Multiply(mantissa, exp_2);
-
-      /*
-      auto exp_shft = 0;
-      if(digits_10 < min_precision)
+      if(input < 0.0)
       {
-        digits_10 *= 10;
-        exp_shft++;
+        buff[len++] = '-';
       }
-      */
 
-      static const constexpr auto base_5_rounding_table = Constants::Tables::GetRoundingTable<T, 5>();
-      static const constexpr auto base_10_rounding_table = Constants::Tables::GetRoundingTable<T, 10>();
+      const auto *table = &Floating::DIGITS[exp_base_10_int][0];
+      exp_base_10_int = (((exp_base_10_int - Floating::BIAS) * 78'913) >> 18U);
 
-      const int exp_base_10_int = ((exp * 78'913) >> 18); //- exp_shft;
+      unsigned remainder;
+      unsigned digits_10, extra_digits, last_9_digits;
+      const auto res_simd_mul = Helpers::Simd::x86_64::Multiply<float>(mantissa, table, digits_10, extra_digits, last_9_digits);
+      const auto res_iee_mul = Helpers::Math::IEEE754::Fixed::Multiply<float>(mantissa, table, digits_10, extra_digits, last_9_digits);
 
-      base_type left, right;
+      if(res_simd_mul != res_iee_mul)
+      {
+        const auto res_simd_mul_1 = Helpers::Simd::x86_64::Multiply<float>(mantissa, table, digits_10, extra_digits, last_9_digits);
+        const auto res_iee_mul_1 = Helpers::Math::IEEE754::Fixed::Multiply<float>(mantissa, table, digits_10, extra_digits, last_9_digits);
+        assert(res_iee_mul == res_simd_mul);
+      }
+
+      if(digits_10 < MIN_PRECISION)
+      {
+        digits_10 *= BASE;
+        remainder = Helpers::Math::Magic::Division::div_by_10_pow_n<8>(extra_digits);
+        digits_10 += remainder;
+        extra_digits -= remainder * DEC8;
+        extra_digits *= BASE;
+        exp_base_10_int--;
+      }
+      else if(digits_10 > MAX_PRECISION)
+      {
+        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(digits_10, remainder);
+        Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(extra_digits);
+        extra_digits += remainder * DEC8;
+        exp_base_10_int++;
+      }
+
+      unsigned exp_10_abs = std::abs(exp_base_10_int + 1), visible_digits;
 
       if(exp_base_10_int < 0)
       {
-        const auto exp_10_abs = std::abs(exp_base_10_int) - 1; // since its 0.DIGITS we need to take off 1 exponent
-        const auto quantity = PRECISION - exp_10_abs;
+        const int to_comp = PRECISION + exp_base_10_int + 1;
+        visible_digits = std::max(to_comp, 0);
+      }
+      else
+      {
+        const int to_comp = PRECISION + exp_base_10_int + 1;
+        visible_digits = std::min(to_comp, std::numeric_limits<unsigned>::digits10 - 1);
+      }
 
-        left = 0;
-        right = (exp_10_abs > PRECISION) ? 0 : digits_10;
+      if(visible_digits >= 0 && visible_digits <= std::numeric_limits<unsigned>::digits10 - 2)
+      {
+        const auto trunc_qty = std::numeric_limits<unsigned>::digits10 - visible_digits - 1;
+        Helpers::Math::Precision::truncate_plus_1_quo_rem(digits_10, remainder, trunc_qty);
 
-        if(quantity >= 0 && quantity <= FloatingStruct::MAX_DIGITS10)
+        const bool extra = extra_digits != 0 || remainder != 0;
+
+        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(digits_10, remainder);
+
+        if(remainder > ROUNDING_FACTOR)
         {
-          const auto &rounding_factor_10s = base_10_rounding_table[quantity];
-          const auto &rounding_factor_5s = base_5_rounding_table[quantity];
-
-          const auto remainder = right % rounding_factor_10s;
-
-          if(remainder > rounding_factor_5s || (remainder == rounding_factor_5s))
+          digits_10++;
+        }
+        else if(remainder == ROUNDING_FACTOR)
+        {
+          if(extra)
           {
-            right += rounding_factor_5s;
+            digits_10++;
           }
+          else
+          {
+            // Apply Round-Ties-To-Even on the LAST VISIBLE DIGIT.
+            remainder = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<1>(digits_10); // digits_10 % 10;
+            if(remainder & 1U)
+            {
+              digits_10++;
+            }
+          }
+        }
 
-          right /= rounding_factor_10s;
+        const auto presicion = PRECISION_TABLE[visible_digits];
+
+        if(digits_10 >= presicion)
+        {
+          // Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(digits_10);
+          exp_base_10_int++;
         }
       }
-      else if(exp_base_10_int >= 0 && exp_base_10_int <= FloatingStruct::MAX_DIGITS10)
+
+      exp_10_abs = std::abs(exp_base_10_int + 1);
+
+      if(exp_base_10_int < 0)
       {
-        const auto &rounding_factor_10s = base_10_rounding_table[exp_base_10_int];
-
-        left = digits_10 / rounding_factor_10s;
-        right = digits_10 % rounding_factor_10s;
-
-        // convert internal digit scale -> output precision scale
-        if constexpr(std::numeric_limits<T>::digits10 > PRECISION)
+        buff[len++] = '0';
+        buff[len++] = '.';
+        if(exp_10_abs > PRECISION)
         {
-          right /= base_10_rounding_table[std::numeric_limits<T>::digits10 - PRECISION];
+          std::memset(&buff[len], '0', PRECISION);
+          len += PRECISION;
         }
-
-        if(right >= min_precision)
+        else
         {
-          left += right / min_precision;
-          right %= min_precision;
+          std::memset(&buff[len], '0', exp_10_abs);
+          len += exp_10_abs;
+          Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
+          len += PRECISION - exp_10_abs;
         }
       }
       else
       {
-        left = digits_10;
-        right = 0;
+        if(exp_base_10_int <= std::numeric_limits<unsigned>::digits10 - 2)
+        {
+          const auto len_wr = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
+          std::memmove(&buff[len + exp_10_abs + 1U], &buff[len + exp_10_abs], len_wr);
+          buff[len + exp_10_abs] = '.';
+          len += exp_10_abs;
+          len += PRECISION;
+        }
+        else
+        {
+          const auto len_wr_1 = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
+          const auto len_wr_2 = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len + len_wr_1], digits_10);
+          const auto missin = std::max(0, static_cast<int>(exp_10_abs - len_wr_1 - len_wr_2));
+          std::memset(&buff[len + len_wr_1 + len_wr_2], '0', missin);
+          std::memmove(&buff[len + exp_10_abs + 1U], &buff[len + exp_10_abs], len_wr_1 + len_wr_2);
+          buff[len + exp_10_abs] = '.';
+          len += exp_10_abs + 1;
+          std::memset(&buff[len], '0', PRECISION);
+          len += PRECISION;
+        }
       }
 
-      Helpers::Numeric::Integral::ToStrReverseWriteToCharArrayForceAndCapLength<PRECISION>(right, buff, buff.start_idx);
-      buff.array[--buff.start_idx] = '.';
-      // Helpers::Numeric::Integral::ToStrReverseWriteToCharArray(left, buff, buff.start_idx);
-
-      return buff;
+      return len;
     }
   };
 
-  template <RoundingBehavior BEHAVE, int32_t PRECISION, typename T>
-    requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  static std::string ToStr(const T &input)
+  template <>
+  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, double>
   {
-    const auto buff = Helpers::Numeric::Floating::DigitsPrecision::ToStrCharArray<BEHAVE, PRECISION>(input);
-    return std::string(&buff.array[buff.start_idx], sizeof(buff.array) - buff.start_idx);
+    static unsigned ToStr(char *__restrict__ buff, const double &input, int PRECISION)
+    {
+      return 0U;
+    }
+  };
+
+  template <RoundingBehavior BEHAVE, typename T>
+    requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
+  static std::string ToStr(const T &input, const int PRECISION)
+  {
+    char buff[2048]; // massive on purpose
+    const unsigned len = Helpers::Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLen<BEHAVE, T>(&buff[0], input, PRECISION);
+    return std::string{ &buff[0], len };
   }
 } // namespace Helpers::Numeric::Floating::DigitsPrecision

@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <limits>
 #include <string>
@@ -17,158 +18,392 @@
 
 namespace Helpers::Numeric::Floating::ExponentialNotation
 {
-  static inline uint32_t pow5Factor(uint64_t value)
-  {
-    const uint64_t m_inv_5 = 14757395258967641293u; // 5 * m_inv_5 = 1 (mod 2^64)
-    const uint64_t n_div_5 = 3689348814741910323u;  // #{ n | n = 0 (mod 2^64) } = 2^64 / 5
-    uint32_t count = 0;
-    for(;;)
-    {
-      assert(value != 0);
-      value *= m_inv_5;
-      if(value > n_div_5)
-        break;
-      ++count;
-    }
-    return count;
-  }
-
-  // Returns true if value is divisible by 5^p.
-  static inline bool multipleOfPowerOf5(const uint64_t value, const uint32_t p)
-  {
-    // I tried a case distinction on p, but there was no performance difference.
-    return pow5Factor(value) >= p;
-  }
-
-  // Returns true if value is divisible by 2^p.
-  static inline bool multipleOfPowerOf2(const uint64_t value, const uint32_t p)
-  {
-    assert(value != 0);
-    assert(p < 64);
-    // __builtin_ctzll doesn't appear to be faster here.
-    return (value & ((1ULL << p) - 1)) == 0;
-  }
-
   template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  static auto ToStrCharArray(const T &input, const int &PRECISION = Constants::Tables::Floating<T>::MAX_DIGITS10)
+  static unsigned ToStrCharArray(char *__restrict__ buff, const T &input, int PRECISION = Constants::Tables::Floating<T>::MAX_DIGITS10);
+
+  template <>
+  unsigned ToStrCharArray(char *__restrict__ buff, const float &input, int PRECISION)
   {
-    using Floating = Constants::Tables::Floating<T>;
+    using Floating = Constants::Tables::Floating<double>;
 
-    static const constexpr auto SIZE_OF_BUFF = Floating::MAX_DIGITS10 + Floating::MAX_EXP_DIGITS10 + 10;
+    const constexpr uint32_t ROUNDING_FACTOR = 5U;
+    const constexpr uint32_t DEC9 = 1'000'000'000U;
 
-    Helpers::Numeric::Integral::char_array<SIZE_OF_BUFF> buff;
+    const constexpr auto PRECISION_TABLE = Constants::Tables::Exponential::GetPrecistionTable<unsigned>();
 
-    buff.start_idx = SIZE_OF_BUFF;
+    assert(PRECISION <= 8); // no point of printing more than 8 or 17 digits respectively its actually not even necesary for round tripping
 
-    const auto frexpp = Helpers::Math::IEEE754<T>(input);
-    const auto &exp = frexpp.exponent;
-    const auto &mantissa = frexpp.mantissa;
+    unsigned len = 0;
 
-    if(exp == std::numeric_limits<decltype(frexpp.exponent)>::max()) [[unlikely]]
+    if(input < 0.0)
     {
-      buff.start_idx -= 3;
-      if(mantissa == T{ 0 })
+      buff[len++] = '-';
+    }
+
+    unsigned mantissa;
+    int exp_base_10_int;
+    if(Helpers::Math::IEEE754::GetMantissaExponent<float>(input, mantissa, exp_base_10_int)) [[unlikely]]
+    {
+      if(mantissa == 0)
       {
-        std::memcpy(&buff.array[buff.start_idx], "nan", 3);
+        len = 3;
+        std::memcpy(&buff[0], "nan", 3);
       }
       else if(mantissa == 1)
       {
-        std::memcpy(&buff.array[buff.start_idx], "inf", 3);
+        len = 3;
+        std::memcpy(&buff[0], "inf", 3);
       }
       else if(mantissa == 2)
       {
-        buff.start_idx--;
-        std::memcpy(&buff.array[buff.start_idx], "-inf", 4);
+        len = 4;
+        std::memcpy(&buff[0], "-inf", 4);
       }
       else
       {
-        buff.start_idx -= 3;
-        std::memcpy(&buff.array[buff.start_idx], "0.0E00", 6);
+        len = 5;
+        std::memcpy(&buff[0], "0.0E0", 5);
       }
 
-      return buff;
+      return len;
     }
 
-    int exp_base_10_int = (((exp - Floating::BIAS) * 78'913) >> 18);
+    const auto *table = &Floating::DIGITS[exp_base_10_int][0];
+    exp_base_10_int = (((exp_base_10_int - Floating::BIAS) * 78'913) >> 18U);
 
-    const auto &exp_table_val = Floating::DIGITS[exp];
+    unsigned first_9_digits, middle_9_digits, last_9_digits, remainder;
+    const unsigned mul_cmp_res = Helpers::Simd::x86_64::Multiply<float>(mantissa, table, first_9_digits, middle_9_digits, last_9_digits);
 
-    typename Helpers::Math::IEEE754<T>::result_extra result;
+    int lvl_1 = (1 - (mul_cmp_res & 0b11U));
+    int lvl_2 = (1 - ((mul_cmp_res & 0b11'0000'0000U) >> 8U));
+    int lvl_3 = (1 - ((mul_cmp_res & 0b11'0000'0000'0000'0000U) >> 16U));
 
-    Helpers::Math::IEEE754<T>::MultiplyRoundCompliant(mantissa, exp_table_val, exp_base_10_int, result);
+    int round_lvl_1 = 8 + lvl_1;
+    int round_lvl_2 = 8 + lvl_2;
+    int round_lvl_3 = 8 + lvl_3;
 
-    if(PRECISION < std::numeric_limits<std::remove_cvref_t<decltype(result.result)>>::digits10)
+    buff[len++] = '.';
+
+    if(PRECISION < round_lvl_1)
     {
-      static const constexpr auto base_10_rounding_table = Constants::Tables::GetExponentialRoundingTable<uint64_t, 10>();
-      static const constexpr auto precision_table = Constants::Tables::GetPrecistion<uint64_t>();
-      const auto &rounding_factor_10s = base_10_rounding_table[PRECISION];
-      result.result /= rounding_factor_10s;
-      const auto remainder = result.result % 10;
-      result.result /= 10;
+      const auto this_precision = PRECISION;
+      const auto to_trunc = std::numeric_limits<unsigned>::digits10 - this_precision - 2 + lvl_1;
+      exp_base_10_int += lvl_1;
 
-      // 0 = don't round up; 1 = round up unconditionally; 2 = round up if odd.
-      if(remainder > 5)
+      Helpers::Math::Precision::truncate_plus_1_quo_rem(first_9_digits, remainder, to_trunc);
+
+      const bool extra = remainder != 0 || middle_9_digits != 0 || last_9_digits != 0;
+
+      Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(first_9_digits, remainder);
+
+      if(remainder > ROUNDING_FACTOR)
       {
-        result.result++;
+        first_9_digits++;
       }
-      else if(remainder == 5)
+      else if(remainder == ROUNDING_FACTOR)
       {
-        const auto rem_exp = PRECISION - exp_base_10_int;
-        const auto required_twos = -(exp - Floating::MANTISSA_BITS - Floating::BIAS) - rem_exp;
-        bool trailingZeros = required_twos <= 0 || (required_twos < 60 && multipleOfPowerOf2(mantissa, (uint32_t)required_twos));
-        if(rem_exp < 0)
+        if(extra)
         {
-          const int32_t requiredFives = -rem_exp;
-          trailingZeros = trailingZeros && multipleOfPowerOf5(mantissa, (uint32_t)requiredFives);
-        }
-
-        if(trailingZeros)
-        {
-          // This is the critical TIE-BREAKER
-          // Apply Round-Ties-To-Even on the LAST VISIBLE DIGIT.
-          const auto last_digit = result.result % 10;
-          if(last_digit & 1U)
-          {
-            result.result++;
-          }
+          first_9_digits++;
         }
         else
         {
-          result.result++;
+          // Apply Round-Ties-To-Even on the LAST VISIBLE DIGIT.
+          remainder = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<1>(first_9_digits); // digits_10 % 10;
+          if(remainder & 1U)
+          {
+            first_9_digits++;
+          }
         }
       }
 
-      if(result.result >= precision_table[PRECISION])
+      const auto precision_val = PRECISION_TABLE[PRECISION];
+      if(first_9_digits >= precision_val)
       {
-        result.result /= 10;
+        Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(first_9_digits);
         exp_base_10_int++;
+      }
+
+      remainder = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
+    }
+    else if(PRECISION < (round_lvl_1 + round_lvl_2))
+    {
+      const auto this_precision = PRECISION - round_lvl_1 - round_lvl_2;
+      const auto to_trunc = std::numeric_limits<unsigned>::digits10 - this_precision - 2;
+      exp_base_10_int += lvl_2;
+
+      Helpers::Math::Precision::truncate_plus_1_quo_rem(middle_9_digits, remainder, to_trunc);
+
+      const bool extra = remainder != 0 || last_9_digits != 0;
+
+      Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(middle_9_digits, remainder);
+
+      if(remainder > ROUNDING_FACTOR)
+      {
+        middle_9_digits++;
+      }
+      else if(remainder == ROUNDING_FACTOR)
+      {
+        if(extra)
+        {
+          middle_9_digits++;
+        }
+        else
+        {
+          // Apply Round-Ties-To-Even on the LAST VISIBLE DIGIT.
+          remainder = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<1>(middle_9_digits); // digits_10 % 10;
+          if(remainder & 1U)
+          {
+            middle_9_digits++;
+          }
+        }
+      }
+
+      const auto precision_val = PRECISION_TABLE[this_precision];
+      if(middle_9_digits >= precision_val)
+      {
+        while(middle_9_digits > precision_val)
+        {
+          first_9_digits++;
+          middle_9_digits -= precision_val;
+        }
+
+        if(first_9_digits >= DEC9)
+        {
+          Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(middle_9_digits);
+          exp_base_10_int++;
+        }
+      }
+
+      remainder = 0;
+      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
+      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], middle_9_digits);
+    }
+    else if(PRECISION < (round_lvl_1 + round_lvl_2 + round_lvl_3))
+    {
+      const auto this_precision = PRECISION - round_lvl_1 - round_lvl_2;
+      const auto to_trunc = std::numeric_limits<unsigned>::digits10 - this_precision - 2;
+      exp_base_10_int += lvl_3;
+
+      Helpers::Math::Precision::truncate_plus_1_quo_rem(middle_9_digits, remainder, to_trunc);
+
+      const bool extra = remainder != 0;
+
+      Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(middle_9_digits, remainder);
+
+      if(remainder > ROUNDING_FACTOR)
+      {
+        last_9_digits++;
+      }
+      else if(remainder == ROUNDING_FACTOR)
+      {
+        if(extra)
+        {
+          last_9_digits++;
+        }
+        else
+        {
+          // Apply Round-Ties-To-Even on the LAST VISIBLE DIGIT.
+          remainder = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<1>(middle_9_digits); // digits_10 % 10;
+          if(remainder & 1U)
+          {
+            last_9_digits++;
+          }
+        }
+      }
+
+      const auto precision_val = PRECISION_TABLE[this_precision];
+      if(last_9_digits >= precision_val)
+      {
+        while(last_9_digits > precision_val)
+        {
+          middle_9_digits++;
+          last_9_digits -= precision_val;
+        }
+
+        if(middle_9_digits >= DEC9)
+        {
+          first_9_digits++;
+          middle_9_digits -= DEC9;
+
+          if(first_9_digits >= DEC9)
+          {
+            Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(middle_9_digits);
+            exp_base_10_int++;
+          }
+        }
+      }
+
+      remainder = 0;
+      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
+      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], middle_9_digits);
+      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], last_9_digits);
+    } // else no rounding lol
+
+    std::swap(buff[len - 1], buff[len]);
+
+    len += remainder;
+
+    buff[len++] = 'e';
+
+    buff[len++] = (exp_base_10_int < 0) ? '-' : '+';
+
+    const unsigned exp_abs = std::abs(exp_base_10_int);
+
+    len += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<uint16_t>(&buff[len], static_cast<uint16_t>(exp_abs));
+
+    return len;
+  }
+
+  template <>
+  unsigned ToStrCharArray(char *__restrict__ buff, const double &input, int PRECISION)
+  {
+    using Floating = Constants::Tables::Floating<double>;
+    using type = uint64_t;
+
+    const constexpr type BASE = 10U;
+    const constexpr type DEC8 = 100'000'000U;
+    const constexpr uint32_t ROUNDING_FACTOR = 5U;
+    const constexpr int32_t MAX_PRECISION = 17;
+
+    const constexpr auto min_precision = Helpers::Math::Constexpr::ipow(type{ 10 }, std::numeric_limits<type>::digits10 - 2);
+    const constexpr auto max_precision = Helpers::Math::Constexpr::ipow(type{ 10 }, std::numeric_limits<type>::digits10 - 1);
+
+    const constexpr auto precision_table = Constants::Tables::Exponential::GetPrecistionTable<type>();
+
+    assert(PRECISION <= MAX_PRECISION); // no point of printing more than 8 or 17 digits respectively its actually not even necesary for round tripping
+
+    unsigned len = 0;
+
+    if(input < 0.0)
+    {
+      buff[len++] = '-';
+    }
+
+    uint64_t mantissa;
+    int exp_base_10_int;
+    if(Helpers::Math::IEEE754::GetMantissaExponent<double>(input, mantissa, exp_base_10_int)) [[unlikely]]
+    {
+      if(mantissa == 0)
+      {
+        len = 3;
+        std::memcpy(&buff[0], "nan", 3);
+      }
+      else if(mantissa == 1)
+      {
+        len = 3;
+        std::memcpy(&buff[0], "inf", 3);
+      }
+      else if(mantissa == 2)
+      {
+        len = 4;
+        std::memcpy(&buff[0], "-inf", 4);
+      }
+      else
+      {
+        len = 5;
+        std::memcpy(&buff[0], "0.0E0", 5);
+      }
+
+      return len;
+    }
+
+    const auto *table = &Floating::DIGITS[exp_base_10_int][0];
+    exp_base_10_int = (((exp_base_10_int - Floating::BIAS) * 78'913) >> 18U);
+
+    uint32_t extra_digits;
+    type digits_10, remainder;
+    Helpers::Math::IEEE754::Exponential::Multiply<double>(mantissa, table, digits_10, extra_digits);
+
+    if(digits_10 < min_precision)
+    {
+      digits_10 *= BASE;
+      remainder = Helpers::Math::Magic::Division::div_by_10_pow_n<8>(extra_digits);
+      digits_10 += remainder;
+      extra_digits -= remainder * DEC8;
+      extra_digits *= BASE;
+      exp_base_10_int--;
+    }
+    else if(digits_10 > max_precision)
+    {
+      Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(digits_10, remainder);
+      Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(extra_digits);
+      extra_digits += remainder * DEC8;
+      exp_base_10_int++;
+    }
+
+    if(PRECISION < MAX_PRECISION)
+    {
+      Helpers::Math::Precision::truncate_plus_1_quo_rem(digits_10, remainder, std::numeric_limits<type>::digits10 - PRECISION - 3);
+    }
+    else
+    {
+      remainder = Helpers::Math::Magic::Division::div_by_10_pow_n<8>(extra_digits);
+      extra_digits -= remainder * DEC8;
+    }
+
+    const bool extra = extra_digits != 0 || (PRECISION < 17 && remainder != 0);
+
+    if(PRECISION < MAX_PRECISION)
+    {
+      Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(digits_10, remainder);
+    }
+
+    if(remainder > ROUNDING_FACTOR)
+    {
+      digits_10++;
+    }
+    else if(remainder == ROUNDING_FACTOR)
+    {
+      if(extra)
+      {
+        digits_10++;
+      }
+      else
+      {
+        // Apply Round-Ties-To-Even on the LAST VISIBLE DIGIT.
+        remainder = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<1>(digits_10); // digits_10 % 10;
+        if(remainder & 1U)
+        {
+          digits_10++;
+        }
       }
     }
 
-    Helpers::Numeric::Integral::ToStrReverseWriteToCharArray<true>(exp_base_10_int, buff);
-
-    buff.array[--buff.start_idx] = 'e';
-
-    Helpers::Numeric::Integral::ToStrReverseWriteToCharArrayResult(result.result, buff);
-
-    buff.array[--buff.start_idx] = '.';
-
-    std::swap(buff.array[buff.start_idx], buff.array[buff.start_idx + 1]);
-
-    if(input < 0)
+    if(digits_10 >= precision_table[PRECISION])
     {
-      buff.array[--buff.start_idx] = '-';
+      Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(digits_10);
+      exp_base_10_int++;
     }
 
-    return buff;
+    buff[len++] = '.';
+
+    remainder = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<type>(&buff[len], digits_10);
+
+    std::swap(buff[len - 1], buff[len]);
+
+    len += remainder;
+
+    buff[len++] = 'e';
+
+    buff[len++] = (exp_base_10_int < 0) ? '-' : '+';
+
+    const unsigned exp_abs = std::abs(exp_base_10_int);
+
+    len += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<uint16_t>(&buff[len], static_cast<uint16_t>(exp_abs));
+
+    return len;
   }
 
   template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   static std::string ToStr(const T &input, const int &PRECISION = Constants::Tables::Floating<T>::MAX_DIGITS10)
   {
-    const auto buff = Helpers::Numeric::Floating::ExponentialNotation::ToStrCharArray(input, PRECISION);
-    return std::string(&buff.array[buff.start_idx], sizeof(buff.array) - buff.start_idx);
+    char buff[64];
+
+    const uint32_t len = ToStrCharArray<T>(&buff[0], input, PRECISION);
+
+    return std::string{ &buff[0], len };
   }
 } // namespace Helpers::Numeric::Floating::ExponentialNotation

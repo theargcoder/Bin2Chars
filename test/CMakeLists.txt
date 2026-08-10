@@ -1,20 +1,20 @@
-# Remove find_package(ryu REQUIRED)
+# Set library path for the linker
+if("${SYSTEM_ARCH}" MATCHES "(x86_64|amd64|i386|i686)")
+    set(RYU_LIB "/home/lucca/Work/ryu/build/libryu.a")
+elseif("${SYSTEM_ARCH}" MATCHES "(arm64|aarch64)")
+    set(RYU_LIB "/Users/luccalabattaglia/Work/ryu/build/libryu.a")
+endif()
 
-# Set library manually
-set(RYU_INCLUDE_DIR /Users/luccalabattaglia/Work/ryu/include)
-set(RYU_LIB /Users/luccalabattaglia/Work/ryu/build/libryu.a)
+# Helper function to reduce "CMake shit"
+function(add_logging_test name src)
+  add_executable(${name} ${src})
+  # This inherits SIMD flags, Boost, and Ryu/OpenLogging includes automatically
+  target_link_libraries(${name} PRIVATE OpenLogging ${RYU_LIB})
+  add_test(NAME ${name} COMMAND ${name})
+endfunction()
 
-# Test: Logging
-add_executable(test_logging logging.cpp)
-target_include_directories(test_logging PRIVATE ${RYU_INCLUDE_DIR})
-target_link_libraries(test_logging PRIVATE OpenLogging ${RYU_LIB})
-add_test(NAME LoggingTest COMMAND test_logging)
+add_logging_test(test_constants constants.cpp)
+add_logging_test(test_magic_math magic_math.cpp)
+add_logging_test(test_asm rand_asm_test.cpp)
 
-# Test: Constants
-add_executable(test_constants constants.cpp)
-target_include_directories(test_constants PRIVATE ${RYU_INCLUDE_DIR})
-target_link_libraries(test_constants PRIVATE OpenLogging ${RYU_LIB})
-add_test(NAME ConstantsTest COMMAND test_constants)
-
-# Numeric subdirectory
 add_subdirectory(numeric)

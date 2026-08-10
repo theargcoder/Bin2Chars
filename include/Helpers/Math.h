@@ -6,6 +6,8 @@
 #include <numbers>
 #include <type_traits>
 
+#include "include/Helpers/Assembly.h"
+
 namespace Helpers::Math::Constexpr
 {
   template <typename T>
@@ -15,7 +17,7 @@ namespace Helpers::Math::Constexpr
   }
 
   template <typename BaseType, typename ExpType>
-    requires std::is_integral_v<ExpType>
+    requires std::is_integral_v<ExpType> || std::is_same_v<BaseType, __uint128_t>
   static constexpr BaseType ipow(BaseType base, ExpType exp)
   {
     if(exp < 0)
@@ -198,236 +200,739 @@ namespace Helpers::Math::Constexpr
     return ln(x) * inv_ln10;
   }
 
+  template <typename T>
+    requires(std::is_unsigned_v<T> && std::is_integral_v<T>) || std::is_same_v<__uint128_t, T>
+  static constexpr bool is_pow10(T n)
+  {
+    return (n >= 10) && ([]<typename Type> (Type x) constexpr {
+        while (x % 10 == 0)
+            x /= 10;
+        return x == 1;
+    })(n);
+  }
+
 } // namespace Helpers::Math::Constexpr
 
-namespace Helpers::Math
+namespace Helpers::Math::Magic::Division
+{
+  template <uint32_t N>
+  static auto div_by_10_pow_n(const uint16_t &n)
+  {
+    static_assert(N != 0, "why divide by 1");
+    static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+    if constexpr(N == 1)      { return static_cast<uint16_t>((uint32_t(n) * 0xCCCDU) >> 19); }
+    else if constexpr(N == 2) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x47AFU) >> 16); return (((n - t) >> 1) + t) >> 6;  }
+    else if constexpr(N == 3) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x625U) >> 16); return (((n - t) >> 1) + t) >> 9;   }
+    else if constexpr(N == 4) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0xA36FU) >> 16); return (((n - t) >> 1) + t) >> 13; }
+    // clang-format on
+  }
+
+  template <uint32_t N>
+  static auto div_by_10_pow_n_void(uint16_t &n)
+  {
+    static_assert(N != 0, "why divide by 1");
+    static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+    if constexpr(N == 1)      { n = static_cast<uint16_t>((uint32_t(n) * 0xCCCDU) >> 19); }
+    else if constexpr(N == 2) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x47AFU) >> 16); n = (((n - t) >> 1) + t) >> 6;  }
+    else if constexpr(N == 3) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x625U) >> 16); n = (((n - t) >> 1) + t) >> 9;   }
+    else if constexpr(N == 4) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0xA36FU) >> 16); n = (((n - t) >> 1) + t) >> 13; }
+    // clang-format on
+  }
+
+  template <uint32_t N>
+  static auto div_by_10_pow_n(const uint32_t &n)
+  {
+    static_assert(N != 0, "why divide by 1");
+    static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+    // --- 32-bit divide by 10^p ---
+    if constexpr(N == 1) {      return Helpers::Assembly::umulh32(n, 0xCCCCCCCDULL) >> 3U; }
+    else if constexpr(N == 2) { return Helpers::Assembly::umulh32(n, 0x51EB851FULL) >> 5U; }
+    else if constexpr(N == 3) { return Helpers::Assembly::umulh32(n, 0x10624DD3ULL) >> 6U; }
+    else if constexpr(N == 4) { return Helpers::Assembly::umulh32(n, 0xD1B71759ULL) >> 13U; }
+    else if constexpr(N == 5) { const uint32_t t = Helpers::Assembly::umulh32(n, 0x4F8B588FULL); return (((n - t) >> 1) + t) >> 16U; }
+    else if constexpr(N == 6) { return Helpers::Assembly::umulh32(n, 0x431BDE83ULL) >> 18; }
+    else if constexpr(N == 7) { return Helpers::Assembly::umulh32(n, 0x6B5FCA6BULL) >> 22; }
+    else if constexpr(N == 8) { return Helpers::Assembly::umulh32(n, 0x55E63B89ULL) >> 25; }
+    else if constexpr(N == 9) { const uint32_t t = Helpers::Assembly::umulh32(n, 0x12E0BE83ULL); return (((n - t) >> 1) + t) >> 29U; }
+
+    // clang-format on
+  }
+
+  template <uint32_t N>
+  static inline void div_by_10_pow_n_void(uint32_t &n)
+  {
+    static_assert(N != 0, "why divide by 1");
+    static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+    if constexpr(N == 1) { n = Helpers::Assembly::umulh32(n, 0xCCCCCCCDULL) >> 3U; }
+    else if constexpr(N == 2) { n = Helpers::Assembly::umulh32(n, 0x51EB851FULL) >> 5U; }
+    else if constexpr(N == 3) { n = Helpers::Assembly::umulh32(n, 0x10624DD3ULL) >> 6U; }
+    else if constexpr(N == 4) { n = Helpers::Assembly::umulh32(n, 0xD1B71759ULL) >> 13U; }
+    else if constexpr(N == 5) { const uint32_t t = Helpers::Assembly::umulh32(n, 0x4F8B588FULL); n = (((n - t) >> 1) + t) >> 16U; }
+    else if constexpr(N == 6) { n = Helpers::Assembly::umulh32(n, 0x431BDE83ULL) >> 18; }
+    else if constexpr(N == 7) { n = Helpers::Assembly::umulh32(n, 0x6B5FCA6BULL) >> 22; }
+    else if constexpr(N == 8) { n = Helpers::Assembly::umulh32(n, 0x55E63B89ULL) >> 25; }
+    else if constexpr(N == 9) { const uint32_t t = Helpers::Assembly::umulh32(n, 0x12E0BE83ULL); n = (((n - t) >> 1) + t) >> 29U; }
+    // clang-format on
+  }
+
+  template <uint32_t DIV>
+  static inline auto div_by_10_template(const uint32_t &numerator)
+  {
+    static_assert(Helpers::Math::Constexpr::is_pow10(DIV), "only powers of 10 supported");
+    static_assert(DIV != 0, "cant divide by 0");
+    static_assert(DIV != 1U, "why are you dividing by 1");
+    // clang-format off
+    if constexpr(DIV <= 10) { return div_by_10_pow_n<1>(numerator); }
+    else if constexpr(DIV <= 100) { return div_by_10_pow_n<2>(numerator); }
+    else if constexpr(DIV <= 1'000) { return div_by_10_pow_n<3>(numerator); }
+    else if constexpr(DIV <= 10'000) { return div_by_10_pow_n<4>(numerator); }
+    else if constexpr(DIV <= 100'000) { return div_by_10_pow_n<5>(numerator); }
+    else if constexpr(DIV <= 1'000'000) { return div_by_10_pow_n<6>(numerator); }
+    else if constexpr(DIV <= 10'000'000) { return div_by_10_pow_n<7>(numerator); }
+    else if constexpr(DIV <= 100'000'000) { return div_by_10_pow_n<8>(numerator); }
+    else if constexpr(DIV <= 1'000'000'000) { return div_by_10_pow_n<9>(numerator); }
+    else { return numerator; }
+    // clang-format on
+  }
+
+  template <typename Type>
+    requires std::is_same_v<uint32_t, Type>
+  static auto div_by_10_denominator(const Type &numerator, const Type &denominator)
+  {
+    // clang-format off
+    if(denominator <= 10) { return div_by_10_pow_n<1>(numerator); }
+    else if(denominator <= 100) { return div_by_10_pow_n<2>(numerator); }
+    else if(denominator <= 1'000) { return div_by_10_pow_n<3>(numerator); }
+    else if(denominator <= 10'000) { return div_by_10_pow_n<4>(numerator); }
+    else if(denominator <= 100'000) { return div_by_10_pow_n<5>(numerator); }
+    else if(denominator <= 1'000'000) { return div_by_10_pow_n<6>(numerator); }
+    else if(denominator <= 10'000'000) { return div_by_10_pow_n<7>(numerator); }
+    else if(denominator <= 100'000'000) { return div_by_10_pow_n<8>(numerator); }
+    else if(denominator <= 1'000'000'000) { return div_by_10_pow_n<9>(numerator); }
+    else { return std::remove_cvref_t<decltype(numerator)>{0}; }
+    // clang-format on
+  }
+
+  template <uint64_t N>
+  static inline auto div_by_10_pow_n(const uint64_t &n)
+  {
+    static_assert(N != 0, "why divide by 1");
+    static_assert(N <= std::numeric_limits<uint64_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+    if constexpr(N == 1) { return Helpers::Assembly::umulh64(n , 0xCCCCCCCCCCCCCCCDULL) >> 3; }
+    else if constexpr(N == 2) { uint64_t t = Helpers::Assembly::umulh64(n , 0x47AE147AE147AE15ULL); return (((n - t) >> 1) + t) >> 6; }
+    else if constexpr(N == 3) { uint64_t t = Helpers::Assembly::umulh64(n , 0x624DD2F1A9FBE77ULL); return (((n - t) >> 1) + t) >> 9; }
+    else if constexpr(N == 4) { return Helpers::Assembly::umulh64(n , 0x346DC5D63886594BULL) >> 11; }
+    else if constexpr(N == 5) { uint64_t t = Helpers::Assembly::umulh64(n , 0x4F8B588E368F0847ULL); return (((n - t) >> 1) + t) >> 16; }
+    else if constexpr(N == 6) { return Helpers::Assembly::umulh64(n , 0x431BDE82D7B634DBULL) >> 18U; }
+    else if constexpr(N == 7) { return Helpers::Assembly::umulh64(n , 0xD6BF94D5E57A42BDULL) >> 23U; }
+    else if constexpr(N == 8) { return Helpers::Assembly::umulh64(n , 0xABCC77118461CEFDULL) >> 26U; }
+    else if constexpr(N == 9) { uint64_t t = Helpers::Assembly::umulh64(n, 0x12E0BE826D694B2FULL); return (((n - t) >> 1) + t) >> 29; }
+    else if constexpr(N == 10) { return Helpers::Assembly::umulh64(n, 0xDBE6FECEBDEDD5BFULL) >> 33U; }
+    else if constexpr(N == 11) { return Helpers::Assembly::umulh64(n, 0xAFEBFF0BCB24AAFFULL) >> 36U; }
+    else if constexpr(N == 12) { return Helpers::Assembly::umulh64(n, 0x232F33025BD42233ULL) >> 37U; }
+    else if constexpr(N == 13) { return Helpers::Assembly::umulh64(n, 0x384B84D092ED0385ULL) >> 41U; }
+    else if constexpr(N == 14) { return Helpers::Assembly::umulh64(n, 0xB424DC35095CD81ULL) >> 42U; }
+    else if constexpr(N == 15) { uint64_t t = Helpers::Assembly::umulh64(n, 0x203AF9EE756159B3ULL); return (((n - t) >> 1) + t) >> 49; }
+    else if constexpr(N == 16) { return Helpers::Assembly::umulh64(n, 0x39A5652FB1137857ULL) >> 51U; }
+    else if constexpr(N == 17) { uint64_t t = Helpers::Assembly::umulh64(n, 0x70EF54646D496893ULL); return (((n - t) >> 1) + t) >> 56; }
+    else if constexpr(N == 18) { uint64_t t = Helpers::Assembly::umulh64(n, 0x2725DD1D243ABA0FULL); return (((n - t) >> 1) + t) >> 59; }
+    else if constexpr(N == 19) { return Helpers::Assembly::umulh64(n, 0x760F253EDB4AB0D3ULL) >> 62U; }
+    // clang-format on
+  }
+
+  template <uint64_t N>
+  static inline void div_by_10_pow_n_void(uint64_t &n)
+  {
+    static_assert(N != 0, "why divide by 1");
+    static_assert(N <= std::numeric_limits<uint64_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+    if constexpr(N == 1) { n = Helpers::Assembly::umulh64(n , 0xCCCCCCCCCCCCCCCDULL) >> 3; }
+    else if constexpr(N == 2) { uint64_t t = Helpers::Assembly::umulh64(n , 0x47AE147AE147AE15ULL); n = (((n - t) >> 1) + t) >> 6; }
+    else if constexpr(N == 3) { uint64_t t = Helpers::Assembly::umulh64(n , 0x624DD2F1A9FBE77ULL); n = (((n - t) >> 1) + t) >> 9; }
+    else if constexpr(N == 4) { n = Helpers::Assembly::umulh64(n , 0x346DC5D63886594BULL) >> 11; }
+    else if constexpr(N == 5) { uint64_t t = Helpers::Assembly::umulh64(n , 0x4F8B588E368F0847ULL); n = (((n - t) >> 1) + t) >> 16; }
+    else if constexpr(N == 6) { n = Helpers::Assembly::umulh64(n , 0x431BDE82D7B634DBULL) >> 18U; }
+    else if constexpr(N == 7) { n = Helpers::Assembly::umulh64(n , 0xD6BF94D5E57A42BDULL) >> 23U; }
+    else if constexpr(N == 8) { n = Helpers::Assembly::umulh64(n , 0xABCC77118461CEFDULL) >> 26U; }
+    else if constexpr(N == 9) { uint64_t t = Helpers::Assembly::umulh64(n, 0x12E0BE826D694B2FULL); n = (((n - t) >> 1) + t) >> 29; }
+    else if constexpr(N == 10) { n = Helpers::Assembly::umulh64(n, 0xDBE6FECEBDEDD5BFULL) >> 33U; }
+    else if constexpr(N == 11) { n = Helpers::Assembly::umulh64(n, 0xAFEBFF0BCB24AAFFULL) >> 36U; }
+    else if constexpr(N == 12) { n = Helpers::Assembly::umulh64(n, 0x232F33025BD42233ULL) >> 37U; }
+    else if constexpr(N == 13) { n = Helpers::Assembly::umulh64(n, 0x384B84D092ED0385ULL) >> 41U; }
+    else if constexpr(N == 14) { n = Helpers::Assembly::umulh64(n, 0xB424DC35095CD81ULL) >> 42U; }
+    else if constexpr(N == 15) { uint64_t t = Helpers::Assembly::umulh64(n, 0x203AF9EE756159B3ULL); n = (((n - t) >> 1) + t) >> 49; }
+    else if constexpr(N == 16) { n = Helpers::Assembly::umulh64(n, 0x39A5652FB1137857ULL) >> 51U; }
+    else if constexpr(N == 17) { uint64_t t = Helpers::Assembly::umulh64(n, 0x70EF54646D496893ULL); n = (((n - t) >> 1) + t) >> 56; }
+    else if constexpr(N == 18) { uint64_t t = Helpers::Assembly::umulh64(n, 0x2725DD1D243ABA0FULL); n = (((n - t) >> 1) + t) >> 59; }
+    else if constexpr(N == 19) { n = Helpers::Assembly::umulh64(n, 0x760F253EDB4AB0D3ULL) >> 62U; }
+    // clang-format on
+  }
+  template <uint64_t DIV>
+  static inline auto div_by_10_pow_template(const uint64_t &n)
+  {
+    static_assert(Helpers::Math::Constexpr::is_pow10(DIV), "only powers of 10 supported");
+    static_assert(DIV != 0, "cant divide by 0");
+    static_assert(DIV != 1U, "why are you dividing by 1");
+    // clang-format off
+    if constexpr (DIV <= 10) {  return div_by_10_pow_n<1>(n); }
+    else if constexpr (DIV <= 100) {  return div_by_10_pow_n<2>(n); }
+    else if constexpr (DIV <= 1'000ULL) {  return div_by_10_pow_n<2>(n); }
+    else if constexpr (DIV <= 10'000ULL) {  return div_by_10_pow_n<3>(n); }
+    else if constexpr (DIV <= 100'000ULL) {  return div_by_10_pow_n<4>(n); }
+    else if constexpr (DIV <= 1'000'000ULL) {  return div_by_10_pow_n<5>(n); }
+    else if constexpr (DIV <= 10'000'000ULL) {  return div_by_10_pow_n<6>(n); }
+    else if constexpr (DIV <= 100'000'000ULL) {  return div_by_10_pow_n<7>(n); }
+    else if constexpr (DIV <= 1'000'000'000ULL) {  return div_by_10_pow_n<8>(n); }
+    else if constexpr (DIV <= 10'000'000'000ULL) {  return div_by_10_pow_n<9>(n); }
+    else if constexpr (DIV <= 100'000'000'000ULL) {  return div_by_10_pow_n<10>(n); }
+    else if constexpr (DIV <= 1'000'000'000'000ULL) {  return div_by_10_pow_n<11>(n); }
+    else if constexpr (DIV <= 10'000'000'000'000ULL) {  return div_by_10_pow_n<12>(n); }
+    else if constexpr (DIV <= 100'000'000'000'000ULL) {  return div_by_10_pow_n<13>(n); }
+    else if constexpr (DIV <= 1'000'000'000'000'000ULL) {  return div_by_10_pow_n<14>(n); }
+    else if constexpr (DIV <= 10'000'000'000'000'000ULL) {  return div_by_10_pow_n<15>(n); }
+    else if constexpr (DIV <= 100'000'000'000'000'000ULL) {  return div_by_10_pow_n<16>(n); }
+    else if constexpr (DIV <= 1'000'000'000'000'000'000ULL) {  return div_by_10_pow_n<17>(n); }
+    else if constexpr (DIV <= 10'000'000'000'000'000'000ULL) {  return div_by_10_pow_n<18>(n); }
+    else {  return div_by_10_pow_n<19>(n); }
+    // clang-format on
+  }
+
+  template <typename Type>
+    requires std::is_same_v<uint64_t, Type>
+  static auto div_by_10_denominator(const Type &numerator, const Type &denominator)
+  {
+    // clang-format off
+    if (denominator <= 10) {  return div_by_10_pow_n<1>(numerator); }
+    else if (denominator <= 100) {  return div_by_10_pow_n<2>(numerator); }
+    else if (denominator <= 1'000ULL) {  return div_by_10_pow_n<2>(numerator); }
+    else if (denominator <= 10'000ULL) {  return div_by_10_pow_n<3>(numerator); }
+    else if (denominator <= 100'000ULL) {  return div_by_10_pow_n<4>(numerator); }
+    else if (denominator <= 1'000'000ULL) {  return div_by_10_pow_n<5>(numerator); }
+    else if (denominator <= 10'000'000ULL) {  return div_by_10_pow_n<6>(numerator); }
+    else if (denominator <= 100'000'000ULL) {  return div_by_10_pow_n<7>(numerator); }
+    else if (denominator <= 1'000'000'000ULL) {  return div_by_10_pow_n<8>(numerator); }
+    else if (denominator <= 10'000'000'000ULL) {  return div_by_10_pow_n<9>(numerator); }
+    else if (denominator <= 100'000'000'000ULL) {  return div_by_10_pow_n<10>(numerator); }
+    else if (denominator <= 1'000'000'000'000ULL) {  return div_by_10_pow_n<11>(numerator); }
+    else if (denominator <= 10'000'000'000'000ULL) {  return div_by_10_pow_n<12>(numerator); }
+    else if (denominator <= 100'000'000'000'000ULL) {  return div_by_10_pow_n<13>(numerator); }
+    else if (denominator <= 1'000'000'000'000'000ULL) {  return div_by_10_pow_n<14>(numerator); }
+    else if (denominator <= 10'000'000'000'000'000ULL) {  return div_by_10_pow_n<15>(numerator); }
+    else if (denominator <= 100'000'000'000'000'000ULL) {  return div_by_10_pow_n<16>(numerator); }
+    else if (denominator <= 1'000'000'000'000'000'000ULL) {  return div_by_10_pow_n<17>(numerator); }
+    else if (denominator <= 10'000'000'000'000'000'000ULL) {  return div_by_10_pow_n<18>(numerator); }
+    else {  return div_by_10_pow_n<19>(numerator); }
+    // clang-format on
+  }
+
+  template <typename T>
+  static auto top_digit(const T &input)
+  {
+    return div_by_10_denominator(input, input / 10);
+  }
+
+} // namespace Helpers::Math::Magic::Division
+
+namespace Helpers::Math::Magic::Modulo
+{
+  template <uint32_t N>
+  static inline auto mod_by_10_pow_n(const uint16_t &n)
+  {
+    static_assert(N != 0, "why modide by 1");
+    static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+    if constexpr(N == 1) { return static_cast<uint16_t>(n - ((uint32_t(n) * 0xCCCDU) >> 19) * 10U); }
+    else if constexpr(N == 2) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x47AFU) >> 16); const uint16_t q = (((n - t) >> 1) + t) >> 6; return static_cast<uint16_t>(n - (q * 100U)); }
+    else if constexpr(N == 3) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x625U) >> 16); const uint16_t q = (((n - t) >> 1) + t) >> 9; return static_cast<uint16_t>(n - (q * 1000U)); }
+    else if constexpr(N == 4) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0xA36FU) >> 16); const uint16_t q = (((n - t) >> 1) + t) >> 13; return static_cast<uint16_t>(n - (q * 10000U)); }
+    // clang-format on
+  }
+
+  template <uint32_t N>
+  static inline auto mod_by_10_pow_n_void(uint16_t &quotient, uint16_t &remainder)
+  {
+    static_assert(N != 0, "why modide by 1");
+    static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
+
+    const uint16_t A = quotient;
+    // clang-format off
+    if constexpr(N == 1) { Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(quotient); remainder = A - (quotient * 10U); }
+    else if constexpr(N == 2) { Helpers::Math::Magic::Division::div_by_10_pow_n_void<2>(quotient); remainder = A - (quotient * 100U); }
+    else if constexpr(N == 3) { Helpers::Math::Magic::Division::div_by_10_pow_n_void<3>(quotient); remainder = A - (quotient * 1000U); }
+    else if constexpr(N == 4) { Helpers::Math::Magic::Division::div_by_10_pow_n_void<4>(quotient); remainder = A - (quotient * 10000U); }
+    // clang-format on
+  }
+
+  template <uint32_t N>
+  static inline auto mod_by_10_pow_n(const uint32_t &n)
+  {
+    static_assert(N != 0, "why modide by 1");
+    static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+    if constexpr(N == 1) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10U)); }
+    else if constexpr(N == 2) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100U)); }
+    else if constexpr(N == 3) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000U)); }
+    else if constexpr(N == 4) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10000U)); }
+    else if constexpr(N == 5) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100000U)); }
+    else if constexpr(N == 6) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000000U)); }
+    else if constexpr(N == 7) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10000000U)); }
+    else if constexpr(N == 8) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100000000U)); }
+    else if constexpr(N == 9) { return static_cast<uint32_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000000000U)); }
+    // clang-format on
+  }
+
+  template <uint32_t N, typename Type>
+    requires std::is_unsigned_v<Type> && (sizeof(Type) >= sizeof(uint32_t))
+  static inline auto mod_by_10_pow_n_void(uint32_t &quotient, Type &remainder)
+  {
+    static_assert(N != 0, "why modide by 1");
+    static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
+
+    const uint32_t A = quotient;
+    // clang-format off
+    if constexpr(N == 1)       {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10U); }
+    else if constexpr(N == 2)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100U); }
+    else if constexpr(N == 3)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000U); }
+    else if constexpr(N == 4)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10000U); }
+    else if constexpr(N == 5)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100000U); }
+    else if constexpr(N == 6)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000000U); }
+    else if constexpr(N == 7)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10000000U); }
+    else if constexpr(N == 8)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100000000U); }
+    else if constexpr(N == 9)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000000000U); }
+    // clang-format on
+  }
+
+  static auto mod_by_10_denominator(const uint32_t &numerator, const uint32_t &denominator)
+  {
+    // clang-format off
+    if(denominator <= 10) { return mod_by_10_pow_n<1>(numerator); }
+    else if(denominator <= 100) { return mod_by_10_pow_n<2>(numerator); }
+    else if(denominator <= 1'000) { return mod_by_10_pow_n<3>(numerator); }
+    else if(denominator <= 10'000) { return mod_by_10_pow_n<4>(numerator); }
+    else if(denominator <= 100'000) { return mod_by_10_pow_n<5>(numerator); }
+    else if(denominator <= 1'000'000) { return mod_by_10_pow_n<6>(numerator); }
+    else if(denominator <= 10'000'000) { return mod_by_10_pow_n<7>(numerator); }
+    else if(denominator <= 100'000'000) { return mod_by_10_pow_n<8>(numerator); }
+    else if(denominator <= 1'000'000'000) { return mod_by_10_pow_n<9>(numerator); }
+    else { return std::remove_cvref_t<decltype(numerator)>{0}; }
+    // clang-format on
+  }
+
+  template <uint32_t MOD>
+  static inline auto mod_by_10_template(const uint32_t &numerator)
+  {
+    static_assert(Helpers::Math::Constexpr::is_pow10(MOD), "only powers of 10 supported");
+    static_assert(MOD != 0, "cant mod by 0");
+    static_assert(MOD != 1U, "why are you mod by 1");
+    // clang-format off
+    if constexpr(MOD <= 10) { return mod_by_10_pow_n<1>(numerator); }
+    else if constexpr(MOD <= 100) { return mod_by_10_pow_n<2>(numerator); }
+    else if constexpr(MOD <= 1'000) { return mod_by_10_pow_n<3>(numerator); }
+    else if constexpr(MOD <= 10'000) { return mod_by_10_pow_n<4>(numerator); }
+    else if constexpr(MOD <= 100'000) { return mod_by_10_pow_n<5>(numerator); }
+    else if constexpr(MOD <= 1'000'000) { return mod_by_10_pow_n<6>(numerator); }
+    else if constexpr(MOD <= 10'000'000) { return mod_by_10_pow_n<7>(numerator); }
+    else if constexpr(MOD <= 100'000'000) { return mod_by_10_pow_n<8>(numerator); }
+    else if constexpr(MOD <= 1'000'000'000) { return mod_by_10_pow_n<9>(numerator); }
+    else { return std::remove_cvref_t<decltype(numerator)>{0}; }
+    // clang-format on
+  }
+
+  template <uint32_t N>
+  static inline auto mod_by_10_pow_n(const uint64_t &n)
+  {
+    static_assert(N != 0, "why mod by 1");
+    static_assert(N <= std::numeric_limits<uint64_t>::digits10, "10 ^exp is greater that num of digits");
+
+    // clang-format off
+      if constexpr(N == 1)      { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10ULL)); }
+      else if constexpr(N == 2) { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100ULL)); }
+      else if constexpr(N == 3) { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000ULL)); }
+      else if constexpr(N == 4) { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10000ULL)); }
+      else if constexpr(N == 5) { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100000ULL)); }
+      else if constexpr(N == 6) { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000000ULL)); }
+      else if constexpr(N == 7) { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10000000ULL)); }
+      else if constexpr(N == 8) { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100000000ULL)); }
+      else if constexpr(N == 9) { return static_cast<uint64_t>(n -  (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000000000ULL)); }
+      else if constexpr(N == 10) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10000000000ULL)); }
+      else if constexpr(N == 11) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100000000000ULL)); }
+      else if constexpr(N == 12) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000000000000ULL)); }
+      else if constexpr(N == 13) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10000000000000ULL)); }
+      else if constexpr(N == 14) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100000000000000ULL)); }
+      else if constexpr(N == 15) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000000000000000ULL)); }
+      else if constexpr(N == 16) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10000000000000000ULL)); }
+      else if constexpr(N == 17) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 100000000000000000ULL)); }
+      else if constexpr(N == 18) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 1000000000000000000ULL)); }
+      else if constexpr(N == 19) { return static_cast<uint64_t>(n - (Helpers::Math::Magic::Division::div_by_10_pow_n<N>(n) * 10000000000000000000ULL)); }
+    // clang-format on
+  }
+
+  template <uint32_t N, typename Type>
+    requires std::is_unsigned_v<Type> && (sizeof(Type) >= sizeof(uint64_t))
+  static inline auto mod_by_10_pow_n_void(uint64_t &quotient, Type &remainder)
+  {
+
+    static_assert(N != 0, "why mod by 1");
+    static_assert(N <= std::numeric_limits<uint64_t>::digits10, "10 ^exp is greater that num of digits");
+
+    const uint64_t A = quotient;
+
+    // clang-format off
+      if constexpr(N == 1)       {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10ULL); }
+      else if constexpr(N == 2)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100ULL); }
+      else if constexpr(N == 3)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000ULL); }
+      else if constexpr(N == 4)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10000ULL); }
+      else if constexpr(N == 5)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100000ULL); }
+      else if constexpr(N == 6)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000000ULL); }
+      else if constexpr(N == 7)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10000000ULL); }
+      else if constexpr(N == 8)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100000000ULL); }
+      else if constexpr(N == 9)  {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000000000ULL); }
+      else if constexpr(N == 10) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10000000000ULL); }
+      else if constexpr(N == 11) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100000000000ULL); }
+      else if constexpr(N == 12) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000000000000ULL); }
+      else if constexpr(N == 13) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10000000000000ULL); }
+      else if constexpr(N == 14) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100000000000000ULL); }
+      else if constexpr(N == 15) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000000000000000ULL); }
+      else if constexpr(N == 16) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10000000000000000ULL); }
+      else if constexpr(N == 17) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 100000000000000000ULL); }
+      else if constexpr(N == 18) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 1000000000000000000ULL); }
+      else if constexpr(N == 19) {Helpers::Math::Magic::Division::div_by_10_pow_n_void<N>(quotient); remainder = A - (quotient * 10000000000000000000ULL); }
+    // clang-format on
+  }
+
+  template <uint64_t MOD>
+  static inline auto mod_by_10_template(const uint64_t &numerator)
+  {
+    static_assert(Helpers::Math::Constexpr::is_pow10(MOD), "only powers of 10 supported");
+    static_assert(MOD != 0, "cant mod by 0");
+    static_assert(MOD != 1U, "why are you mod by 1");
+
+    // clang-format off
+    if constexpr (MOD <= 10) {  return mod_by_10_pow_n<1>(numerator); }
+    else if constexpr (MOD <= 100) {  return mod_by_10_pow_n<2>(numerator); }
+    else if constexpr (MOD <= 1'000ULL) {  return mod_by_10_pow_n<2>(numerator); }
+    else if constexpr (MOD <= 10'000ULL) {  return mod_by_10_pow_n<3>(numerator); }
+    else if constexpr (MOD <= 100'000ULL) {  return mod_by_10_pow_n<4>(numerator); }
+    else if constexpr (MOD <= 1'000'000ULL) {  return mod_by_10_pow_n<5>(numerator); }
+    else if constexpr (MOD <= 10'000'000ULL) {  return mod_by_10_pow_n<6>(numerator); }
+    else if constexpr (MOD <= 100'000'000ULL) {  return mod_by_10_pow_n<7>(numerator); }
+    else if constexpr (MOD <= 1'000'000'000ULL) {  return mod_by_10_pow_n<8>(numerator); }
+    else if constexpr (MOD <= 10'000'000'000ULL) {  return mod_by_10_pow_n<9>(numerator); }
+    else if constexpr (MOD <= 100'000'000'000ULL) {  return mod_by_10_pow_n<10>(numerator); }
+    else if constexpr (MOD <= 1'000'000'000'000ULL) {  return mod_by_10_pow_n<11>(numerator); }
+    else if constexpr (MOD <= 10'000'000'000'000ULL) {  return mod_by_10_pow_n<12>(numerator); }
+    else if constexpr (MOD <= 100'000'000'000'000ULL) {  return mod_by_10_pow_n<13>(numerator); }
+    else if constexpr (MOD <= 1'000'000'000'000'000ULL) {  return mod_by_10_pow_n<14>(numerator); }
+    else if constexpr (MOD <= 10'000'000'000'000'000ULL) {  return mod_by_10_pow_n<15>(numerator); }
+    else if constexpr (MOD <= 100'000'000'000'000'000ULL) {  return mod_by_10_pow_n<16>(numerator); }
+    else if constexpr (MOD <= 1'000'000'000'000'000'000ULL) {  return mod_by_10_pow_n<17>(numerator); }
+    else if constexpr (MOD <= 10'000'000'000'000'000'000ULL) {  return mod_by_10_pow_n<18>(numerator); }
+    else {  return mod_by_10_pow_n<19>(numerator); }
+    // clang-format on
+  }
+
+  static auto mod_by_10_denominator(const uint64_t &numerator, const uint64_t &denominator)
+  {
+    // clang-format off
+    if (denominator <= 10) {  return mod_by_10_pow_n<1>(numerator); }
+    else if (denominator <= 100) {  return mod_by_10_pow_n<2>(numerator); }
+    else if (denominator <= 1'000ULL) {  return mod_by_10_pow_n<2>(numerator); }
+    else if (denominator <= 10'000ULL) {  return mod_by_10_pow_n<3>(numerator); }
+    else if (denominator <= 100'000ULL) {  return mod_by_10_pow_n<4>(numerator); }
+    else if (denominator <= 1'000'000ULL) {  return mod_by_10_pow_n<5>(numerator); }
+    else if (denominator <= 10'000'000ULL) {  return mod_by_10_pow_n<6>(numerator); }
+    else if (denominator <= 100'000'000ULL) {  return mod_by_10_pow_n<7>(numerator); }
+    else if (denominator <= 1'000'000'000ULL) {  return mod_by_10_pow_n<8>(numerator); }
+    else if (denominator <= 10'000'000'000ULL) {  return mod_by_10_pow_n<9>(numerator); }
+    else if (denominator <= 100'000'000'000ULL) {  return mod_by_10_pow_n<10>(numerator); }
+    else if (denominator <= 1'000'000'000'000ULL) {  return mod_by_10_pow_n<11>(numerator); }
+    else if (denominator <= 10'000'000'000'000ULL) {  return mod_by_10_pow_n<12>(numerator); }
+    else if (denominator <= 100'000'000'000'000ULL) {  return mod_by_10_pow_n<13>(numerator); }
+    else if (denominator <= 1'000'000'000'000'000ULL) {  return mod_by_10_pow_n<14>(numerator); }
+    else if (denominator <= 10'000'000'000'000'000ULL) {  return mod_by_10_pow_n<15>(numerator); }
+    else if (denominator <= 100'000'000'000'000'000ULL) {  return mod_by_10_pow_n<16>(numerator); }
+    else if (denominator <= 1'000'000'000'000'000'000ULL) {  return mod_by_10_pow_n<17>(numerator); }
+    else if (denominator <= 10'000'000'000'000'000'000ULL) {  return mod_by_10_pow_n<18>(numerator); }
+    else {  return mod_by_10_pow_n<19>(numerator); }
+    // clang-format on
+  }
+
+} // namespace Helpers::Math::Magic::Modulo
+
+namespace Helpers::Math::Precision
+{
+  static void truncate_plus_1_quo_rem(uint32_t &quotient, uint32_t &rem, const auto &PRECISION)
+  {
+    // clang-format off
+    switch(PRECISION)
+    {
+    case 0: { rem = 0; } break;
+    case 1: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(quotient, rem); } break;
+    case 2: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<2>(quotient, rem); } break;
+    case 3: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<3>(quotient, rem); } break;
+    case 4: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<4>(quotient, rem); } break;
+    case 5: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<5>(quotient, rem); } break;
+    case 6: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<6>(quotient, rem); } break;
+    case 7: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<7>(quotient, rem); } break;
+    case 8: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(quotient, rem); } break;
+    case 9: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<9>(quotient, rem); } break;
+    default: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<6>(quotient, rem); } break;
+    }
+    // clang-format on
+  }
+
+  static void truncate_plus_1_quo_rem(uint64_t &quotient, uint64_t &rem, const auto &PRECISION)
+  {
+    // clang-format off
+    switch(PRECISION)
+    {
+    case 0: { rem = 0; } break;
+    case 1: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(quotient, rem); } break;
+    case 2: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<2>(quotient, rem); } break;
+    case 3: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<3>(quotient, rem); } break;
+    case 4: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<4>(quotient, rem); } break;
+    case 5: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<5>(quotient, rem); } break;
+    case 6: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<6>(quotient, rem); } break;
+    case 7: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<7>(quotient, rem); } break;
+    case 8: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(quotient, rem); } break;
+    case 9: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<9>(quotient, rem); } break;
+    case 10: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<10>(quotient, rem); } break;
+    case 11: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<11>(quotient, rem); } break;
+    case 12: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<12>(quotient, rem); } break;
+    case 13: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<13>(quotient, rem); } break;
+    case 14: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<14>(quotient, rem); } break;
+    case 15: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<15>(quotient, rem); } break;
+    case 16: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<16>(quotient, rem); } break;
+    case 17: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<17>(quotient, rem); } break;
+    case 18: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<18>(quotient, rem); } break;
+    default: { Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<6>(quotient, rem); } break;
+    }
+    // clang-format on
+  }
+} // namespace Helpers::Math::Precision
+
+namespace Helpers::Math::IEEE754
 {
   template <typename T>
     requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
-  struct IEEE754;
+  static bool GetMantissaExponent(const T &input, auto &mantissa, int &exponent) noexcept;
 
   template <>
-  struct IEEE754<float>
+  bool GetMantissaExponent<float>(const float &input, uint32_t &mantissa, int &exponent) noexcept
   {
-  private:
     using underlying = uint32_t;
-    using signed_underlying = int32_t;
-    using uint128_t = __uint128_t;
 
-    static constexpr underlying EXPONENT_ONLY = 0x7F800000U;
-    static constexpr signed_underlying EXPONENT_ST = 23;
-    static constexpr signed_underlying EXPONENT_LEFT_OFFSET = sizeof(float) * 8 - EXPONENT_ST - 1;
+    static const constexpr uint8_t EXPONENT_ST = 23U;
+    static const constexpr uint8_t MANTISSA_SHIFT = 8U;
+    static const constexpr uint8_t EXPONENT_LEFT_OFFSET = sizeof(float) * 8 - EXPONENT_ST - 1;
+    static const constexpr uint8_t EXPONENT_ALL_BITS_ON = 255U; // as defined in IEEE-754
 
-    static constexpr signed_underlying MIN_EXPONENT = std::numeric_limits<float>::min_exponent - std::numeric_limits<float>::digits;
-    static constexpr signed_underlying EXPONENT_TABLE_OFFSET = std::numeric_limits<double>::min_exponent - std::numeric_limits<double>::digits;
-    static constexpr signed_underlying EXPONENT_TABLE_BIAS = -EXPONENT_TABLE_OFFSET + MIN_EXPONENT + EXPONENT_ST;
+    static const constexpr int16_t MIN_EXPONENT = std::numeric_limits<float>::min_exponent - std::numeric_limits<float>::digits;
+    static const constexpr int16_t EXPONENT_TABLE_OFFSET = std::numeric_limits<double>::min_exponent - std::numeric_limits<double>::digits;
+    static const constexpr int16_t EXPONENT_TABLE_BIAS = -EXPONENT_TABLE_OFFSET + MIN_EXPONENT + EXPONENT_ST;
 
-    static constexpr signed_underlying EXPONENT_ALL_BITS_ON = 255; // as defined in IEEE-754
+    static const constexpr underlying EXPONENT_ONLY = 0x7F800000U;
+    static const constexpr underlying MANTISSA_ONLY = 0x007FFFFFU;
+    static const constexpr underlying MANTISSA_IMPLICIT_1 = underlying{ 1 } << EXPONENT_ST;
+    static const constexpr underlying SIGN_ONLY = 0x80000000U;
 
-    static constexpr underlying MANTISSA_ONLY = 0x007FFFFFU;
-    static constexpr underlying MANTISSA_IMPLICIT_1 = underlying{ 1 } << EXPONENT_ST;
+    const auto bits = std::bit_cast<underlying>(input);
 
-    static constexpr underlying SIGN_ONLY = 0x80000000U;
+    const underlying man = bits & MANTISSA_ONLY;
 
-    static const constexpr uint128_t half = uint128_t{ 1 } << EXPONENT_ST;
-    static const constexpr auto shift = EXPONENT_ST + 1;
-    static const constexpr uint128_t frac_mask = ((uint128_t{ 1 } << shift) - 1);
+    const uint8_t exp = ((bits & EXPONENT_ONLY) >> EXPONENT_ST);
 
-  public:
-    underlying mantissa;
-    int exponent;
-
-  public:
-    explicit IEEE754(const float &input)
+    if(exp >= EXPONENT_ALL_BITS_ON) [[unlikely]]
     {
-      const underlying bits = std::bit_cast<underlying>(input);
+      const underlying SIGN = bits & SIGN_ONLY;
+      mantissa = (man == 0) ? (SIGN) ? 2 : 1 : 0;
+      return true;
+    }
 
-      const underlying man = bits & MANTISSA_ONLY;
+    if(exp > 0) [[likely]]
+    {
+      mantissa = (man | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
+      exponent = exp + EXPONENT_TABLE_BIAS;
+    }
+    else
+    {
+      const auto shift_internal = std::countl_zero(man) - EXPONENT_LEFT_OFFSET;
 
-      const signed_underlying exp = ((bits & EXPONENT_ONLY) >> EXPONENT_ST);
-
-      if(exp >= EXPONENT_ALL_BITS_ON) [[unlikely]]
+      if(shift_internal <= EXPONENT_ST) [[likely]]
       {
-        const underlying SIGN = bits & SIGN_ONLY;
-        exponent = std::numeric_limits<decltype(exponent)>::max();
-        mantissa = (man == 0) ? (SIGN) ? 2 : 1 : 0;
-
-        return;
-      }
-
-      if(exp > 0) [[likely]]
-      {
-        mantissa = man | MANTISSA_IMPLICIT_1;
-        exponent = exp + EXPONENT_TABLE_BIAS;
+        mantissa = (((man << shift_internal) & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
+        exponent = 1 - shift_internal + EXPONENT_TABLE_BIAS;
       }
       else
       {
-        const int shift_internal = std::countl_zero(man) - EXPONENT_LEFT_OFFSET;
-
-        if(shift_internal <= EXPONENT_ST) [[likely]]
-        {
-          mantissa = ((man << shift_internal) & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1;
-          exponent = 1 - shift_internal + EXPONENT_TABLE_BIAS;
-        }
-        else
-        {
-          mantissa = std::numeric_limits<decltype(mantissa)>::max();
-          exponent = std::numeric_limits<decltype(exponent)>::max();
-        }
+        mantissa = std::numeric_limits<std::remove_cvref_t<decltype(mantissa)>>::max();
+        return true;
       }
     }
 
-  public:
-    static auto Multiply(const float &A, const auto &B)
-    {
-      const uint128_t A_bits = std::bit_cast<underlying>(A);
-
-      const uint128_t sig = (A_bits & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1;
-
-      const uint128_t prod = uint128_t{ sig } * uint128_t{ B.hig };
-
-      return static_cast<uint128_t>(prod >> shift);
-    }
-
-    struct result_extra
-    {
-      uint64_t result;
-      bool extra;
-    };
-
-  public:
-    static auto MultiplyRoundCompliant(const underlying &A, const auto &B, int &exponent, result_extra &to_ret)
-    {
-      using hig_type = std::remove_cvref_t<decltype(B.hig)>;
-      static_assert(std::is_integral_v<hig_type>, "B must be an integral type");
-      static_assert(std::is_unsigned_v<hig_type>, "B should be unsigned here");
-
-      static const constexpr hig_type low = Helpers::Math::Constexpr::ipow(hig_type{ 10 }, std::numeric_limits<hig_type>::digits10 - 1);
-
-      const __uint128_t prod = static_cast<__uint128_t>(A) * static_cast<__uint128_t>(B.hig);
-
-      to_ret.result = static_cast<hig_type>(prod >> shift);
-
-      if(to_ret.result < low)
-      {
-        to_ret.result *= 10;
-        --exponent;
-      }
-
-      to_ret.extra = false;
-    } //
-  };
+    return false;
+  }
 
   template <>
-  struct IEEE754<double>
+  bool GetMantissaExponent<double>(const double &input, uint64_t &mantissa, int &exponent) noexcept
   {
-  private:
     using underlying = uint64_t;
-    using signed_underlying = int64_t;
-    using uint128_t = __uint128_t;
 
-    static constexpr underlying EXPONENT_ONLY = 0x7FF0000000000000ULL;
-    static constexpr signed_underlying EXPONENT_ST = 52;
-    static constexpr signed_underlying EXPONENT_LEFT_OFFSET = sizeof(double) * 8 - EXPONENT_ST - 1;
+    static const constexpr uint8_t NUM_OF_BITS = sizeof(double) * 8U;
+    static const constexpr uint8_t EXPONENT_ST = 52U;
+    static const constexpr uint8_t MANTISSA_SHIFT = 11U;
+    static const constexpr uint8_t EXPONENT_LEFT_OFFSET = NUM_OF_BITS - EXPONENT_ST - 1;
 
-    static constexpr signed_underlying MIN_EXPONENT = std::numeric_limits<double>::min_exponent - std::numeric_limits<double>::digits;
+    static const constexpr uint16_t EXPONENT_ALL_BITS_ON = 2047U; // as defined in IEEE-754
 
-    static constexpr signed_underlying EXPONENT_ALL_BITS_ON = 2047; // as defined in IEEE-754
+    static const constexpr underlying EXPONENT_ONLY = 0x7FF0000000000000ULL;
+    static const constexpr underlying MANTISSA_ONLY = 0x000FFFFFFFFFFFFFULL;
+    static const constexpr underlying MANTISSA_IMPLICIT_1 = underlying{ 1 } << EXPONENT_ST;
 
-    static constexpr underlying MANTISSA_ONLY = 0x000FFFFFFFFFFFFFULL;
-    static constexpr underlying MANTISSA_IMPLICIT_1 = underlying{ 1 } << EXPONENT_ST;
+    static const constexpr underlying SIGN_ONLY = 0x8000000000000000ULL;
 
-    static constexpr underlying SIGN_ONLY = 0x8000000000000000ULL;
+    const auto bits = std::bit_cast<underlying>(input);
 
-    static const constexpr uint128_t half = uint128_t{ 1 } << EXPONENT_ST;
-    static const constexpr auto shift = EXPONENT_ST + 1;
-    static const constexpr uint128_t frac_mask = ((uint128_t{ 1 } << shift) - 1);
+    const underlying man = bits & MANTISSA_ONLY;
 
-  public:
-    underlying mantissa;
-    int exponent;
+    const uint16_t exp = ((bits & EXPONENT_ONLY) >> EXPONENT_ST);
 
-  public:
-    explicit IEEE754(const double &input)
+    if(exp >= EXPONENT_ALL_BITS_ON) [[unlikely]]
     {
-      const underlying bits = std::bit_cast<underlying>(input);
+      const underlying SIGN = bits & SIGN_ONLY;
+      mantissa = (man == 0) ? (SIGN) ? 2 : 1 : 0;
+      return true;
+    }
 
-      const underlying man = bits & MANTISSA_ONLY;
+    if(exp > 0) [[likely]]
+    {
+      mantissa = (man | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
+      exponent = exp + EXPONENT_ST;
+    }
+    else
+    {
+      const auto shift_internal = std::countl_zero(man) - EXPONENT_LEFT_OFFSET;
 
-      const signed_underlying exp = ((bits & EXPONENT_ONLY) >> EXPONENT_ST);
-
-      if(exp >= EXPONENT_ALL_BITS_ON) [[unlikely]]
+      if(shift_internal <= EXPONENT_ST) [[likely]]
       {
-        const underlying SIGN = bits & SIGN_ONLY;
-        exponent = std::numeric_limits<decltype(exponent)>::max();
-        mantissa = (man == 0) ? (SIGN) ? 2 : 1 : 0;
-
-        return;
-      }
-
-      if(exp > 0) [[likely]]
-      {
-        mantissa = man | MANTISSA_IMPLICIT_1;
-        exponent = exp + EXPONENT_ST;
+        mantissa = (((man << shift_internal) & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
+        exponent = 1 + EXPONENT_ST - shift_internal;
       }
       else
       {
-        const int shift_internal = std::countl_zero(man) - EXPONENT_LEFT_OFFSET;
-
-        if(shift_internal <= EXPONENT_ST) [[likely]]
-        {
-          mantissa = ((man << shift_internal) & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1;
-          exponent = 1 + EXPONENT_ST - shift_internal;
-        }
-        else
-        {
-          mantissa = std::numeric_limits<decltype(mantissa)>::max();
-          exponent = std::numeric_limits<decltype(exponent)>::max();
-        }
+        mantissa = std::numeric_limits<std::remove_cvref_t<decltype(mantissa)>>::max();
+        return true;
       }
     }
 
-  public:
-    static auto Multiply(const double &A, const auto &B)
+    return false;
+  }
+
+  namespace Exponential
+  {
+    template <typename T>
+      requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
+    static inline auto Multiply(const auto &mantissa, const uint32_t *table, auto &result, auto &next_9_digits) noexcept;
+
+    template <>
+    inline auto Multiply<float>(const uint32_t &mantissa, const uint32_t *table, uint32_t &result, uint32_t &next_9_digits) noexcept
     {
-      const uint128_t A_bits = std::bit_cast<underlying>(A);
+      const constexpr uint32_t DEC9 = 1'000'000'000U;
 
-      const uint128_t sig = (A_bits & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1;
+      const uint64_t u64_prod_0 = static_cast<uint64_t>(mantissa) * table[0];
+      const uint64_t u64_prod_1 = static_cast<uint64_t>(mantissa) * table[1];
 
-      const uint128_t prod = uint128_t{ sig } * uint128_t{ B.hig };
+      const auto u32low_prod_0 = static_cast<uint32_t>(u64_prod_0);
+      const auto u32low_1e9 = Helpers::Assembly::umulh32(u32low_prod_0, DEC9);
+      const auto u32hig_prod_1 = static_cast<uint32_t>(u64_prod_1 >> 32U);
 
-      return static_cast<uint128_t>(prod >> shift);
-    }
+      result = u64_prod_0 >> 32U;
+      next_9_digits = u32hig_prod_1 + u32low_1e9;
 
-    struct result_extra
-    {
-      uint64_t result;
-      bool extra;
-    };
-
-  public:
-    static auto MultiplyRoundCompliant(const underlying &A, const auto &B, int &exponent, result_extra &to_ret)
-    {
-      using hig_type = std::remove_cvref_t<decltype(B.hig)>;
-      static_assert(std::is_integral_v<hig_type>, "B must be an integral type");
-      static_assert(std::is_unsigned_v<hig_type>, "B should be unsigned here");
-
-      static const constexpr __uint128_t low = Helpers::Math::Constexpr::ipow(__uint128_t{ 10 }, std::numeric_limits<uint64_t>::digits10 + 2);
-
-      const auto B_pow = static_cast<__uint128_t>(B.hig) * 1'000 + B.low;
-
-      const __uint128_t prod = static_cast<__uint128_t>(A) * B_pow;
-      __uint128_t result = prod >> shift;
-
-      // 4. Normalized check (the "x10" path)
-      if(result < low)
+      while(next_9_digits >= DEC9)
       {
-        result *= 10;
-        --exponent;
+        result++;
+        next_9_digits -= DEC9;
       }
+    }
 
-      to_ret.result = static_cast<hig_type>(result / 1'000);
-      to_ret.extra = (result % 1'000) != 0;
-    } //
-  };
-} // namespace Helpers::Math
+    template <>
+    inline auto Multiply<double>(const uint64_t &mantissa, const uint32_t *table, uint64_t &result, uint32_t &next_9_digits) noexcept
+    {
+      const constexpr uint64_t DEC9 = 1'000'000'000ULL;
+
+      const uint64_t m_high_mid = static_cast<uint64_t>(table[0]) * DEC9 + table[1];
+      const auto p_low_top = static_cast<uint32_t>(Helpers::Assembly::umulh64(mantissa, table[2]));
+
+      const __uint128_t u128_prod = (__uint128_t)mantissa * m_high_mid;
+      const auto p_hi_mid_rem_times_1e9 = static_cast<uint32_t>(Helpers::Assembly::umulh64(u128_prod, DEC9));
+
+      result = u128_prod >> 64U;
+      next_9_digits = p_low_top + p_hi_mid_rem_times_1e9;
+
+      while(next_9_digits >= DEC9)
+      {
+        result++;
+        next_9_digits -= DEC9;
+      }
+    }
+  } // namespace Exponential
+
+  namespace Fixed
+  {
+    template <typename T>
+      requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
+    static unsigned Multiply(const auto &, const uint32_t *, uint32_t &, uint32_t &, uint32_t &) noexcept;
+
+    template <>
+    unsigned Multiply<float>(const uint32_t &mantissa, const uint32_t *table, uint32_t &first_9_digits, uint32_t &middle_9_digits, uint32_t &last_9_digits) noexcept
+    {
+      const constexpr uint32_t DEC8 = 100'000'000U;
+      const constexpr uint32_t DEC9 = 1'000'000'000U;
+
+      const uint64_t u64_prod_0 = static_cast<uint64_t>(mantissa) * table[0];
+      const uint64_t u64_prod_1 = static_cast<uint64_t>(mantissa) * table[1];
+      const uint64_t u64_prod_2 = static_cast<uint64_t>(mantissa) * table[2];
+
+      const auto u32_0_prod_low = static_cast<uint32_t>(u64_prod_0);
+      const auto u32_1_prod_low = static_cast<uint32_t>(u64_prod_1);
+      const auto u32_1_prod_hig = static_cast<uint32_t>(u64_prod_1 >> 32U);
+      const auto u32_2_prod_hig = static_cast<uint32_t>(u64_prod_2 >> 32U);
+      const uint32_t u32_0_prod_low_1e9 = (uint64_t)u32_0_prod_low * DEC9 >> 32U;
+      const uint32_t u32_1_prod_low_1e9 = (uint64_t)u32_1_prod_low * DEC9 >> 32U;
+
+      first_9_digits = u64_prod_0 >> 32U;
+      middle_9_digits = u32_1_prod_hig + u32_0_prod_low_1e9;
+      last_9_digits = u32_2_prod_hig + u32_1_prod_low_1e9;
+
+      const unsigned fir9 = ((first_9_digits < DEC8)) + ((~((first_9_digits >= DEC9) & 0b1U)) & 0b1U);
+      const unsigned mid9 = ((middle_9_digits < DEC8)) + ((~((middle_9_digits >= DEC9) & 0b1U)) & 0b1U);
+      const unsigned las9 = ((last_9_digits < DEC8)) + ((~((last_9_digits >= DEC9) & 0b1U)) & 0b1U);
+
+      const unsigned status = fir9 | mid9 << 8U | las9 << 16U;
+
+      return status;
+    }
+
+    template <>
+    unsigned Multiply<float>(const uint64_t &mantissa, const uint32_t *table, uint32_t &first_9_digits, uint32_t &middle_9_digits, uint32_t &last_9_digits) noexcept
+    {
+      return 0U;
+    }
+  } // namespace Fixed
+} // namespace Helpers::Math::IEEE754
+
+//
