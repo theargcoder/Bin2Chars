@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <iostream>
 
-#if true || defined(__AVX512BW__) && defined(__AVX512VL__)
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
 
 int main()
 {
