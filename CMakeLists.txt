@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(OpenLogging CXX)
+project(Bin2Chars CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -124,25 +124,24 @@ endif()
 # Static Linking of Standard Libraries
 # ------------------------------------------------------------
 if(MSVC)
-    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+  set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    # Ensure we are on Linux/Unix; macOS generally doesn't support static libc++
-    if(NOT APPLE)
-        add_link_options(-static-libgcc -static-libstdc++)
-    endif()
+  # Ensure we are on Linux/Unix; macOS generally doesn't support static libc++
+  if(NOT APPLE)
+    add_link_options(-static-libgcc -static-libstdc++)
+  endif()
 endif()
 
 # ------------------------------------------------------------
 # Header-only library
 # ------------------------------------------------------------
-add_library(OpenLogging INTERFACE)
+add_library(Bin2Chars INTERFACE)
 
-target_include_directories(
-  OpenLogging INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}
-                        ${CMAKE_CURRENT_SOURCE_DIR}/../ryu)
+add_subdirectory(ryu)
 
-# Propagate Boost headers
-target_link_libraries(OpenLogging INTERFACE Boost::headers)
+target_include_directories(Bin2Chars INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_link_libraries(Bin2Chars INTERFACE Boost::headers ryu::ryu)
 
 # ------------------------------------------------------------
 # Tests
