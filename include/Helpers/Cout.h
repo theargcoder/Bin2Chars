@@ -3,9 +3,8 @@
 #include <iostream>
 #include <type_traits>
 
-namespace Helpers::Cout
+namespace Bin2Chars::Helpers::Cout
 {
-
   template <typename T>
   void print_binary(const std::string &label, const T &input)
   {

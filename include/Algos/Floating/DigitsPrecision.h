@@ -4,7 +4,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <iostream>
 #include <limits>
 #include <string>
 #include <type_traits>
@@ -18,7 +17,7 @@
 #include "include/Helpers/Simd.h"
 #include "include/Helpers/Templating.h"
 
-namespace Helpers::Numeric::Floating::DigitsPrecision
+namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 {
   enum class RoundingBehavior : uint8_t
   {
@@ -31,22 +30,22 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
   template <RoundingBehavior BEHAVE, typename T>
   struct ToStrWriteBuffReturnLenImpl;
 
-  template <Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior BEHAVE, typename T>
+  template <Numeric::Floating::DigitsPrecision::RoundingBehavior BEHAVE, typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   static unsigned ToStrWriteBuffReturnLen(char *__restrict__ ptr, const T &input, int PRECISION)
   {
-    return Helpers::Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLenImpl<BEHAVE, T>::ToStr(ptr, input, PRECISION);
+    return Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLenImpl<BEHAVE, T>::ToStr(ptr, input, PRECISION);
   }
 
   template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, T>
+  struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, T>
   {
     static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION);
   };
 
   template <>
-  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, float>
+  struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, float>
   {
     static unsigned ToStr(char *__restrict__ buff, const float &input, int PRECISION)
     {
@@ -55,7 +54,7 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
   };
 
   template <>
-  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, double>
+  struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, double>
   {
     static unsigned ToStr(char *__restrict__ buff, const double &input, int PRECISION)
     {
@@ -65,17 +64,17 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
 
   template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, T>
+  struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, T>
   {
     static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION);
   };
 
   template <>
-  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, float>
+  struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, float>
   {
     static unsigned ToStr(char *__restrict__ buff, const float &input, int PRECISION)
     {
-      using Floating = Constants::Tables::Floating<double>;
+      using Floating = Bin2Chars::Constants::Tables::Floating<double>;
 
       const constexpr unsigned BASE = 10U;
       const constexpr unsigned DEC8 = 100'000'000U;
@@ -84,7 +83,7 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
       const constexpr auto MIN_PRECISION = Helpers::Math::Constexpr::ipow(10U, std::numeric_limits<unsigned>::digits10 - 1);
       const constexpr auto MAX_PRECISION = Helpers::Math::Constexpr::ipow(10U, std::numeric_limits<unsigned>::digits10);
 
-      const constexpr auto PRECISION_TABLE = Constants::Tables::Fixed::GetPrecistionTable<unsigned>();
+      const constexpr auto PRECISION_TABLE = Bin2Chars::Constants::Tables::Fixed::GetPrecistionTable<unsigned>();
 
       unsigned len = 0;
       unsigned mantissa;
@@ -221,7 +220,7 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
         {
           std::memset(&buff[len], '0', exp_10_abs);
           len += exp_10_abs;
-          Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
+          Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
           len += PRECISION - exp_10_abs;
         }
       }
@@ -229,7 +228,7 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
       {
         if(exp_base_10_int <= std::numeric_limits<unsigned>::digits10 - 2)
         {
-          const auto len_wr = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
+          const auto len_wr = Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
           std::memmove(&buff[len + exp_10_abs + 1U], &buff[len + exp_10_abs], len_wr);
           buff[len + exp_10_abs] = '.';
           len += exp_10_abs;
@@ -237,8 +236,8 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
         }
         else
         {
-          const auto len_wr_1 = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
-          const auto len_wr_2 = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len + len_wr_1], digits_10);
+          const auto len_wr_1 = Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
+          const auto len_wr_2 = Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len + len_wr_1], digits_10);
           const auto missin = std::max(0, static_cast<int>(exp_10_abs - len_wr_1 - len_wr_2));
           std::memset(&buff[len + len_wr_1 + len_wr_2], '0', missin);
           std::memmove(&buff[len + exp_10_abs + 1U], &buff[len + exp_10_abs], len_wr_1 + len_wr_2);
@@ -254,7 +253,7 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
   };
 
   template <>
-  struct ToStrWriteBuffReturnLenImpl<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, double>
+  struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, double>
   {
     static unsigned ToStr(char *__restrict__ buff, const double &input, int PRECISION)
     {
@@ -267,7 +266,7 @@ namespace Helpers::Numeric::Floating::DigitsPrecision
   static std::string ToStr(const T &input, const int PRECISION)
   {
     char buff[2048]; // massive on purpose
-    const unsigned len = Helpers::Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLen<BEHAVE, T>(&buff[0], input, PRECISION);
+    const unsigned len = Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLen<BEHAVE, T>(&buff[0], input, PRECISION);
     return std::string{ &buff[0], len };
   }
 } // namespace Helpers::Numeric::Floating::DigitsPrecision

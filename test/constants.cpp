@@ -61,15 +61,15 @@ namespace
     requires std::is_floating_point_v<T>
   (T)
   {
-    const auto table = Constants::Tables::Floating<T>::DIGITS;
+    const auto table = Bin2Chars::Constants::Tables::Floating<T>::DIGITS;
     // Use Boost's 100-decimal-digit precision float for the test bounds
     using BigFloat = boost::multiprecision::cpp_bin_float_100;
 
     const BigFloat LOG_10_2_BF("0.301029995663981195213738894724493026768"); // Hardcoded for exactness or calculate via Boost
 
-    for(int i = Constants::Tables::Floating<float>::MIN_BIN_EXP; i <= Constants::Tables::Floating<float>::MAX_BIN_EXP; i++)
+    for(int i = Bin2Chars::Constants::Tables::Floating<float>::MIN_BIN_EXP; i <= Bin2Chars::Constants::Tables::Floating<float>::MAX_BIN_EXP; i++)
     {
-      const auto idx = i + Constants::Tables::Floating<T>::BIAS;
+      const auto idx = i + Bin2Chars::Constants::Tables::Floating<T>::BIAS;
       const __uint128_t val = static_cast<__uint128_t>(table[idx][0]) * Tests::pow(__uint128_t{ 10 }, 18)
                               + static_cast<__uint128_t>(table[idx][1]) * Tests::pow(__uint128_t{ 10 }, 9) + table[idx][2];
       const int digits = static_cast<int>(boost::multiprecision::log10((BigFloat{ val }))) + 1;
@@ -299,9 +299,9 @@ static auto simdy_uint32_t_to_str(char *__restrict__ buff, const uint32_t &input
     return 1U;
   }
 
-  uint32_t top_val = Helpers::Math::Magic::Division::div_by_10_pow_n<6>(input) * 10;
-  uint32_t middle_val = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<4>(Helpers::Math::Magic::Division::div_by_10_pow_n<2>(input)) * 10;
-  uint32_t bottom_val = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<2>(input) * 1'000;
+  uint32_t top_val = Bin2Chars::Helpers::Math::Magic::Division::div_by_10_pow_n<6>(input) * 10;
+  uint32_t middle_val = Bin2Chars::Helpers::Math::Magic::Modulo::mod_by_10_pow_n<4>(Bin2Chars::Helpers::Math::Magic::Division::div_by_10_pow_n<2>(input)) * 10;
+  uint32_t bottom_val = Bin2Chars::Helpers::Math::Magic::Modulo::mod_by_10_pow_n<2>(input) * 1'000;
 
   // vdupq_n_u32 is the NEON equivalent of _mm_set1_epi32
   const uint32x4_t v_top = vdupq_n_u32(top_val);
@@ -429,10 +429,10 @@ auto mul_simd(const Type &mantissa, const uint32_t &m_high, const uint32_t &m_mi
 
   const uint64_t m_high_mid = static_cast<uint64_t>(m_high) * DEC8 + m_mid;
   const uint64_t p_hi_mid_bottom = (MANTISSA_MAX)*m_high_mid;
-  const auto p_hi_mid_rem_times_1e9 = static_cast<uint32_t>(Helpers::Assembly::umulh64(p_hi_mid_bottom, DEC8));
-  const auto p_low_top = static_cast<uint32_t>(Helpers::Assembly::umulh64(MANTISSA_MAX, m_low));
+  const auto p_hi_mid_rem_times_1e9 = static_cast<uint32_t>(Bin2Chars::Helpers::Assembly::umulh64(p_hi_mid_bottom, DEC8));
+  const auto p_low_top = static_cast<uint32_t>(Bin2Chars::Helpers::Assembly::umulh64(MANTISSA_MAX, m_low));
 
-  auto result = Helpers::Assembly::umulh64(MANTISSA_MAX, m_high_mid);
+  auto result = Bin2Chars::Helpers::Assembly::umulh64(MANTISSA_MAX, m_high_mid);
   auto next_9_digits = p_low_top + p_hi_mid_rem_times_1e9;
 
   while(next_9_digits >= DEC8)
@@ -441,16 +441,16 @@ auto mul_simd(const Type &mantissa, const uint32_t &m_high, const uint32_t &m_mi
     next_9_digits -= DEC8;
   }
 
-  const uint32_t m_hig_top = static_cast<uint32_t>(Helpers::Assembly::umulh64(MANTISSA_MAX, m_high));
-  const uint32_t m_mid_top = static_cast<uint32_t>(Helpers::Assembly::umulh64(MANTISSA_MAX, m_mid));
-  const uint32_t m_low_top = static_cast<uint32_t>(Helpers::Assembly::umulh64(MANTISSA_MAX, m_low));
+  const uint32_t m_hig_top = static_cast<uint32_t>(Bin2Chars::Helpers::Assembly::umulh64(MANTISSA_MAX, m_high));
+  const uint32_t m_mid_top = static_cast<uint32_t>(Bin2Chars::Helpers::Assembly::umulh64(MANTISSA_MAX, m_mid));
+  const uint32_t m_low_top = static_cast<uint32_t>(Bin2Chars::Helpers::Assembly::umulh64(MANTISSA_MAX, m_low));
   const uint64_t m_hig_low = MANTISSA_MAX * m_high;
   const uint64_t m_mid_low = MANTISSA_MAX * m_mid;
 
-  const uint32_t m_high_carry = Helpers::Assembly::umulh64(m_hig_low, DEC8);
-  const uint32_t m_mid_rem_for_low = Helpers::Assembly::umulh64(m_mid_low, DEC8);
+  const uint32_t m_high_carry = Bin2Chars::Helpers::Assembly::umulh64(m_hig_low, DEC8);
+  const uint32_t m_mid_rem_for_low = Bin2Chars::Helpers::Assembly::umulh64(m_mid_low, DEC8);
   const uint64_t m_hig_rem_for_mid = m_hig_low * DEC8;
-  const uint32_t m_hig_rem_for_low = Helpers::Assembly::umulh64(m_hig_rem_for_mid, DEC8);
+  const uint32_t m_hig_rem_for_low = Bin2Chars::Helpers::Assembly::umulh64(m_hig_rem_for_mid, DEC8);
 
   const uint32x4_t digits = { m_hig_top, m_mid_top + m_high_carry, m_low_top + m_hig_rem_for_low + m_mid_rem_for_low, 0 };
 
@@ -553,7 +553,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -561,7 +561,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -569,7 +569,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -577,13 +577,13 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, 999'999U);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, 999'999U);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(999'999U));
   }
 
@@ -591,7 +591,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -599,7 +599,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -607,20 +607,20 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(16429));
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(16429));
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(16429));
   }
 
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(57999));
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(57999));
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(57999));
   }
 
@@ -628,7 +628,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -636,7 +636,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 }
@@ -648,7 +648,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[64];
     buff[63] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -656,7 +656,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[64];
     buff[63] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -664,7 +664,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -672,13 +672,13 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, 999'999U);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, 999'999U);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(999'999U));
   }
 
@@ -686,7 +686,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -694,7 +694,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -702,7 +702,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -710,21 +710,21 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(16429));
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(16429));
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(16429));
   }
 
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(57999));
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(57999));
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(57999));
   }
 
@@ -732,7 +732,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -740,7 +740,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationx86_64)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 }
@@ -752,7 +752,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[64];
     buff[63] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -760,7 +760,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[64];
     buff[63] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint64_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -768,7 +768,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -776,13 +776,13 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, 999'999U);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint32_t>(buff, 999'999U);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(999'999U));
   }
 
@@ -790,7 +790,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -798,7 +798,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -806,7 +806,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -814,21 +814,21 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(16429));
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(16429));
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(16429));
   }
 
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(57999));
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint16_t>(buff, static_cast<uint16_t>(57999));
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(57999));
   }
 
@@ -836,7 +836,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 
@@ -844,7 +844,7 @@ BOOST_AUTO_TEST_CASE(SimDVecorizationARM64test)
   {
     char buff[32];
     buff[31] = '\0';
-    const auto len = Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
+    const auto len = Bin2Chars::Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<uint8_t>(buff, i);
     BOOST_CHECK_EQUAL(std::string(&buff[0], len), std::to_string(i));
   }
 }

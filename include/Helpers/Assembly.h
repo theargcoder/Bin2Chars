@@ -6,7 +6,7 @@
 #include <x86intrin.h>
 #endif
 
-namespace Helpers::Assembly
+namespace Bin2Chars::Helpers::Assembly
 {
   __attribute__((always_inline)) static auto umulh32(const uint64_t &a, const uint32_t &b) noexcept
   {
@@ -139,4 +139,4 @@ namespace Helpers::Assembly
 #endif
   }
 
-} // namespace Helpers::Assembly
+} // namespace Bin2Chars::Helpers::Assembly

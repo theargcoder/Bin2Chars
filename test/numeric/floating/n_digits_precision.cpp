@@ -149,24 +149,25 @@ namespace
 
       std::string open_logging, std_format, ryu;
 
-      const auto st_open_logging = Helpers::Assembly::timer_start();
-      open_logging = Helpers::Numeric::Floating::DigitsPrecision::ToStr<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
-      const auto en_open_logging = Helpers::Assembly::timer_end();
+      const auto st_open_logging = Bin2Chars::Helpers::Assembly::timer_start();
+      open_logging = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+      const auto en_open_logging = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_std_fmt = Helpers::Assembly::timer_start();
-      std_format = Helpers::Numeric::Std::to_string<false>(val, PRECISION);
-      const auto en_std_fmt = Helpers::Assembly::timer_end();
+      const auto st_std_fmt = Bin2Chars::Helpers::Assembly::timer_start();
+      std_format = Bin2Chars::Numeric::Std::to_string<false>(val, PRECISION);
+      const auto en_std_fmt = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_ryu = Helpers::Assembly::timer_start();
-      ryu = Helpers::Numeric::Ryu::Fixed::ToStr(val, PRECISION);
-      const auto en_ryu = Helpers::Assembly::timer_end();
+      const auto st_ryu = Bin2Chars::Helpers::Assembly::timer_start();
+      ryu = Bin2Chars::Numeric::Ryu::Fixed::ToStr(val, PRECISION);
+      const auto en_ryu = Bin2Chars::Helpers::Assembly::timer_end();
 
-      open_logging_took
-          += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(en_open_logging - st_open_logging)));
+      open_logging_took += std::chrono::duration_cast<std::chrono::nanoseconds>(
+          static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_open_logging - st_open_logging)));
       open_logging_cycles += en_open_logging - st_open_logging;
-      std_fmt_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(en_std_fmt - st_std_fmt)));
+      std_fmt_took
+          += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_std_fmt - st_std_fmt)));
       std_cycles += en_std_fmt - st_std_fmt;
-      ryu_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(en_ryu - st_ryu)));
+      ryu_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_ryu - st_ryu)));
       ryu_cycles += en_ryu - st_ryu;
 
       if(open_logging != std_format)
@@ -184,7 +185,7 @@ namespace
           BOOST_CHECK_EQUAL(log_val, ref_val);
           log_str_and_into_hex(LogHexStr("open_logging", open_logging), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
-          open_logging = Helpers::Numeric::Floating::DigitsPrecision::ToStr<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+          open_logging = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
 
           char buffer[1024];
           d2exp_buffered(val, PRECISION, buffer);
@@ -210,24 +211,25 @@ namespace
     {
       std::string open_logging, std_format, ryu;
 
-      const auto st_open_logging = Helpers::Assembly::timer_start();
-      open_logging = Helpers::Numeric::Floating::DigitsPrecision::ToStr<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
-      const auto en_open_logging = Helpers::Assembly::timer_end();
+      const auto st_open_logging = Bin2Chars::Helpers::Assembly::timer_start();
+      open_logging = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+      const auto en_open_logging = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_std_fmt = Helpers::Assembly::timer_start();
-      std_format = Helpers::Numeric::Std::to_string<false>(val, PRECISION);
-      const auto en_std_fmt = Helpers::Assembly::timer_end();
+      const auto st_std_fmt = Bin2Chars::Helpers::Assembly::timer_start();
+      std_format = Bin2Chars::Numeric::Std::to_string<false>(val, PRECISION);
+      const auto en_std_fmt = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_ryu = Helpers::Assembly::timer_start();
-      ryu = Helpers::Numeric::Ryu::Fixed::ToStr(val, PRECISION);
-      const auto en_ryu = Helpers::Assembly::timer_end();
+      const auto st_ryu = Bin2Chars::Helpers::Assembly::timer_start();
+      ryu = Bin2Chars::Numeric::Ryu::Fixed::ToStr(val, PRECISION);
+      const auto en_ryu = Bin2Chars::Helpers::Assembly::timer_end();
 
-      open_logging_took
-          += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(en_open_logging - st_open_logging)));
+      open_logging_took += std::chrono::duration_cast<std::chrono::nanoseconds>(
+          static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_open_logging - st_open_logging)));
       open_logging_cycles += en_open_logging - st_open_logging;
-      std_fmt_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(en_std_fmt - st_std_fmt)));
+      std_fmt_took
+          += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_std_fmt - st_std_fmt)));
       std_cycles += en_std_fmt - st_std_fmt;
-      ryu_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(en_ryu - st_ryu)));
+      ryu_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_ryu - st_ryu)));
       ryu_cycles += en_ryu - st_ryu;
 
       if(open_logging != std_format)
@@ -243,7 +245,7 @@ namespace
           BOOST_CHECK_EQUAL(log_val, ref_val);
           log_str_and_into_hex(LogHexStr("open_logging", open_logging), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
-          open_logging = Helpers::Numeric::Floating::DigitsPrecision::ToStr<Helpers::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+          open_logging = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
 
           char buffer[1024];
           d2exp_buffered(val, PRECISION, buffer);

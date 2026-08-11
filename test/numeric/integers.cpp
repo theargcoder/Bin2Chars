@@ -151,37 +151,39 @@ namespace
       for(Type i = DELIM, lim = 0, max_iter = 0; ((PLUS) ? i < DELIM + RANGE : i > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
           (PLUS) ? i += JUMP : i -= JUMP, max_iter++)
       {
-        const auto st_log = Helpers::Assembly::timer_start();
-        our_log = Helpers::Numeric::Integral::ToStr(i);
-        const auto en_log = Helpers::Assembly::timer_end();
+        const auto st_log = Bin2Chars::Helpers::Assembly::timer_start();
+        our_log = Bin2Chars::Numeric::Integral::ToStr(i);
+        const auto en_log = Bin2Chars::Helpers::Assembly::timer_end();
 
-        const auto st_std_to_str = Helpers::Assembly::timer_start();
-        std_log = Helpers::Numeric::Std::to_string<false>(i, 123);
-        const auto en_std_to_str = Helpers::Assembly::timer_end();
+        const auto st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
+        std_log = Bin2Chars::Numeric::Std::to_string<false>(i, 123);
+        const auto en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
 
-        const auto std_lib_to_st = Helpers::Assembly::timer_start();
+        const auto std_lib_to_st = Bin2Chars::Helpers::Assembly::timer_start();
         std_lib_to_str_log = std::to_string(i);
-        const auto std_lib_to_en = Helpers::Assembly::timer_end();
+        const auto std_lib_to_en = Bin2Chars::Helpers::Assembly::timer_end();
 
-        const auto simdy_st = Helpers::Assembly::timer_start();
-        simdy_log = Helpers::Numeric::Integral::ToStrSIMD(i);
-        const auto simdy_en = Helpers::Assembly::timer_end();
+        const auto simdy_st = Bin2Chars::Helpers::Assembly::timer_start();
+        simdy_log = Bin2Chars::Numeric::Integral::ToStrSIMD(i);
+        const auto simdy_en = Bin2Chars::Helpers::Assembly::timer_end();
 
-        open_logging_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(en_log - st_log)));
+        open_logging_time
+            += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_log - st_log)));
         open_logging_cpu_cycles += en_log - st_log;
-        std_lib_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(en_std_to_str - st_std_to_str)));
+        std_lib_time += std::chrono::duration_cast<std::chrono::nanoseconds>(
+            static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_std_to_str - st_std_to_str)));
         std_lib_cpu_cycles += en_std_to_str - st_std_to_str;
-        std_lib_to_str_time
-            += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(std_lib_to_en - std_lib_to_st)));
+        std_lib_to_str_time += std::chrono::duration_cast<std::chrono::nanoseconds>(
+            static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(std_lib_to_en - std_lib_to_st)));
         std_lib_to_str_cycles += std_lib_to_en - std_lib_to_st;
-        simdy_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Helpers::Assembly::rdtsc_to_ns(simdy_en - simdy_st)));
+        simdy_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(simdy_en - simdy_st)));
         simdy_cycles += simdy_en - simdy_st;
 
         if(our_log != std_log || simdy_log != std_lib_to_str_log)
         {
           BOOST_CHECK_EQUAL(our_log, std_log);
-          log_str_and_into_hex(LogHexStr("Helpers::Numeric::ToStr", our_log), LogHexStr("std::to_chars", std_log), LogHexStr("std::to_string", std_lib_to_str_log),
-                               LogHexStr("Helpers::Numeric::ToStrSIMD", simdy_log));
+          log_str_and_into_hex(LogHexStr("Bin2Chars::Numeric::ToStr", our_log), LogHexStr("std::to_chars", std_log), LogHexStr("std::to_string", std_lib_to_str_log),
+                               LogHexStr("Bin2Chars::Numeric::ToStrSIMD", simdy_log));
 
           lim++;
           errors++;
@@ -277,7 +279,7 @@ namespace
 
 BOOST_AUTO_TEST_CASE(test_all_integegral_v)
 {
-  Helpers::Assembly::pin_thread_to_cpu(3);
+  Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(3);
 
   // test_and_benchmark_ints<int8_t>(0);
   // test_and_benchmark_ints<uint8_t>(0);

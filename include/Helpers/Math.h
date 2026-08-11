@@ -8,7 +8,7 @@
 
 #include "include/Helpers/Assembly.h"
 
-namespace Helpers::Math::Constexpr
+namespace Bin2Chars::Helpers::Math::Constexpr
 {
   template <typename T>
   static constexpr T abs(T x)
@@ -211,9 +211,9 @@ namespace Helpers::Math::Constexpr
     })(n);
   }
 
-} // namespace Helpers::Math::Constexpr
+} // namespace Bin2Chars::Helpers::Math::Constexpr
 
-namespace Helpers::Math::Magic::Division
+namespace Bin2Chars::Helpers::Math::Magic::Division
 {
   template <uint32_t N>
   static auto div_by_10_pow_n(const uint16_t &n)
@@ -442,9 +442,9 @@ namespace Helpers::Math::Magic::Division
     return div_by_10_denominator(input, input / 10);
   }
 
-} // namespace Helpers::Math::Magic::Division
+} // namespace Bin2Chars::Helpers::Math::Magic::Division
 
-namespace Helpers::Math::Magic::Modulo
+namespace Bin2Chars::Helpers::Math::Magic::Modulo
 {
   template <uint32_t N>
   static inline auto mod_by_10_pow_n(const uint16_t &n)
@@ -670,9 +670,9 @@ namespace Helpers::Math::Magic::Modulo
     // clang-format on
   }
 
-} // namespace Helpers::Math::Magic::Modulo
+} // namespace Bin2Chars::Helpers::Math::Magic::Modulo
 
-namespace Helpers::Math::Precision
+namespace Bin2Chars::Helpers::Math::Precision
 {
   static void truncate_plus_1_quo_rem(uint32_t &quotient, uint32_t &rem, const auto &PRECISION)
   {
@@ -722,9 +722,9 @@ namespace Helpers::Math::Precision
     }
     // clang-format on
   }
-} // namespace Helpers::Math::Precision
+} // namespace Bin2Chars::Helpers::Math::Precision
 
-namespace Helpers::Math::IEEE754
+namespace Bin2Chars::Helpers::Math::IEEE754
 {
   template <typename T>
     requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
@@ -933,6 +933,6 @@ namespace Helpers::Math::IEEE754
       return 0U;
     }
   } // namespace Fixed
-} // namespace Helpers::Math::IEEE754
+} // namespace Bin2Chars::Helpers::Math::IEEE754
 
 //
