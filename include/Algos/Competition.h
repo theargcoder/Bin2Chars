@@ -13,7 +13,7 @@ extern "C"
 #include "../ryu/ryu/ryu.h"
 }
 
-namespace Helpers::Numeric::Std
+namespace Bin2Chars::Numeric::Std
 {
   template <bool SCIENTIFIC, typename Type>
   static auto to_string(Type value, const auto &PRECISION)
@@ -114,9 +114,9 @@ namespace Helpers::Numeric::Std
     return len;
   }
 
-} // namespace Helpers::Numeric::Std
+} // namespace Bin2Chars::Numeric::Std
 
-namespace Helpers::Numeric::Ryu
+namespace Bin2Chars::Numeric::Ryu
 {
   namespace Exponential
   {
@@ -147,4 +147,4 @@ namespace Helpers::Numeric::Ryu
       return ToStr(static_cast<double>(v), PRECISION);
     }
   } // namespace Fixed
-} // namespace Helpers::Numeric::Ryu
+} // namespace Bin2Chars::Numeric::Ryu

@@ -200,17 +200,17 @@ namespace
 
     // OpenLogging logger;
 
-    Type divisor = Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
+    Type divisor = Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
 
     for(Type i = DELIM, lim = 0, max_iter = 0; ((PLUS) ? i < DELIM + RANGE : i > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE; (PLUS) ? i += JUMP : i -= JUMP, max_iter++)
     {
-      const auto st_log = Helpers::Assembly::timer_start();
-      const auto our_div_10 = Helpers::Math::Magic::Division::div_by_10_pow_n<N>(i);
-      const auto en_log = Helpers::Assembly::timer_end();
+      const auto st_log = Bin2Chars::Helpers::Assembly::timer_start();
+      const auto our_div_10 = Bin2Chars::Helpers::Math::Magic::Division::div_by_10_pow_n<N>(i);
+      const auto en_log = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_std_to_str = Helpers::Assembly::timer_start();
+      const auto st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
       const auto regular_div_10 = i / divisor;
-      const auto en_std_to_str = Helpers::Assembly::timer_end();
+      const auto en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
 
       const auto bannana = TempTest::div_by_10_pow_n<N>(i);
 
@@ -223,10 +223,10 @@ namespace
       {
         BOOST_CHECK_EQUAL(our_div_10, regular_div_10);
         BOOST_CHECK_EQUAL(bannana, regular_div_10);
-        log_str_and_into_hex(LogHexStr("Helpers::Math::Magic::div_by_10_denominator", std::to_string(our_div_10)), LogHexStr("regular IDIV got", std::to_string(regular_div_10)),
-                             LogHexStr("New GEMINI n-t >> 1 + t DIV : ", std::to_string(bannana)));
+        log_str_and_into_hex(LogHexStr("Bin2Chars::Helpers::Math::Magic::div_by_10_denominator", std::to_string(our_div_10)),
+                             LogHexStr("regular IDIV got", std::to_string(regular_div_10)), LogHexStr("New GEMINI n-t >> 1 + t DIV : ", std::to_string(bannana)));
 
-        const auto for_debug = Helpers::Math::Magic::Division::div_by_10_denominator(i, divisor);
+        const auto for_debug = Bin2Chars::Helpers::Math::Magic::Division::div_by_10_denominator(i, divisor);
 
         lim++;
       }
@@ -244,17 +244,17 @@ namespace
 
     // OpenLogging logger;
 
-    Type divisor = Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
+    Type divisor = Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
 
     for(Type i = DELIM, lim = 0, max_iter = 0; ((PLUS) ? i < DELIM + RANGE : i > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE; (PLUS) ? i += JUMP : i -= JUMP, max_iter++)
     {
-      const uint64_t st_log = Helpers::Assembly::timer_start();
-      const auto our_div_10 = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<N>(i);
-      const uint64_t en_log = Helpers::Assembly::timer_end();
+      const uint64_t st_log = Bin2Chars::Helpers::Assembly::timer_start();
+      const auto our_div_10 = Bin2Chars::Helpers::Math::Magic::Modulo::mod_by_10_pow_n<N>(i);
+      const uint64_t en_log = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const uint64_t st_std_to_str = Helpers::Assembly::timer_start();
+      const uint64_t st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
       const auto regular_div_10 = i % divisor;
-      const uint64_t en_std_to_str = Helpers::Assembly::timer_end();
+      const uint64_t en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
 
       open_logging_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
       open_logging_cpu_cycles += en_log - st_log;
@@ -264,9 +264,10 @@ namespace
       if(our_div_10 != regular_div_10)
       {
         BOOST_CHECK_EQUAL(our_div_10, regular_div_10);
-        log_str_and_into_hex(LogHexStr("Helpers::Math::Magic::div_by_10_denominator", std::to_string(our_div_10)), LogHexStr("regular IDIV got", std::to_string(regular_div_10)));
+        log_str_and_into_hex(LogHexStr("Bin2Chars::Helpers::Math::Magic::div_by_10_denominator", std::to_string(our_div_10)),
+                             LogHexStr("regular IDIV got", std::to_string(regular_div_10)));
 
-        const auto for_debug = Helpers::Math::Magic::Division::div_by_10_denominator(i, divisor);
+        const auto for_debug = Bin2Chars::Helpers::Math::Magic::Division::div_by_10_denominator(i, divisor);
 
         lim++;
       }

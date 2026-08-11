@@ -16,7 +16,7 @@
 
 #include "include/Helpers/Templating.h"
 
-namespace Helpers::Numeric::Floating::ExponentialNotation
+namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 {
   template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
@@ -25,7 +25,7 @@ namespace Helpers::Numeric::Floating::ExponentialNotation
   template <>
   unsigned ToStrCharArray(char *__restrict__ buff, const float &input, int PRECISION)
   {
-    using Floating = Constants::Tables::Floating<double>;
+    using Floating = Bin2Chars::Constants::Tables::Floating<double>;
 
     const constexpr uint32_t ROUNDING_FACTOR = 5U;
     const constexpr uint32_t DEC9 = 1'000'000'000U;
@@ -125,7 +125,7 @@ namespace Helpers::Numeric::Floating::ExponentialNotation
         exp_base_10_int++;
       }
 
-      remainder = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
+      remainder = Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
     }
     else if(PRECISION < (round_lvl_1 + round_lvl_2))
     {
@@ -177,8 +177,8 @@ namespace Helpers::Numeric::Floating::ExponentialNotation
       }
 
       remainder = 0;
-      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
-      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], middle_9_digits);
+      remainder += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
+      remainder += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], middle_9_digits);
     }
     else if(PRECISION < (round_lvl_1 + round_lvl_2 + round_lvl_3))
     {
@@ -236,9 +236,9 @@ namespace Helpers::Numeric::Floating::ExponentialNotation
       }
 
       remainder = 0;
-      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
-      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], middle_9_digits);
-      remainder += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], last_9_digits);
+      remainder += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len], first_9_digits);
+      remainder += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], middle_9_digits);
+      remainder += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<unsigned>(&buff[len + remainder], last_9_digits);
     } // else no rounding lol
 
     std::swap(buff[len - 1], buff[len]);
@@ -251,7 +251,7 @@ namespace Helpers::Numeric::Floating::ExponentialNotation
 
     const unsigned exp_abs = std::abs(exp_base_10_int);
 
-    len += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<uint16_t>(&buff[len], static_cast<uint16_t>(exp_abs));
+    len += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<uint16_t>(&buff[len], static_cast<uint16_t>(exp_abs));
 
     return len;
   }
@@ -379,7 +379,7 @@ namespace Helpers::Numeric::Floating::ExponentialNotation
 
     buff[len++] = '.';
 
-    remainder = Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<type>(&buff[len], digits_10);
+    remainder = Numeric::Integral::ToStrFowardWriteSIMDReturnLen<type>(&buff[len], digits_10);
 
     std::swap(buff[len - 1], buff[len]);
 
@@ -391,7 +391,7 @@ namespace Helpers::Numeric::Floating::ExponentialNotation
 
     const unsigned exp_abs = std::abs(exp_base_10_int);
 
-    len += Helpers::Numeric::Integral::ToStrFowardWriteSIMDReturnLen<uint16_t>(&buff[len], static_cast<uint16_t>(exp_abs));
+    len += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<uint16_t>(&buff[len], static_cast<uint16_t>(exp_abs));
 
     return len;
   }
@@ -406,4 +406,4 @@ namespace Helpers::Numeric::Floating::ExponentialNotation
 
     return std::string{ &buff[0], len };
   }
-} // namespace Helpers::Numeric::Floating::ExponentialNotation
+} // namespace Bin2Chars::Numeric::Floating::ExponentialNotation

@@ -13,7 +13,7 @@
 int main(int argc, char **argv)
 {
   // 1. Pin to a specific core to avoid cross-core TSC sync issues
-  Helpers::Assembly::pin_thread_to_cpu(3);
+  Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(3);
 
   static constexpr auto TRIALS = 100'000'000;
   std::vector<uint32_t> random_inputs(TRIALS);
@@ -35,22 +35,22 @@ int main(int argc, char **argv)
   {
     uint16_t current_num = random_inputs[i];
 
-    uint64_t st_simdy = Helpers::Assembly::timer_start();
+    uint64_t st_simdy = Bin2Chars::Helpers::Assembly::timer_start();
 
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(&buff[0], current_num);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(&buff[0], current_num);
 
-    uint64_t en_simdy = Helpers::Assembly::timer_end();
+    uint64_t en_simdy = Bin2Chars::Helpers::Assembly::timer_end();
 
     // Force compiler to materialize the result
     asm volatile("" : : "m"(*(char (*)[32])buff), "r"(len) : "memory");
 
     simdy_times[i] = en_simdy - st_simdy;
 
-    uint64_t st_std = Helpers::Assembly::timer_start();
+    uint64_t st_std = Bin2Chars::Helpers::Assembly::timer_start();
 
     const auto pp = std::to_chars(&buff[0], &buff[32], current_num);
 
-    uint64_t en_std = Helpers::Assembly::timer_end();
+    uint64_t en_std = Bin2Chars::Helpers::Assembly::timer_end();
 
     // Force compiler to materialize the result
     asm volatile("" : : "m"(*(char (*)[32])buff), "r"(pp) : "memory");
@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 int main(int argc, char **argv)
 {
   // 1. Pin to a specific core to avoid cross-core TSC sync issues
-  Helpers::Assembly::pin_thread_to_cpu(3);
+  Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(3);
 
   static constexpr auto TRIALS = 100'000'000;
   std::vector<uint32_t> random_inputs(TRIALS);
@@ -101,22 +101,22 @@ int main(int argc, char **argv)
   {
     uint16_t current_num = random_inputs[i];
 
-    const uint64_t st_simdy = Helpers::Assembly::timer_start();
+    const uint64_t st_simdy = Bin2Chars::Helpers::Assembly::timer_start();
 
-    const auto len = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(&buff[0], current_num);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(&buff[0], current_num);
 
-    const uint64_t en_simdy = Helpers::Assembly::timer_end();
+    const uint64_t en_simdy = Bin2Chars::Helpers::Assembly::timer_end();
 
     // Force compiler to materialize the result
     asm volatile("" : : "m"(*(char (*)[32])buff), "r"(len) : "memory");
 
     simdy_times[i] = en_simdy - st_simdy;
 
-    const uint64_t st_std = Helpers::Assembly::timer_start();
+    const uint64_t st_std = Bin2Chars::Helpers::Assembly::timer_start();
 
-    const auto pp = Helpers::Numeric::Std::to_chars_impl(&buff[0], current_num);
+    const auto pp = Bin2Chars::Numeric::Std::to_chars_impl(&buff[0], current_num);
 
-    const uint64_t en_std = Helpers::Assembly::timer_end();
+    const uint64_t en_std = Bin2Chars::Helpers::Assembly::timer_end();
 
     // Force compiler to materialize the result
     asm volatile("" : : "m"(*(char (*)[32])buff), "r"(pp) : "memory");

@@ -4,7 +4,7 @@
 #include <string>
 #include <type_traits>
 
-namespace Helpers::Templating::Types
+namespace Bin2Chars::Helpers::Templating::Types
 {
   template <typename T>
   static constexpr bool is_char_v()
@@ -67,9 +67,9 @@ namespace Helpers::Templating::Types
   template <typename T>
   using make_unsigned_t = typename make_unsigned<T>::type;
 
-} // namespace Helpers::Templating::Types
+} // namespace Bin2Chars::Helpers::Templating::Types
 
-namespace Helpers::Templating::Assert
+namespace Bin2Chars::Helpers::Templating::Assert
 {
   template <typename T>
   static constexpr bool at_most_64_bit_double_radix_2()
@@ -78,9 +78,9 @@ namespace Helpers::Templating::Assert
                   "Type is larger than 64 bit or has radix is not base 2; check your double implementation in your systems docs");
     return true;
   }
-} // namespace Helpers::Templating::Assert
+} // namespace Bin2Chars::Helpers::Templating::Assert
 
-namespace Helpers::Templating::Fillers
+namespace Bin2Chars::Helpers::Templating::Fillers
 {
   template <size_t M, size_t P, typename... Chars>
     requires(std::is_same_v<char, Chars> && ...)
@@ -96,4 +96,4 @@ namespace Helpers::Templating::Fillers
   {
     ((dest[dest_idx--] = src[src_idx][args]), ...);
   }
-} // namespace Helpers::Templating::Fillers
+} // namespace Bin2Chars::Helpers::Templating::Fillers

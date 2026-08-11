@@ -17,7 +17,7 @@
 #include <string>
 #include <type_traits>
 
-namespace Helpers::Numeric::Integral
+namespace Bin2Chars::Numeric::Integral
 {
   template <int N>
   struct char_array_len
@@ -77,7 +77,7 @@ namespace Helpers::Numeric::Integral
     requires std::is_integral_v<T> || std::is_same_v<T, __uint128_t>
   static std::string ToStr(const T &input)
   {
-    const auto buff = Helpers::Numeric::Integral::ToStrCharArray<FORCE_SIGN>(input);
+    const auto buff = Numeric::Integral::ToStrCharArray<FORCE_SIGN>(input);
     return std::string(&buff.array[buff.start_idx], sizeof(buff.array) - buff.start_idx);
   }
 
@@ -264,7 +264,7 @@ namespace Helpers::Numeric::Integral
 
     return (val) ? val % BASE : 0;
   }
-} // namespace Helpers::Numeric::Integral
+} // namespace Bin2Chars::Numeric::Integral
 
 //
 ///

@@ -13,7 +13,7 @@
 #include <type_traits>
 
 #if defined(__ARM_NEON) || defined(__aarch64__)
-namespace Helpers::Simd::ARM64
+namespace Bin2Chars::Helpers::Simd::ARM64
 {
   using uint128_t = unsigned __int128;
 
@@ -206,11 +206,11 @@ namespace Helpers::Simd::ARM64
 
     return len;
   }
-}
+} // namespace Bin2Chars::Helpers::Simd::ARM64
 #endif
 
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
-namespace Helpers::Simd::x86_64
+namespace Bin2Chars::Helpers::Simd::x86_64
 {
   template <typename T>
     requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
@@ -876,5 +876,5 @@ namespace Helpers::Simd::x86_64
 
     return len;
   }
-} // namespace Helpers::Simd::x86_64
+} // namespace Bin2Chars::Helpers::Simd::x86_64
 #endif

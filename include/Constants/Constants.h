@@ -6,7 +6,7 @@
 #include <limits>
 #include <type_traits>
 
-namespace Constants
+namespace Bin2Chars::Constants
 {
   struct Size
   {
@@ -49,9 +49,9 @@ namespace Constants
     const constexpr static char *en_color = "m";
     const constexpr static char *reset = "\033[0m";
   };
-} // namespace Constants
+} // namespace Bin2Chars::Constants
 
-namespace Constants::Tables
+namespace Bin2Chars::Constants::Tables
 {
   template <typename T>
     requires std::is_floating_point_v<T>
@@ -68,7 +68,7 @@ namespace Constants::Tables
     static const constexpr auto SIZE = MAX_BIN_EXP - MIN_BIN_EXP + 1;
     static const constexpr auto MAX_DIGITS10 = std::numeric_limits<T>::digits10;
     static const constexpr auto MAX_EXP_DIGITS10
-        = static_cast<std::remove_cvref_t<decltype(MIN_BIN_EXP)>>(Helpers::Math::Constexpr::log10(T{ std::numeric_limits<T>::max_exponent10 }));
+        = static_cast<std::remove_cvref_t<decltype(MIN_BIN_EXP)>>(Bin2Chars::Helpers::Math::Constexpr::log10(T{ std::numeric_limits<T>::max_exponent10 }));
 
   public:
     static const constexpr uint32_t DIGITS[SIZE][3] = { { 494065645U, 841246544U, 176568792U },
@@ -2176,7 +2176,7 @@ namespace Constants::Tables
   static constexpr auto GetExponentialRoundingTableImpl(std::index_sequence<I...> /*unused*/)
   {
     constexpr auto N = sizeof...(I);
-    auto array = std::array<Type, N>{ BASE * Helpers::Math::Constexpr::ipow(Type{ 10 }, N - I - 2)... };
+    auto array = std::array<Type, N>{ BASE * Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N - I - 2)... };
     array[N - 1] = 1;
 
     return array;
@@ -2195,7 +2195,7 @@ namespace Constants::Tables
     static constexpr auto GetPrecistionTableImpl(std::index_sequence<I...> /*unused*/)
     {
       constexpr auto N = sizeof...(I);
-      return std::array<Type, N>{ Type{ 10 } * (Helpers::Math::Constexpr::ipow(Type{ 10 }, I))... };
+      return std::array<Type, N>{ Type{ 10 } * (Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, I))... };
     }
 
     template <typename Type>
@@ -2212,7 +2212,7 @@ namespace Constants::Tables
     static constexpr auto GetPrecistionTableImpl(std::index_sequence<I...> /*unused*/)
     {
       constexpr auto N = sizeof...(I);
-      return std::array<Type, N>{ (Helpers::Math::Constexpr::ipow(Type{ 10 }, I))... };
+      return std::array<Type, N>{ (Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, I))... };
     }
 
     template <typename Type>
@@ -2227,7 +2227,7 @@ namespace Constants::Tables
   static constexpr auto GetTruncationTableImpl(std::index_sequence<I...> /*unused*/)
   {
     constexpr auto N = sizeof...(I);
-    return std::array<TypeBase, N + 1>{ (Helpers::Math::Constexpr::ipow(TypeBase{ 10 }, N - I - 2))..., 1 };
+    return std::array<TypeBase, N + 1>{ (Bin2Chars::Helpers::Math::Constexpr::ipow(TypeBase{ 10 }, N - I - 2))..., 1 };
   }
 
   template <typename Type>
@@ -2241,7 +2241,7 @@ namespace Constants::Tables
   static constexpr auto GetRoundingTableImpl(std::index_sequence<I...> /*unused*/)
   {
     constexpr auto N = sizeof...(I);
-    auto array = std::array<T, N + 1>{ BASE * Helpers::Math::Constexpr::ipow(T{ 10 }, N - I)... };
+    auto array = std::array<T, N + 1>{ BASE * Bin2Chars::Helpers::Math::Constexpr::ipow(T{ 10 }, N - I)... };
     array[N] = BASE;
     return array;
   }
@@ -2253,6 +2253,6 @@ namespace Constants::Tables
     using base_type = std::conditional_t<std::is_same_v<float, T>, uint32_t, uint64_t>;
     return GetRoundingTableImpl<base_type, BASE>(std::make_index_sequence<N>());
   }
-} // namespace Constants::Tables
+} // namespace Bin2Chars::Constants::Tables
 
 //
