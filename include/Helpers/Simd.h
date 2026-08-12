@@ -273,7 +273,7 @@ namespace Bin2Chars::Helpers::Simd::x86_64
 
   template <typename T>
     requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
-  static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const auto &input) noexcept;
+  static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept;
 
   using uint128_t = unsigned __int128;
 
