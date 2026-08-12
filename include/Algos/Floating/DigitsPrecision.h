@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstdint>
@@ -8,12 +9,9 @@
 #include <string>
 #include <type_traits>
 
-#include "include/Helpers/Math.h"
-
-#include "include/Constants/Constants.h"
-
 #include "include/Algos/Integer.h"
-
+#include "include/Constants/Constants.h"
+#include "include/Helpers/Math.h"
 #include "include/Helpers/Simd.h"
 #include "include/Helpers/Templating.h"
 
