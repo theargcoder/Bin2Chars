@@ -1,6 +1,8 @@
+#pragma once
 
 #include <cstdint>
 #include <iostream>
+#include <string>
 #include <type_traits>
 
 namespace Bin2Chars::Helpers::Cout
@@ -35,5 +37,5 @@ namespace Bin2Chars::Helpers::Cout
       i--;
     }
     std::cout << "\n";
-  };
-} // namespace Helpers::Cout
+  }
+} // namespace Bin2Chars::Helpers::Cout

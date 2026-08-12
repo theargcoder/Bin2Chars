@@ -1,10 +1,12 @@
 #pragma once
 
-#include "include/Helpers/Math.h"
-#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <type_traits>
+#include <utility>
+
+#include "include/Helpers/Math.h"
 
 namespace Bin2Chars::Constants
 {

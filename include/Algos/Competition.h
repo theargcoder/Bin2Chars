@@ -2,16 +2,13 @@
 
 #include <charconv>
 
+#include <ryu/ryu.h>
+
 #include <array>
 #include <charconv>
 #include <cstdint>
 #include <string>
 #include <type_traits>
-
-extern "C"
-{
-#include "../ryu/ryu/ryu.h"
-}
 
 namespace Bin2Chars::Numeric::Std
 {

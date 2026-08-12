@@ -1,5 +1,10 @@
+#pragma once
+
 #include <cstdint>
+#include <cstdio>
+#include <exception>
 #include <iostream>
+#include <sched.h>
 #if defined(__x86_64__)
 #include <chrono>
 #include <thread>

@@ -1,0 +1,77 @@
+# .clangd Configuration File for Hardcore C++23 / Modern Header-Only Libraries
+
+CompileFlags:
+  # Tells clangd where to find compile_commands.json
+  CompilationDatabase: build
+
+  # High-strictness compiler flags for C++23 and deep template analysis
+  Add: [
+    -std=c++23,
+    -Wall,
+    -Wextra,
+    -Wpedantic,
+    -Wshadow,
+    -Wconversion,
+    -Wsign-conversion,
+    -Wnon-virtual-dtor,
+    -Wold-style-cast,
+    -Wcast-align,
+    -Wunused,
+    -Woverloaded-virtual,
+    -Wnull-dereference,
+    -Wdouble-promotion,
+    -Wformat=2,
+    -Wimplicit-fallthrough,
+    -Wextra-semi,
+    -ftemplate-backtrace-limit=0,    # Clang equivalent: unrolls template/concept failure stacks
+    -fconstexpr-backtrace-limit=0,   # Unrolls deep compile-time evaluation errors
+    -fmacro-backtrace-limit=0,       # Unrolls complex macro expansions
+    -ferror-limit=0,                 # Prevents truncating diagnostic cascades
+    -I.,                             # Look up project-root relative headers
+    -x, c++-header                   # Force header files to be parsed as C++ headers
+  ]
+
+  # Strip flags from compile_commands.json that conflict with clangd or static analysis
+  Remove: [
+    -W*,                             # Lets clangd and clang-tidy independently manage warnings
+    -fno-lifetime-dse,
+    -mcpu=native,
+    -march=*
+  ]
+
+# Project indexing settings
+Index:
+  Background: Build                  # Index codebase in background for instant Go-To-Definition
+  StandardLibrary: Yes               # Index standard library headers for global symbol search
+
+# Autocompletion configuration
+Completion:
+  AllScopes: Yes                     # Search all namespaces/scopes
+  HeaderInsertion: IWYU              # Auto-insert headers with Include-What-You-Use logic
+  HeaderInsertionDecorators: Yes     # Show visual indicators for completions requiring new headers
+
+Diagnostics:
+  # Header hygiene enforcement
+  UnusedIncludes: Strict
+  MissingIncludes: Strict
+
+  # Suppress driver argument mismatches across environments
+  Suppress: [
+    drv_unknown_argument
+  ]
+
+# Comprehensive visual hints in Neovim
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+  Designators: Yes
+  BlockEnd: Yes                      # Shows scope closing context (e.g., // namespace detail)
+  DefaultArguments: Yes              # Displays default parameter values in function calls
+  TypeNameLimit: 0                   # 0 = Unlimited length (no truncation for complex C++23 types)
+
+Hover:
+  ShowCodeBlock: Yes
+
+Format:
+  Style: file                        # Respects local .clang-format if present
