@@ -7,13 +7,12 @@
 #include <limits>
 #include <string>
 #include <type_traits>
-
-#include "include/Helpers/Math.h"
-
-#include "include/Constants/Constants.h"
+#include <utility>
 
 #include "include/Algos/Integer.h"
-
+#include "include/Constants/Constants.h"
+#include "include/Helpers/Math.h"
+#include "include/Helpers/Simd.h"
 #include "include/Helpers/Templating.h"
 
 namespace Bin2Chars::Numeric::Floating::ExponentialNotation
