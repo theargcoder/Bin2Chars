@@ -5,10 +5,6 @@
 # Ignore cache
 .cache/
 
-#Ignore formatting stuff
-.clang-format
-.clang-tidy
-
 # MacOS garbage
 .DS_Store
 

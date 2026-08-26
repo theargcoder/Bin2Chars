@@ -1,17 +1,28 @@
-#define BOOST_TEST_MODULE ScientificNotatioTests
+#define BOOST_TEST_MODULE full_digits_notation
 #include <boost/test/included/unit_test.hpp>
+#include <boost/test/tools/old/interface.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include <bit>
 #include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <format>
+#include <ios>
+#include <iostream>
 #include <limits>
+#include <ostream>
 #include <random>
+#include <string>
+#include <string_view>
+#include <tuple>
 #include <type_traits>
 
 #include "include/Algos/Competition.h"
 #include "include/Algos/Floating/DigitsPrecision.h"
-#include "include/Algos/Floating/Exponential.h"
-#include "include/Helpers/Math.h"
+#include "include/Helpers/Assembly.h"
 
 namespace
 {

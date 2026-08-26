@@ -259,17 +259,14 @@ int main()
     68464626, 5562, 0, 0, 0, 0, 0, 0                                                // 11 - anotherone
   };
 
-  for(int k = 0; k < 1075; k++)
+  for(int k = 0; k <= 1074; k++)
   {
   backwards:
     // 36 words * 32 bits = 1152 bits. perfectly fits k=1100 + 10^8 overflow.
     const unsigned P = std::floor(k * std::log10(2));
-    // total digits in 5^k
-    const uint32_t TOTAL_DIGITS = std::floor(k * std::log10(5)) + 1;
 
     constexpr unsigned NUM_WORDS = 96;
 
-    const unsigned K_DIV_8 = static_cast<unsigned>(k) >> 3U;
     const unsigned K_DIV_64 = static_cast<unsigned>(k) >> 6U;
     const unsigned BASE_IDX = K_DIV_64 * 96;
     const unsigned E_0 = POW_5_E[K_DIV_64];
@@ -828,7 +825,7 @@ int main()
     68464626, 5562, 0, 0, 0, 0, 0, 0                                                // 11 - anotherone
   };
 
-  for(int k = 511; k < 1075; k++)
+  for(int k = 511; k <= 1074; k++)
   {
   backwards:
     constexpr unsigned NUM_WORDS = 96;
@@ -2178,7 +2175,7 @@ int __main()
 int printer_arr()
 {
   std::cout << " constexpr uint8_t POW_5_E[] = {";
-  for(unsigned k = 0; k < 1075; k++)
+  for(unsigned k = 0; k <= 1074; k++)
   {
     if(k % 64 != 0)
     {
@@ -2190,7 +2187,7 @@ int printer_arr()
   std::cout << "\b}\n";
 
   std::cout << " constexpr uint32_t POW_5_CACHE[] = { \n";
-  for(unsigned k = 0; k < 1075; k++)
+  for(unsigned k = 0; k <= 1074; k++)
   {
     if(k % 16 != 0)
     {
@@ -2265,7 +2262,7 @@ int printer_arr()
 
 int test_proposal_vs_modified()
 {
-  for(int k = 0; k < 1075; k++)
+  for(int k = 0; k <= 1074; k++)
   {
     // 36 words * 32 bits = 1152 bits. perfectly fits k=1100 + 10^8 overflow.
     const unsigned P = std::floor(k * std::log10(2));

@@ -1,13 +1,13 @@
-#include "include/Algos/Competition.h"
-#include "include/Helpers/Math.h"
-#include "include/Helpers/Simd.h"
-
 #include <algorithm>
 #include <cstdint>
+#include <cstdio>
 #include <numeric>
 #include <random>
-#include <stdio.h>
 #include <vector>
+
+#include "include/Algos/Competition.h"
+#include "include/Helpers/Assembly.h"
+#include "include/Helpers/Simd.h"
 
 /*
 int main(int argc, char **argv)
