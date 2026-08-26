@@ -1,17 +1,25 @@
 #define BOOST_TEST_MODULE IntegerTests
 #include <boost/test/included/unit_test.hpp>
+#include <boost/test/tools/old/interface.hpp>
+#include <boost/test/unit_test_suite.hpp>
 #include <boost/type_index.hpp>
 
 #include <chrono>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <format>
 #include <iostream>
 #include <limits>
+#include <string>
+#include <string_view>
+#include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "include/Algos/Competition.h"
 #include "include/Algos/Integer.h"
-#include "include/Helpers/Math.h"
+#include "include/Helpers/Assembly.h"
 
 namespace
 {

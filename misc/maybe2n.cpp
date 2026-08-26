@@ -10,8 +10,8 @@
 
 int main()
 {
-  constexpr uint16_t POW_5_E[] = { 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960 };
-  constexpr uint32_t POW_5_CACHE[] = {
+  constexpr uint16_t POW_2_E[] = { 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024 };
+  constexpr uint32_t POW_2_CACHE[] = {
     //  k = 0
     1, 0, 0, 0, 0, 0, 0, 0, // __m256i single load cvtepied to __m512i
     0, 0, 0, 0, 0, 0, 0, 0, // 1 - anotherone
@@ -122,17 +122,24 @@ int main()
     59792539, 78873685, 34792183, 35279959, 90053648, 7896554, 47302987, 77699956, // 1 - anotherone
     34195312, 29631265, 46577987, 52030940, 45916986, 8668183, 49162314, 25922530, // 2 - anotherone
     65882010, 24656150, 76642610, 12948690, 79064572, 752686, 26857595, 83108762,  // 3 - anotherone
-    38787518, 80353382, 13999990, 74531401, 9, 0, 0, 0                             // 4 - anotherone
+    38787518, 80353382, 13999990, 74531401, 9, 0, 0, 0,                            // 4 - anotherone
+
+    //  k = 1024
+    24137216, 63296242, 30483535, 38479716, 99472459, 58629823, 50510684, 72371633, // __m256i single load cvtepied to __m512i
+    11054082, 81473913, 23424628, 83815068, 85005768, 30829520, 9411945, 19601246,  // 1 - anotherone
+    52763022, 42486548, 77767893, 94741243, 84743063, 16622492, 97688144, 35765878, // 2 - anotherone
+    79871393, 11201138, 40753602, 8477322, 9631327, 67580550, 81157732, 72734300,   // 3 - anotherone
+    89423065, 61797697, 89024733, 93051907, 31590772, 93134862, 17976               // 4 - anotherone
   };
 
-  for(int k = 0; k < 1023; k++)
+  for(int k = 0; k <= 1024; k++)
   {
   backwards:
     constexpr unsigned NUM_WORDS = 40;
 
     const unsigned K_DIV_64 = static_cast<unsigned>(k) >> 6U;
     const unsigned BASE_IDX = K_DIV_64 * 40;
-    const unsigned E_0 = POW_5_E[K_DIV_64];
+    const unsigned E_0 = POW_2_E[K_DIV_64];
 
     const __m512i ZERO = _mm512_setzero_si512();
 
@@ -141,11 +148,11 @@ int main()
 
     std::array<uint64_t, 96> SIMD_ARRAY;
 
-    __m512i rrprime_1 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX])));
-    __m512i rrprime_2 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 8])));
-    __m512i rrprime_3 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 16])));
-    __m512i rrprime_4 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 24])));
-    __m512i rrprime_5 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 32])));
+    __m512i rrprime_1 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX])));
+    __m512i rrprime_2 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX + 8])));
+    __m512i rrprime_3 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX + 16])));
+    __m512i rrprime_4 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX + 24])));
+    __m512i rrprime_5 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX + 32])));
 
     const __m512i R_10E8 = _mm512_set1_epi64(100'000'000U);
     const __m512i R_MAGIC_10E8 = _mm512_set1_epi64(1'441'151'881U);
@@ -316,7 +323,7 @@ int main()
 
 int main()
 {
-  constexpr uint16_t POW_5_E[] = { 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960 };
+  constexpr uint16_t POW_5_E[] = { 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024 };
   constexpr uint32_t POW_5_CACHE[] = {
     //  k = 0
     1, 0, 0, 0, 0, 0, 0, 0, // __m256i single load cvtepied to __m512i
@@ -428,7 +435,14 @@ int main()
     59792539, 78873685, 34792183, 35279959, 90053648, 7896554, 47302987, 77699956, // 1 - anotherone
     34195312, 29631265, 46577987, 52030940, 45916986, 8668183, 49162314, 25922530, // 2 - anotherone
     65882010, 24656150, 76642610, 12948690, 79064572, 752686, 26857595, 83108762,  // 3 - anotherone
-    38787518, 80353382, 13999990, 74531401, 9, 0, 0, 0                             // 4 - anotherone
+    38787518, 80353382, 13999990, 74531401, 9, 0, 0, 0,                            // 4 - anotherone
+
+    //  k = 1024
+    24137216, 63296242, 30483535, 38479716, 99472459, 58629823, 50510684, 72371633, // __m256i single load cvtepied to __m512i
+    11054082, 81473913, 23424628, 83815068, 85005768, 30829520, 9411945, 19601246,  // 1 - anotherone
+    52763022, 42486548, 77767893, 94741243, 84743063, 16622492, 97688144, 35765878, // 2 - anotherone
+    79871393, 11201138, 40753602, 8477322, 9631327, 67580550, 81157732, 72734300,   // 3 - anotherone
+    89423065, 61797697, 89024733, 93051907, 31590772, 93134862, 17976               // 4 - anotherone
   };
 
   for(int k = 0; k < 1023; k++)
@@ -750,7 +764,7 @@ int printer_arr()
   std::cout << "\b}\n";
 
   std::cout << " constexpr uint32_t POW_5_CACHE[] = { \n";
-  for(int k = 0; k < 1024; k++)
+  for(int k = 0; k < 1025; k++)
   {
     if(k % 64 != 0)
     {

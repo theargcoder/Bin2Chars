@@ -46,7 +46,6 @@ Index:
 Completion:
   AllScopes: Yes                     # Search all namespaces/scopes
   HeaderInsertion: IWYU              # Auto-insert headers with Include-What-You-Use logic
-  HeaderInsertionDecorators: Yes     # Show visual indicators for completions requiring new headers
 
 Diagnostics:
   # Header hygiene enforcement
@@ -68,8 +67,3 @@ InlayHints:
   DefaultArguments: Yes              # Displays default parameter values in function calls
   TypeNameLimit: 0                   # 0 = Unlimited length (no truncation for complex C++23 types)
 
-Hover:
-  ShowCodeBlock: Yes
-
-Format:
-  Style: file                        # Respects local .clang-format if present

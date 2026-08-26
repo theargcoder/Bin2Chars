@@ -1,4 +1,6 @@
-#define BOOST_TEST_MODULE ConstantsTests
+#define BOOST_TEST_MODULE constants_test
+#include <boost/test/tools/old/interface.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h> // x86 SIMD
@@ -7,19 +9,20 @@
 #endif
 
 #include <boost/multiprecision/cpp_bin_float.hpp>
+#include <boost/multiprecision/detail/default_ops.hpp>
+#include <boost/multiprecision/fwd.hpp>
 #include <boost/test/included/unit_test.hpp>
 
-#include <bit>
 #include <cmath>
 #include <cstdint>
+#include <format>
 #include <iostream>
 #include <limits>
 #include <string>
 #include <type_traits>
 
-#include "include/Algos/Integer.h"
 #include "include/Constants/Constants.h"
-#include "include/Helpers/Math.h"
+#include "include/Helpers/Simd.h"
 
 namespace
 {
@@ -243,13 +246,13 @@ BOOST_AUTO_TEST_CASE(multiplytest)
 
   {
     const uint64_t mantissa = 6646139978835021;
-    table_3_way tablevals = { 135525271, 560688054, 250931600 };
+    table_3_way tablevals = { .hig = 135525271, .mid = 560688054, .low = 250931600 };
     auto expected_truncated = mul2_128b(mantissa, tablevals.hig, tablevals.mid);
     BOOST_CHECK_EQUAL(expected_truncated, 99'999'999'998'652'475); //'500'019'082);
   }
   {
     const uint64_t mantissa = 6646139978835021;
-    table_3_way tablevals = { 135525271, 560688054, 250931600 };
+    table_3_way tablevals = { .hig = 135525271, .mid = 560688054, .low = 250931600 };
     mul_ret_remainder(mantissa, tablevals.hig, tablevals.mid, tablevals.low);
     BOOST_CHECK_EQUAL(1, 99999'99999'86524'7550ULL); //'500'019'082);
   }
