@@ -129,7 +129,7 @@ int main()
     11054082, 81473913, 23424628, 83815068, 85005768, 30829520, 9411945, 19601246,  // 1 - anotherone
     52763022, 42486548, 77767893, 94741243, 84743063, 16622492, 97688144, 35765878, // 2 - anotherone
     79871393, 11201138, 40753602, 8477322, 9631327, 67580550, 81157732, 72734300,   // 3 - anotherone
-    89423065, 61797697, 89024733, 93051907, 31590772, 93134862, 17976               // 4 - anotherone
+    89423065, 61797697, 89024733, 93051907, 31590772, 93134862, 17976, 0            // 4 - anotherone
   };
 
   for(int k = 0; k <= 1024; k++)
@@ -203,11 +203,11 @@ int main()
 
       if(missing)
       {
-        const __m512i u64_prod_1 = _mm512_slli_epi64(rrprime_1, 5);
-        const __m512i u64_prod_2 = _mm512_slli_epi64(rrprime_2, 5);
-        const __m512i u64_prod_3 = _mm512_slli_epi64(rrprime_3, 5);
-        const __m512i u64_prod_4 = _mm512_slli_epi64(rrprime_4, 5);
-        const __m512i u64_prod_5 = _mm512_slli_epi64(rrprime_5, 5);
+        const __m512i u64_prod_1 = _mm512_slli_epi64(rrprime_1, missing);
+        const __m512i u64_prod_2 = _mm512_slli_epi64(rrprime_2, missing);
+        const __m512i u64_prod_3 = _mm512_slli_epi64(rrprime_3, missing);
+        const __m512i u64_prod_4 = _mm512_slli_epi64(rrprime_4, missing);
+        const __m512i u64_prod_5 = _mm512_slli_epi64(rrprime_5, missing);
         const __m512i u64_magic_prod_1 = _mm512_mul_epu32(u64_prod_1, R_MAGIC_10E8);
         const __m512i u64_magic_prod_2 = _mm512_mul_epu32(u64_prod_2, R_MAGIC_10E8);
         const __m512i u64_magic_prod_3 = _mm512_mul_epu32(u64_prod_3, R_MAGIC_10E8);
@@ -442,10 +442,10 @@ int main()
     11054082, 81473913, 23424628, 83815068, 85005768, 30829520, 9411945, 19601246,  // 1 - anotherone
     52763022, 42486548, 77767893, 94741243, 84743063, 16622492, 97688144, 35765878, // 2 - anotherone
     79871393, 11201138, 40753602, 8477322, 9631327, 67580550, 81157732, 72734300,   // 3 - anotherone
-    89423065, 61797697, 89024733, 93051907, 31590772, 93134862, 17976               // 4 - anotherone
+    89423065, 61797697, 89024733, 93051907, 31590772, 93134862, 17976, 0            // 4 - anotherone
   };
 
-  for(int k = 0; k < 1023; k++)
+  for(int k = 0; k <= 1024; k++)
   {
   backwards:
     constexpr unsigned NUM_WORDS = 40;
