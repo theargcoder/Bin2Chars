@@ -76,6 +76,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
     add_compile_options(
       -fno-omit-frame-pointer
+      -g3
       -O0
       -Wall
       -Wshadow
@@ -91,7 +92,7 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
     add_compile_options(
-      -g
+      -g3
       -O0
       -Wall
       -Wextra
