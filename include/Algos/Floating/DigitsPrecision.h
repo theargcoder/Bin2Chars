@@ -9,8 +9,10 @@
 #include <string>
 #include <type_traits>
 
+#include "include/Algos/Compute/DecimalExpansion.h"
 #include "include/Algos/Integer.h"
 #include "include/Constants/Constants.h"
+#include "include/Helpers/Assembly.h"
 #include "include/Helpers/Math.h"
 #include "include/Helpers/Simd.h"
 #include "include/Helpers/Templating.h"
@@ -75,13 +77,19 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       using Floating = Bin2Chars::Constants::Tables::Floating<double>;
 
       const constexpr unsigned BASE = 10U;
+      const constexpr unsigned DEC7 = 10'000'000U;
       const constexpr unsigned DEC8 = 100'000'000U;
       const constexpr unsigned ROUNDING_FACTOR = 5U;
+
+      const constexpr uint64_t MAGIC_10E8 = 1'441'151'881U;
+      const constexpr uint8_t MAGIC_SHFT = 57U;
 
       const constexpr auto MIN_PRECISION = Helpers::Math::Constexpr::ipow(10U, std::numeric_limits<unsigned>::digits10 - 1);
       const constexpr auto MAX_PRECISION = Helpers::Math::Constexpr::ipow(10U, std::numeric_limits<unsigned>::digits10);
 
       const constexpr auto PRECISION_TABLE = Bin2Chars::Constants::Tables::Fixed::GetPrecistionTable<unsigned>();
+
+      std::array<unsigned, Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE> EXP_DIGITS;
 
       unsigned len = 0;
       unsigned mantissa;
@@ -118,135 +126,39 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       {
         buff[len++] = '-';
       }
+      buff[len++] = '.';
 
-      const auto *table = &Floating::DIGITS[exp_base_10_int][0];
-      exp_base_10_int = (((exp_base_10_int - Floating::BIAS) * 78'913) >> 18U);
-
-      unsigned remainder;
-      unsigned digits_10, extra_digits, last_9_digits;
-      const auto res_simd_mul = Helpers::Simd::x86_64::Multiply<float>(mantissa, table, digits_10, extra_digits, last_9_digits);
-      const auto res_iee_mul = Helpers::Math::IEEE754::Fixed::Multiply<float>(mantissa, table, digits_10, extra_digits, last_9_digits);
-
-      if(res_simd_mul != res_iee_mul)
-      {
-        const auto res_simd_mul_1 = Helpers::Simd::x86_64::Multiply<float>(mantissa, table, digits_10, extra_digits, last_9_digits);
-        const auto res_iee_mul_1 = Helpers::Math::IEEE754::Fixed::Multiply<float>(mantissa, table, digits_10, extra_digits, last_9_digits);
-        assert(res_iee_mul == res_simd_mul);
-      }
-
-      if(digits_10 < MIN_PRECISION)
-      {
-        digits_10 *= BASE;
-        remainder = Helpers::Math::Magic::Division::div_by_10_pow_n<8>(extra_digits);
-        digits_10 += remainder;
-        extra_digits -= remainder * DEC8;
-        extra_digits *= BASE;
-        exp_base_10_int--;
-      }
-      else if(digits_10 > MAX_PRECISION)
-      {
-        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(digits_10, remainder);
-        Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(extra_digits);
-        extra_digits += remainder * DEC8;
-        exp_base_10_int++;
-      }
-
-      unsigned exp_10_abs = std::abs(exp_base_10_int + 1), visible_digits;
+      exp_base_10_int -= Floating::BIAS;
 
       if(exp_base_10_int < 0)
       {
-        const int to_comp = PRECISION + exp_base_10_int + 1;
-        visible_digits = std::max(to_comp, 0);
+        Algos::Compute::DecimalExpansion::NegativeExponent(EXP_DIGITS, std::abs(exp_base_10_int));
       }
       else
       {
-        const int to_comp = PRECISION + exp_base_10_int + 1;
-        visible_digits = std::min(to_comp, std::numeric_limits<unsigned>::digits10 - 1);
+        Algos::Compute::DecimalExpansion::PositiveExponent(EXP_DIGITS, exp_base_10_int);
       }
 
-      if(visible_digits >= 0 && visible_digits <= std::numeric_limits<unsigned>::digits10 - 2)
+      auto *it = &EXP_DIGITS[Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE - 1];
+
+      while(*it == 0) // 2^0 is 1 so no way its 0 infinetly
       {
-        const auto trunc_qty = std::numeric_limits<unsigned>::digits10 - visible_digits - 1;
-        Helpers::Math::Precision::truncate_plus_1_quo_rem(digits_10, remainder, trunc_qty);
-
-        const bool extra = extra_digits != 0 || remainder != 0;
-
-        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(digits_10, remainder);
-
-        if(remainder > ROUNDING_FACTOR)
-        {
-          digits_10++;
-        }
-        else if(remainder == ROUNDING_FACTOR)
-        {
-          if(extra)
-          {
-            digits_10++;
-          }
-          else
-          {
-            // Apply Round-Ties-To-Even on the LAST VISIBLE DIGIT.
-            remainder = Helpers::Math::Magic::Modulo::mod_by_10_pow_n<1>(digits_10); // digits_10 % 10;
-            if(remainder & 1U)
-            {
-              digits_10++;
-            }
-          }
-        }
-
-        const auto presicion = PRECISION_TABLE[visible_digits];
-
-        if(digits_10 >= presicion)
-        {
-          // Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(digits_10);
-          exp_base_10_int++;
-        }
+        it--;
       }
 
-      exp_10_abs = std::abs(exp_base_10_int + 1);
+      unsigned carry = 0;
 
-      if(exp_base_10_int < 0)
+      for(; it != &EXP_DIGITS[0]; it--)
       {
-        buff[len++] = '0';
-        buff[len++] = '.';
-        if(exp_10_abs > PRECISION)
-        {
-          std::memset(&buff[len], '0', PRECISION);
-          len += PRECISION;
-        }
-        else
-        {
-          std::memset(&buff[len], '0', exp_10_abs);
-          len += exp_10_abs;
-          Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
-          len += PRECISION - exp_10_abs;
-        }
-      }
-      else
-      {
-        if(exp_base_10_int <= std::numeric_limits<unsigned>::digits10 - 2)
-        {
-          const auto len_wr = Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
-          std::memmove(&buff[len + exp_10_abs + 1U], &buff[len + exp_10_abs], len_wr);
-          buff[len + exp_10_abs] = '.';
-          len += exp_10_abs;
-          len += PRECISION;
-        }
-        else
-        {
-          const auto len_wr_1 = Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len], digits_10);
-          const auto len_wr_2 = Numeric::Integral::ToStrFowardWriteSIMDReturnLen(&buff[len + len_wr_1], digits_10);
-          const auto missin = std::max(0, static_cast<int>(exp_10_abs - len_wr_1 - len_wr_2));
-          std::memset(&buff[len + len_wr_1 + len_wr_2], '0', missin);
-          std::memmove(&buff[len + exp_10_abs + 1U], &buff[len + exp_10_abs], len_wr_1 + len_wr_2);
-          buff[len + exp_10_abs] = '.';
-          len += exp_10_abs + 1;
-          std::memset(&buff[len], '0', PRECISION);
-          len += PRECISION;
-        }
+        const uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
+        const auto digs = static_cast<unsigned>(prod >> 32U) + carry;
+        const auto rem = static_cast<unsigned>(prod);
+
+        carry = Helpers::Assembly::umulh32(rem, DEC8);
+        len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
       }
 
-      return len;
+      return len = 0;
     }
   };
 
