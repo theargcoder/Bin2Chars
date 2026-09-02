@@ -146,16 +146,24 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         it--;
       }
 
-      unsigned carry = 0;
-
-      for(; it != &EXP_DIGITS[0]; it--)
+      for(unsigned carry = 0, digs, rem, carr;; it--)
       {
         const uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
-        const auto digs = static_cast<unsigned>(prod >> 32U) + carry;
-        const auto rem = static_cast<unsigned>(prod);
+        digs = static_cast<unsigned>(prod >> 32U) + carry;
+        carr = static_cast<unsigned>(prod);
 
-        carry = Helpers::Assembly::umulh32(rem, DEC8);
-        len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
+
+        buff[len - 1] += digs;
+
+        carry = Helpers::Assembly::umulh32(carr, DEC8);
+        len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+
+        if(it == &EXP_DIGITS[0])
+        {
+          len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
+          break;
+        }
       }
 
       return len = 0;
