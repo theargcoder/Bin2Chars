@@ -1,5 +1,8 @@
 #pragma once
 
+#include <algorithm>
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
@@ -273,6 +276,10 @@ namespace Bin2Chars::Helpers::Simd::x86_64
 
   template <typename T>
     requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
+  static uint32_t WriteEightCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept;
+
+  template <typename T>
+    requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
   static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept;
 
   using uint128_t = unsigned __int128;
@@ -286,59 +293,6 @@ namespace Bin2Chars::Helpers::Simd::x86_64
     const __m512i even_prod = _mm512_mul_epu32(a, b);
     const __m512i odd_prod = _mm512_mul_epu32(_mm512_srli_epi64(a, 32U), _mm512_srli_epi64(b, 32U));
     return _mm512_mask_blend_epi32(0xAAAAU, _mm512_srli_epi64(even_prod, 32U), odd_prod);
-  }
-
-  // Helper to fix the narrowing conversion warning
-  inline __m512i set1_u64(uint64_t val)
-  {
-    return _mm512_set1_epi64(static_cast<long long>(val));
-  }
-
-  // Full 64-bit Unsigned Multiply High
-  inline __m512i _mm512_mulhi_epu64(const __m512i &a, const __m512i &b)
-  {
-    const __m512i a_high = _mm512_srli_epi64(a, 32);
-    const __m512i b_high = _mm512_srli_epi64(b, 32);
-
-    const __m512i ll = _mm512_mul_epu32(a, b);           // AL * BL
-    const __m512i lh = _mm512_mul_epu32(a, b_high);      // AL * BH
-    const __m512i hl = _mm512_mul_epu32(a_high, b);      // AH * BL
-    const __m512i hh = _mm512_mul_epu32(a_high, b_high); // AH * BH
-
-    __m512i mid = _mm512_add_epi64(_mm512_srli_epi64(ll, 32), _mm512_and_si512(lh, _mm512_set1_epi64(0xFFFFFFFF)));
-    mid = _mm512_add_epi64(mid, _mm512_and_si512(hl, _mm512_set1_epi64(0xFFFFFFFF)));
-
-    __m512i result = _mm512_add_epi64(hh, _mm512_srli_epi64(lh, 32));
-    result = _mm512_add_epi64(result, _mm512_srli_epi64(hl, 32));
-    result = _mm512_add_epi64(result, _mm512_srli_epi64(mid, 32));
-
-    return result;
-  }
-
-  inline __m256i _mm256_mulhi_epu64(const __m256i &a, const __m256i &b)
-  {
-    // Mask to isolate the lower 32 bits of each 64-bit lane
-    const __m256i mask = _mm256_set1_epi64x(0xFFFFFFFF);
-
-    const __m256i a_high = _mm256_srli_epi64(a, 32);
-    const __m256i b_high = _mm256_srli_epi64(b, 32);
-
-    // _mm256_mul_epu32 multiplies the low 32 bits of each 64-bit slot
-    const __m256i ll = _mm256_mul_epu32(a, b);           // AL * BL
-    const __m256i lh = _mm256_mul_epu32(a, b_high);      // AL * BH
-    const __m256i hl = _mm256_mul_epu32(a_high, b);      // AH * BL
-    const __m256i hh = _mm256_mul_epu32(a_high, b_high); // AH * BH
-
-    // Extract carries from the low * low product and add to middle products
-    __m256i mid = _mm256_add_epi64(_mm256_srli_epi64(ll, 32), _mm256_and_si256(lh, mask));
-    mid = _mm256_add_epi64(mid, _mm256_and_si256(hl, mask));
-
-    // Combine high product with carries from the middle products
-    __m256i result = _mm256_add_epi64(hh, _mm256_srli_epi64(lh, 32));
-    result = _mm256_add_epi64(result, _mm256_srli_epi64(hl, 32));
-    result = _mm256_add_epi64(result, _mm256_srli_epi64(mid, 32));
-
-    return result;
   }
 
   /**
@@ -561,6 +515,61 @@ namespace Bin2Chars::Helpers::Simd::x86_64
     _mm_storeu_si16(reinterpret_cast<void *>(buff + 8), top_top);
 
     return len;
+  }
+
+  template <>
+  uint32_t WriteEightCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+  {
+    static const uint64_t table[] = { 4294967296ULL,  8589934582ULL,  8589934582ULL,  8589934582ULL,  12884901788ULL, 12884901788ULL, 12884901788ULL, 17179868184ULL,
+                                      17179868184ULL, 17179868184ULL, 21474826480ULL, 21474826480ULL, 21474826480ULL, 21474826480ULL, 25769703776ULL, 25769703776ULL,
+                                      25769703776ULL, 30063771072ULL, 30063771072ULL, 30063771072ULL, 34349738368ULL, 34349738368ULL, 34349738368ULL, 34349738368ULL,
+                                      38554705664ULL, 38554705664ULL, 38554705664ULL, 41949672960ULL, 41949672960ULL, 41949672960ULL, 42949672960ULL, 42949672960ULL };
+
+    const __m512i val = _mm512_set1_epi32(input);
+    // clang-format off
+    const __m512i M_MAGIC_10_0 = _mm512_setr_epi32(0x12E0BE83U, 0x5798EE24U, 0xAD7F29ACU, 0x0C6F7A0CU, 0x4F8B588FU, 0xA36E2EB2U, 0x0624DD30U, 0x47AE147BU, 0x9999999AU, 0, 0, 0, 0, 0, 0, 0);
+    // clang-format on
+    const __m512i M_SHIFTS_10_0 = _mm512_setr_epi32(29, 26, 23, 19, 16, 13, 9, 6, 3, 0, 0, 0, 0, 0, 0, 0);
+    const __m128i INDICES = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+
+    const __m512i prod = umul_hi_32x16(val, M_MAGIC_10_0);
+
+    const unsigned comp = 31U - __builtin_clz(input | 1U);
+    const unsigned len = (input + table[comp]) >> 32U;
+    const unsigned lead_z = std::min(10U - len, 2U);
+
+    const __m512i n_sub_t = _mm512_sub_epi32(val, prod);
+    const __m512i n_sub_t_shf = _mm512_srli_epi32(n_sub_t, 1);
+    const __m512i n_sub_t_shf_add_t = _mm512_add_epi32(n_sub_t_shf, prod);
+    const __m512i shifted_32 = _mm512_srlv_epi32(n_sub_t_shf_add_t, M_SHIFTS_10_0);
+
+    const __m512i res_vec = _mm512_mask_blend_epi32(0x0200, shifted_32, val);
+
+    const __m128i LEAD_Z_LANES = _mm_set1_epi8(lead_z);
+    const __m128i ASCII_ZERO = _mm_set1_epi8('0');
+
+    const __m512i res_times_2 = _mm512_slli_epi32(res_vec, 1);
+    const __m512i res_times_8 = _mm512_slli_epi32(res_vec, 3);
+
+    const __m512i res_times_10 = _mm512_add_epi32(res_times_8, res_times_2);
+
+    const __m512i permuted = _mm512_maskz_alignr_epi32(0xFFFE, res_times_10, res_times_10, 15);
+
+    const __m512i full_res = _mm512_sub_epi32(res_vec, permuted);
+
+    const __m128i u8_packed = _mm512_cvtepi32_epi8(full_res);
+
+    const __m128i ascii_vec = _mm_add_epi8(u8_packed, ASCII_ZERO);
+    const __m128i final_indices = _mm_add_epi8(INDICES, LEAD_Z_LANES);
+    const __m128i output_chars = _mm_shuffle_epi8(ascii_vec, final_indices);
+
+    _mm_storeu_si64(reinterpret_cast<void *>(buff), output_chars);
+
+    const __m128i top_top = _mm_srli_si128(output_chars, 8);
+
+    _mm_storeu_si16(reinterpret_cast<void *>(buff + 8), top_top);
+
+    return std::max(len, 8U);
   }
 
 #elif defined(__AVX2__)
