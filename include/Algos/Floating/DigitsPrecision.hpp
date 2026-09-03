@@ -9,13 +9,13 @@
 #include <string>
 #include <type_traits>
 
-#include "include/Algos/Compute/DecimalExpansion.h"
-#include "include/Algos/Integer.h"
-#include "include/Constants/Constants.h"
-#include "include/Helpers/Assembly.h"
-#include "include/Helpers/Math.h"
-#include "include/Helpers/Simd.h"
-#include "include/Helpers/Templating.h"
+#include "include/Algos/Compute/DecimalExpansion.hpp"
+#include "include/Algos/Integer.hpp"
+#include "include/Constants/Constants.hpp"
+#include "include/Helpers/Assembly.hpp"
+#include "include/Helpers/Math.hpp"
+#include "include/Helpers/Simd.hpp"
+#include "include/Helpers/Templating.hpp"
 
 namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 {

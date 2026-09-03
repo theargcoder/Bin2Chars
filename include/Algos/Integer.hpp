@@ -7,9 +7,9 @@
 #include <arm_neon.h> // ARM SIMD
 #endif
 
-#include "include/Helpers/Math.h"
-#include "include/Helpers/Simd.h"
-#include "include/Helpers/Templating.h"
+#include "include/Helpers/Math.hpp"
+#include "include/Helpers/Simd.hpp"
+#include "include/Helpers/Templating.hpp"
 
 #include <cstdint>
 #include <cstring>

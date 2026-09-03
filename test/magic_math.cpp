@@ -16,8 +16,8 @@
 #include <type_traits>
 #include <utility>
 
-#include "include/Helpers/Assembly.h"
-#include "include/Helpers/Math.h"
+#include "include/Helpers/Assembly.hpp"
+#include "include/Helpers/Math.hpp"
 
 namespace
 {

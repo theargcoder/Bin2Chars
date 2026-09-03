@@ -6,7 +6,7 @@
 #include <numbers>
 #include <type_traits>
 
-#include "Assembly.h"
+#include "Assembly.hpp"
 
 namespace Bin2Chars::Helpers::Math::Constexpr
 {

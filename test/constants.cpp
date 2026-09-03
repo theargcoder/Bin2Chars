@@ -21,8 +21,8 @@
 #include <string>
 #include <type_traits>
 
-#include "include/Constants/Constants.h"
-#include "include/Helpers/Simd.h"
+#include "include/Constants/Constants.hpp"
+#include "include/Helpers/Simd.hpp"
 
 namespace
 {
