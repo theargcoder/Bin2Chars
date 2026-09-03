@@ -76,25 +76,18 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     {
       using Floating = Bin2Chars::Constants::Tables::Floating<double>;
 
-      const constexpr unsigned BASE = 10U;
-      const constexpr unsigned DEC7 = 10'000'000U;
       const constexpr unsigned DEC8 = 100'000'000U;
       const constexpr unsigned ROUNDING_FACTOR = 5U;
 
       const constexpr uint64_t MAGIC_10E8 = 1'441'151'881U;
       const constexpr uint8_t MAGIC_SHFT = 57U;
 
-      const constexpr auto MIN_PRECISION = Helpers::Math::Constexpr::ipow(10U, std::numeric_limits<unsigned>::digits10 - 1);
-      const constexpr auto MAX_PRECISION = Helpers::Math::Constexpr::ipow(10U, std::numeric_limits<unsigned>::digits10);
-
-      const constexpr auto PRECISION_TABLE = Bin2Chars::Constants::Tables::Fixed::GetPrecistionTable<unsigned>();
-
       std::array<unsigned, Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE> EXP_DIGITS;
 
       unsigned len = 0;
       unsigned mantissa;
-      int exp_base_10_int;
-      if(Helpers::Math::IEEE754::GetMantissaExponent<float>(input, mantissa, exp_base_10_int)) [[unlikely]]
+      int exp;
+      if(Helpers::Math::IEEE754::GetMantissaExponent<float>(input, mantissa, exp)) [[unlikely]]
       {
         if(mantissa == 0)
         {
@@ -128,45 +121,84 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       }
       buff[len++] = '.';
 
-      exp_base_10_int -= Floating::BIAS;
+      exp -= Floating::BIAS;
 
-      if(exp_base_10_int < 0)
+      unsigned carry = 0, digs, rem, carr;
+      auto *it = &EXP_DIGITS[Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE - 1];
+
+      if(int exp_base_10; exp < 0)
       {
-        Algos::Compute::DecimalExpansion::NegativeExponent(EXP_DIGITS, std::abs(exp_base_10_int));
+        Algos::Compute::DecimalExpansion::NegativeExponent(EXP_DIGITS, std::abs(exp));
+
+        while(*it == 0) // 2^0 is 1 so no way its 0 infinetly
+        {
+          it--;
+        }
+        const uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
+        digs = static_cast<unsigned>(prod >> 32U) + carry;
+        carr = static_cast<unsigned>(prod);
+
+        const unsigned digits = Helpers::Simd::calculate_len(digs);
+
+        const int n_limbs = it - &EXP_DIGITS[0];
+
+        exp_base_10 = static_cast<int>(digits) - 1 + (8 * n_limbs) - std::abs(exp);
+
+        const auto exp_base_10_ABS = std::abs(exp_base_10);
+
+        std::memset(&buff[len], '0', exp_base_10_ABS);
+        std::swap(buff[len - 1], buff[len]);
+        len += exp_base_10_ABS;
+
+        if(exp_base_10_ABS > PRECISION + 1) // if there are more leading zeros than precision available ...
+        {
+          return 1 + PRECISION + 1;
+        }
+
+        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
+        carry = Helpers::Assembly::umulh32(carr, DEC8);
+
+        buff[len - 1] += digs;
+        len += Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+        it--;
       }
       else
       {
-        Algos::Compute::DecimalExpansion::PositiveExponent(EXP_DIGITS, exp_base_10_int);
+        Algos::Compute::DecimalExpansion::PositiveExponent(EXP_DIGITS, exp);
       }
 
-      auto *it = &EXP_DIGITS[Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE - 1];
-
-      while(*it == 0) // 2^0 is 1 so no way its 0 infinetly
-      {
-        it--;
-      }
-
-      for(unsigned carry = 0, digs, rem, carr;; it--)
+      for(; it >= &EXP_DIGITS[0] && len < PRECISION + 9; it--)
       {
         const uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
         digs = static_cast<unsigned>(prod >> 32U) + carry;
         carr = static_cast<unsigned>(prod);
 
         Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
+        carry = Helpers::Assembly::umulh32(carr, DEC8);
 
         buff[len - 1] += digs;
-
-        carry = Helpers::Assembly::umulh32(carr, DEC8);
         len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+      }
 
-        if(it == &EXP_DIGITS[0])
+      len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
+
+      if(size_t i = 1 + PRECISION + 1; buff[i] > '5')
+      {
+        buff[1 + PRECISION]++;
+      }
+      else if(buff[i] == '5')
+      {
+        i++;
+        for(; i < len && buff[i] == '0'; i++)
         {
-          len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
-          break;
+        }
+        if(i != len)
+        {
+          buff[1 + PRECISION]++;
         }
       }
 
-      return len = 0;
+      return 1 + PRECISION + 1;
     }
   };
 
@@ -187,4 +219,4 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     const unsigned len = Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLen<BEHAVE, T>(&buff[0], input, PRECISION);
     return std::string{ &buff[0], len };
   }
-} // namespace Helpers::Numeric::Floating::DigitsPrecision
+} // namespace Bin2Chars::Numeric::Floating::DigitsPrecision

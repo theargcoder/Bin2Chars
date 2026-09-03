@@ -248,6 +248,8 @@ namespace
         const auto log_val = std::strtold(open_logging.c_str(), nullptr);
         const auto ref_val = std::strtold(std_format.c_str(), nullptr);
 
+        open_logging = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+
         if(open_logging.contains("nan") && std_format.contains("nan"))
           continue;
 
