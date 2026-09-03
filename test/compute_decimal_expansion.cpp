@@ -9,8 +9,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "include/Algos/Compute/DecimalExpansion.h"
-#include "include/Constants/Constants.h"
+#include "include/Algos/Compute/DecimalExpansion.hpp"
+#include "include/Constants/Constants.hpp"
 
 namespace
 {

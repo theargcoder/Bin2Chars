@@ -5,9 +5,9 @@
 #include <random>
 #include <vector>
 
-#include "include/Algos/Competition.h"
-#include "include/Helpers/Assembly.h"
-#include "include/Helpers/Simd.h"
+#include "include/Algos/Competition.hpp"
+#include "include/Helpers/Assembly.hpp"
+#include "include/Helpers/Simd.hpp"
 
 /*
 int main(int argc, char **argv)

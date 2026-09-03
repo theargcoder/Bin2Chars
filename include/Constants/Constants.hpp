@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <utility>
 
-#include "include/Helpers/Math.h"
+#include "include/Helpers/Math.hpp"
 
 namespace Bin2Chars::Constants
 {

@@ -17,9 +17,9 @@
 #include <type_traits>
 #include <utility>
 
-#include "include/Algos/Competition.h"
-#include "include/Algos/Integer.h"
-#include "include/Helpers/Assembly.h"
+#include "include/Algos/Competition.hpp"
+#include "include/Algos/Integer.hpp"
+#include "include/Helpers/Assembly.hpp"
 
 namespace
 {
@@ -27,7 +27,9 @@ namespace
   {
     std::string_view label;
     std::string_view num_str;
-    LogHexStr(const std::string &_label, const std::string &_num_str) : label(_label), num_str(_num_str) {};
+    LogHexStr(const std::string &_label, const std::string &_num_str) : label(_label), num_str(_num_str)
+    {
+    }
   };
 
   template <typename... Args>
@@ -48,7 +50,7 @@ namespace
     };
 
     (print_hex(logs.num_str), ...);
-  };
+  }
 
   struct BenchResult
   {
@@ -56,7 +58,9 @@ namespace
     std::chrono::nanoseconds time;
     uint64_t cycles;
 
-    BenchResult(const char *str, std::chrono::nanoseconds nano, uint64_t cpu_cycles) : label(str), time(nano), cycles(cpu_cycles) {};
+    BenchResult(const char *str, std::chrono::nanoseconds nano, uint64_t cpu_cycles) : label(str), time(nano), cycles(cpu_cycles)
+    {
+    }
   };
 
   template <typename T, typename... Args>
@@ -198,10 +202,10 @@ namespace
         }
       }
     }
-  };
+  }
 
   template <uint64_t N, typename T>
-  auto tester_ints(const T &) -> auto
+  auto tester_ints(const T & /*unused*/) -> auto
   {
     std::chrono::nanoseconds tostr_integral_ours_took{ 0 };
     std::chrono::nanoseconds std_to_chars_took{ 0 };
@@ -267,21 +271,21 @@ namespace
 
   template <typename T, size_t... I>
     requires std::is_integral_v<T>
-  const auto test_and_benchmark_int_impl(std::index_sequence<I...>)
+  auto test_and_benchmark_int_impl(std::index_sequence<I...> /*unused*/)
   {
     auto res = tester_ints<1>(T{ 0 });
     ((res = tester_ints<I + 1>(T{ 0 }),
       log_time_tables(T{ 0 }, "INTEGERS", I + 1, BenchResult("Numeric:ToStr", std::get<0>(res), std::get<1>(res)), BenchResult("std::to_chars", std::get<2>(res), std::get<3>(res)),
                       BenchResult("std::to_string", std::get<4>(res), std::get<5>(res)), BenchResult("Numeric::ToStrSIMD", std::get<6>(res), std::get<7>(res)))),
      ...);
-  };
+  }
 
   template <typename T>
     requires std::is_integral_v<T>
   const auto test_and_benchmark_ints(T)
   {
     test_and_benchmark_int_impl<T>(std::make_index_sequence<2>{});
-  };
+  }
 
 } // namespace
 

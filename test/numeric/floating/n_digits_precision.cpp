@@ -20,9 +20,9 @@
 #include <tuple>
 #include <type_traits>
 
-#include "include/Algos/Competition.h"
-#include "include/Algos/Floating/DigitsPrecision.h"
-#include "include/Helpers/Assembly.h"
+#include "include/Algos/Competition.hpp"
+#include "include/Algos/Floating/DigitsPrecision.hpp"
+#include "include/Helpers/Assembly.hpp"
 
 namespace
 {
