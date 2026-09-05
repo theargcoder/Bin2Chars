@@ -137,98 +137,83 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         it--;
       }
 
-      int exp_base_10, precision_missing = PRECISION;
-      unsigned carry = 0, rem, len_written;
+      int exp_base_10, precision_missing;
+      unsigned rem, len_written;
       uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
-      auto digs = static_cast<unsigned>(prod >> 32U) + carry;
+      auto digs = static_cast<unsigned>(prod >> 32U);
       auto carr = static_cast<unsigned>(prod);
+      auto carry = Helpers::Assembly::umulh32(carr, DEC8);
 
       const auto digits = static_cast<int>(Helpers::Simd::calculate_len(digs));
 
       const int n_limbs = static_cast<int>(it - &EXP_DIGITS[0]);
 
-      exp_base_10 = digits - 1 + (n_limbs << 3U) - std::abs(exp);
+      exp_base_10 = digits - 1 + (n_limbs << 3U) - ((exp < 0) ? std::abs(exp) : 0);
 
       if(exp_base_10 < 0)
       {
-        buff[len++] = '0';
-        buff[len++] = '.';
+        precision_missing = 1 + PRECISION;
 
-        const auto exp_base_10_ABS = std::abs(exp_base_10) - 1; // already wrote the 0 :)
+        const auto exp_base_10_ABS = std::abs(exp_base_10);
         const auto n_zeros = static_cast<unsigned>(std::min(exp_base_10_ABS, precision_missing));
 
         std::memset(&buff[len], '0', n_zeros);
         precision_missing -= n_zeros;
         len += n_zeros;
 
-        if(exp_base_10_ABS > PRECISION) // if there are more leading zeros than precision available ...
+        if(exp_base_10_ABS - 1 > PRECISION) // if there are more leading zeros than precision available ...
         {
+          buff[len++] = '0';
+          buff[(input < 0.0) ? 2 : 1] = '.';
           return len;
         }
-
-        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
-        carry = Helpers::Assembly::umulh32(carr, DEC8);
-
-        buff[len - 1] += digs;
-        len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
-        precision_missing -= static_cast<int>(len_written);
-        len += len_written;
-        it--;
-
-        for(; it >= &EXP_DIGITS[0] && precision_missing > 0; it--)
-        {
-          prod = static_cast<uint64_t>(*it) * mantissa;
-          digs = static_cast<unsigned>(prod >> 32U) + carry;
-          carr = static_cast<unsigned>(prod);
-
-          Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
-          carry = Helpers::Assembly::umulh32(carr, DEC8);
-
-          buff[len - 1] += digs;
-          len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
-          len += len_written;
-          precision_missing -= static_cast<int>(len_written);
-        }
-
-        len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
-        len += len_written;
-        precision_missing -= static_cast<int>(len_written);
-
-        if(precision_missing > 0)
-        {
-          std::memset(&buff[len], '0', precision_missing);
-          len += static_cast<int>(len_written);
-        }
-
-        len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
       }
       else
       {
+        precision_missing = 1 + exp_base_10 + PRECISION;
+      }
+
+      len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+      precision_missing -= static_cast<int>(len_written);
+      len += len_written;
+      it--;
+
+      for(; it >= &EXP_DIGITS[0] && precision_missing > 0; it--)
+      {
+        prod = static_cast<uint64_t>(*it) * mantissa;
+        digs = static_cast<unsigned>(prod >> 32U) + carry;
+        carr = static_cast<unsigned>(prod);
+
         Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
         carry = Helpers::Assembly::umulh32(carr, DEC8);
 
         buff[len - 1] += digs;
-        len += Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
-        it--;
-
-        for(; it >= &EXP_DIGITS[0] && len < exp_base_10; it--)
-        {
-          prod = static_cast<uint64_t>(*it) * mantissa;
-          digs = static_cast<unsigned>(prod >> 32U) + carry;
-          carr = static_cast<unsigned>(prod);
-
-          Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
-          carry = Helpers::Assembly::umulh32(carr, DEC8);
-
-          buff[len - 1] += digs;
-          len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
-        }
-
-        if(it <= &EXP_DIGITS[0])
-        {
-          len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
-        }
+        len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+        len += len_written;
+        precision_missing -= static_cast<int>(len_written);
       }
+
+      len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
+      len += len_written;
+      precision_missing -= static_cast<int>(len_written);
+
+      if(precision_missing > 0)
+      {
+        std::memset(&buff[len], '0', precision_missing);
+        len += static_cast<int>(precision_missing);
+      }
+
+      if(PRECISION > 0)
+      {
+        const int dot_idx = ((input < 0.0F) ? 1 : 0) + ((exp_base_10 < 0) ? 1 : exp_base_10 + 1);
+
+        std::memmove(&buff[dot_idx + 1], &buff[dot_idx], len - dot_idx);
+
+        buff[dot_idx] = '.';
+        len++;
+      }
+
+      len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
 
       if(size_t i = len, MAX = len + std::abs(precision_missing); buff[i] > '5')
       {

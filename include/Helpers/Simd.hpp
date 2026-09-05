@@ -791,6 +791,84 @@ namespace Bin2Chars::Helpers::Simd
       return len;
     }
 
+    template <>
+    uint32_t WriteEightCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    {
+      const __m256i VAL = _mm256_set1_epi32(input);
+
+      const __m256i M_MAGIC_u64 = { 0x55E63B89ULL, 0x431BDE83ULL, 0xD1B71759ULL, 0x51EB851FULL };
+      const __m256i M_SHIFTS_u64 = { 57, 50, 45, 37 };
+
+      const __m256i PERMUTE_SHF_64 = _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7);
+      const __m128i INDICES = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+
+      const __m256i prod = _mm256_mul_epu32(VAL, M_MAGIC_u64);
+
+      const unsigned len = calculate_len(input);
+      const unsigned lead_z = std::min(10U - len, 2U);
+
+      const __m256i shifted = _mm256_srlv_epi64(prod, M_SHIFTS_u64);
+      const __m128i shifted_64 = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(shifted, PERMUTE_SHF_64));
+
+      const __m128i shifted_64_x_64 = _mm_slli_epi64(shifted_64, 6);
+      const __m128i shifted_64_x_32 = _mm_slli_epi64(shifted_64, 5);
+
+      const __m128i shifted_64_x_4 = _mm_slli_epi64(shifted_64, 2);
+      const __m128i shifted_64_x_96 = _mm_add_epi64(shifted_64_x_64, shifted_64_x_32);
+
+      const __m128i shifted_64_x_100 = _mm_add_epi64(shifted_64_x_96, shifted_64_x_4);
+
+      const __m128i top_lanes = _mm_slli_si128(shifted_64_x_100, 4);
+      const __m128i bot_lanes = _mm_shuffle_epi32(shifted_64_x_100, _MM_SHUFFLE(0, 1, 2, 3));
+
+      const __m128i F_6554 = _mm_set1_epi16(6554);
+
+      const __m128i res_u64_top = _mm_sub_epi64(shifted_64, top_lanes);
+      const __m128i res_u64_bot = _mm_sub_epi64(_mm256_castsi256_si128(VAL), bot_lanes);
+
+      const __m128i shifted_top_16 = _mm_slli_epi64(res_u64_top, 16);
+      const __m128i shifted_bot_16 = _mm_slli_epi64(res_u64_bot, 16);
+
+      const __m128i res_packed_top = _mm_or_si128(shifted_top_16, res_u64_top);
+      const __m128i res_packed_bot = _mm_or_si128(shifted_bot_16, res_u64_bot);
+
+      const __m128i res_prod_top = _mm_mulhi_epu16(res_packed_top, F_6554);
+      const __m128i res_prod_bot = _mm_mulhi_epu16(res_packed_bot, F_6554);
+
+      const __m128i res_shifted_top_x8 = _mm_slli_epi16(res_prod_top, 3);
+      const __m128i res_shifted_bot_x8 = _mm_slli_epi16(res_prod_bot, 3);
+      const __m128i res_shifted_top_x2 = _mm_slli_epi16(res_prod_top, 1);
+      const __m128i res_shifted_bot_x2 = _mm_slli_epi16(res_prod_bot, 1);
+
+      const __m128i res_shifted_top_x10 = _mm_add_epi16(res_shifted_top_x8, res_shifted_top_x2);
+      const __m128i res_shifted_bot_x10 = _mm_add_epi16(res_shifted_bot_x8, res_shifted_bot_x2);
+
+      const __m128i ZERO_NUMS = _mm_setzero_si128();
+      const __m128i ZERO_CHAR = _mm_set1_epi8('0');
+      const __m128i LEAD_Z_LANES = _mm_set1_epi8(lead_z);
+
+      const __m128i res_shf_blen_top = _mm_blend_epi16(res_shifted_top_x10, ZERO_NUMS, 0b0101'0101);
+      const __m128i res_shf_blen_bot = _mm_blend_epi16(res_shifted_bot_x10, ZERO_NUMS, 0b0101'0101);
+      const __m128i res_to_sub_top = _mm_blend_epi16(res_prod_top, res_packed_top, 0b1010'1010);
+      const __m128i res_to_sub_bot = _mm_blend_epi16(res_prod_bot, res_packed_bot, 0b1010'1010);
+      const __m128i res_com_top = _mm_sub_epi16(res_to_sub_top, res_shf_blen_top);
+      const __m128i res_com_bot = _mm_sub_epi16(res_to_sub_bot, res_shf_blen_bot);
+
+      const __m128i trunc_u8 = _mm_packus_epi16(res_com_top, res_com_bot);
+
+      const __m128i ascii_vec = _mm_add_epi8(trunc_u8, ZERO_CHAR);
+      const __m128i final_indices = _mm_add_epi8(INDICES, LEAD_Z_LANES);
+      const __m128i output_chars = _mm_shuffle_epi8(ascii_vec, final_indices);
+
+      _mm_storeu_si64(reinterpret_cast<void *>(buff), output_chars);
+
+      const __m128i top_top = _mm_srli_si128(output_chars, 8);
+
+      _mm_storeu_si16(reinterpret_cast<void *>(buff + 8), top_top);
+
+      return std::max(len, 8U);
+    }
+
 #else
 
 #endif
