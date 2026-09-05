@@ -114,9 +114,11 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         return len;
       }
 
+      unsigned start_idx = 0;
       if(input < 0.0)
       {
         buff[len++] = '-';
+        start_idx = 1;
       }
 
       exp -= Floating::BIAS;
@@ -138,22 +140,21 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       }
 
       int exp_base_10, precision_missing;
-      unsigned rem, len_written;
+      unsigned rem, len_written, int_len;
+
       uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
       auto digs = static_cast<unsigned>(prod >> 32U);
-      auto carr = static_cast<unsigned>(prod);
-      auto carry = Helpers::Assembly::umulh32(carr, DEC8);
+      uint32_t frac = static_cast<unsigned>(prod); // Renamed from carr. carry is GONE!
 
       const auto digits = static_cast<int>(Helpers::Simd::calculate_len(digs));
-
       const int n_limbs = static_cast<int>(it - &EXP_DIGITS[0]);
 
-      exp_base_10 = digits - 1 + (n_limbs << 3U) - ((exp < 0) ? std::abs(exp) : 0);
+      exp_base_10 = digits - 1 + (n_limbs << 3U) - (exp < 0 ? std::abs(exp) : 0);
 
       if(exp_base_10 < 0)
       {
+        int_len = 1;
         precision_missing = 1 + PRECISION;
-
         const auto exp_base_10_ABS = std::abs(exp_base_10);
         const auto n_zeros = static_cast<unsigned>(std::min(exp_base_10_ABS, precision_missing));
 
@@ -161,7 +162,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         precision_missing -= n_zeros;
         len += n_zeros;
 
-        if(exp_base_10_ABS - 1 > PRECISION) // if there are more leading zeros than precision available ...
+        if(exp_base_10_ABS - 1 > PRECISION)
         {
           buff[len++] = '0';
           buff[(input < 0.0) ? 2 : 1] = '.';
@@ -170,7 +171,8 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       }
       else
       {
-        precision_missing = 1 + exp_base_10 + PRECISION;
+        int_len = exp_base_10 + 1;
+        precision_missing = int_len + PRECISION;
       }
 
       len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
@@ -181,19 +183,54 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       for(; it >= &EXP_DIGITS[0] && precision_missing > 0; it--)
       {
         prod = static_cast<uint64_t>(*it) * mantissa;
-        digs = static_cast<unsigned>(prod >> 32U) + carry;
-        carr = static_cast<unsigned>(prod);
+
+        const uint64_t total = static_cast<uint64_t>(frac) * DEC8 + prod;
+
+        digs = static_cast<unsigned>(total >> 32U);
+        frac = static_cast<unsigned>(total);
 
         Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
-        carry = Helpers::Assembly::umulh32(carr, DEC8);
 
-        buff[len - 1] += digs;
+        // buff[len - 1] += digs; // FUXK this no longer stands since buff[len -1]  can be '9' ....
+
+        if(digs != 0)
+        {
+          int i = static_cast<int>(len) - 1;
+          const int ST = static_cast<int>(start_idx);
+          for(; i >= ST; i--)
+          {
+            if(buff[i] == '9')
+            {
+              buff[i] = '0';
+            }
+            else
+            {
+              buff[i]++;
+              break;
+            }
+          }
+
+          if(i < ST) // rippled all the way to hell
+          {
+            std::memmove(&buff[ST + 1], &buff[ST], len - start_idx); // move the shit down 1 slot
+            buff[start_idx] = '1';                                   // add the leading zero
+            len++;
+            exp_base_10++;
+            int_len++;
+          }
+        }
+
         len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
         len += len_written;
         precision_missing -= static_cast<int>(len_written);
       }
 
-      len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
+      // Final trailing fraction conversion (replacing your final WriteEightChars carry)
+      const uint64_t final_total = static_cast<uint64_t>(frac) * DEC8;
+      digs = static_cast<unsigned>(final_total >> 32U);
+      frac = static_cast<unsigned>(final_total); // Kept perfectly exact in case your rounder wants to inspect it
+
+      len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
       len += len_written;
       precision_missing -= static_cast<int>(len_written);
 
@@ -205,7 +242,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       if(PRECISION > 0)
       {
-        const int dot_idx = ((input < 0.0F) ? 1 : 0) + ((exp_base_10 < 0) ? 1 : exp_base_10 + 1);
+        const unsigned dot_idx = start_idx + int_len;
 
         std::memmove(&buff[dot_idx + 1], &buff[dot_idx], len - dot_idx);
 
@@ -213,22 +250,102 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         len++;
       }
 
+      // Calculate original target string length (truncating the extra generation)
       len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
+      const size_t MAX = len + std::abs(precision_missing);
 
-      if(size_t i = len, MAX = len + std::abs(precision_missing); buff[i] > '5')
+      bool round_up = false;
+      if(MAX > len)
       {
-        buff[len - 1]++;
+        const char next_digit = buff[len];
+        if(next_digit > '5')
+        {
+          round_up = true;
+        }
+        else if(next_digit == '5')
+        {
+          bool trailing_zeros = true;
+
+          // 1. Check the already-generated extra digits in the buffer
+          for(size_t j = len + 1; j < MAX; j++)
+          {
+            if(buff[j] != '0')
+            {
+              trailing_zeros = false;
+              break;
+            }
+          }
+
+          // 2. Check the unprocessed Bignum limbs
+          // If the generation loop broke early, 'it' points to the first unprocessed limb.
+          // If any remaining limb is non-zero, the mathematical remainder is > 0.
+          if(trailing_zeros && it >= &EXP_DIGITS[0])
+          {
+            for(auto *rem_it = it; rem_it >= &EXP_DIGITS[0]; rem_it--)
+            {
+              if(*rem_it != 0)
+              {
+                trailing_zeros = false;
+                break;
+              }
+            }
+          }
+
+          if(trailing_zeros)
+          {
+            // Banker's Rounding: Exact tie, round to even.
+            // (len - 1 is guaranteed to be a digit, not '.', because we only insert '.'
+            // if PRECISION > 0, meaning there is at least one digit after it)
+            round_up = ((buff[len - 1] - '0') & 1U);
+          }
+          else
+          {
+            // Strictly greater than 0.5
+            round_up = true;
+          }
+        }
       }
-      else if(buff[i] == '5')
+
+      if(round_up)
       {
-        i++;
-        for(; i < MAX && buff[i] == '0'; i++)
+        int i = static_cast<int>(len) - 1;
+        const int ST = static_cast<int>(start_idx);
+        for(; i >= ST; i--)
+        {
+          if(buff[i] == '.')
+          {
+            continue;
+          }
+
+          if(buff[i] == '9')
+          {
+            buff[i] = '0';
+          }
+          else
+          {
+            buff[i]++;
+            break;
+          }
+        }
+
+        // Ripple carry propagated past the most significant digit (e.g., 99.9 -> 100.0)
+        if(i < ST)
+        {
+          // Shift the valid string right by 1 byte.
+          // MAGIC: This shifts the '.' right by 1 position as well, perfectly preserving PRECISION!
+          std::memmove(&buff[ST + 1], &buff[ST], len - start_idx);
+          buff[start_idx] = '1';
+          len++;
+        }
+      }
+
+      if(unsigned i; exp_base_10 > 0 && buff[start_idx] == '0') // CANT HAVE LEADING ZEROS
+      {
+        for(i = start_idx; i < len && buff[i] == '0'; i++)
         {
         }
-        if(i < MAX)
-        {
-          buff[len - 1]++;
-        }
+        std::memmove(&buff[start_idx], &buff[i], len - i);
+        len -= i - start_idx;
       }
 
       return len;
