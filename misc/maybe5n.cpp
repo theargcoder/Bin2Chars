@@ -825,7 +825,7 @@ int main()
     68464626, 5562, 0, 0, 0, 0, 0, 0                                                // 11 - anotherone
   };
 
-  for(int k = 511; k <= 1074; k++)
+  for(int k = 0; k <= 1074; k++)
   {
   backwards:
     constexpr unsigned NUM_WORDS = 96;
