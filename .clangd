@@ -27,8 +27,7 @@ CompileFlags:
     -fconstexpr-backtrace-limit=0,   # Unrolls deep compile-time evaluation errors
     -fmacro-backtrace-limit=0,       # Unrolls complex macro expansions
     -ferror-limit=0,                 # Prevents truncating diagnostic cascades
-    -I.,                             # Look up project-root relative headers
-    -x, c++-header                   # Force header files to be parsed as C++ headers
+    -I.                             # Look up project-root relative headers
   ]
 
   # Strip flags from compile_commands.json that conflict with clangd or static analysis
