@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
-#include <limits>
 #include <string>
 #include <type_traits>
 
@@ -119,86 +118,135 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       {
         buff[len++] = '-';
       }
-      buff[len++] = '.';
 
       exp -= Floating::BIAS;
 
-      unsigned carry = 0, digs, rem, carr;
       auto *it = &EXP_DIGITS[Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE - 1];
 
-      if(int exp_base_10; exp < 0)
+      if(exp < 0)
       {
         Algos::Compute::DecimalExpansion::NegativeExponent(EXP_DIGITS, std::abs(exp));
-
-        while(*it == 0) // 2^0 is 1 so no way its 0 infinetly
-        {
-          it--;
-        }
-        const uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
-        digs = static_cast<unsigned>(prod >> 32U) + carry;
-        carr = static_cast<unsigned>(prod);
-
-        const unsigned digits = Helpers::Simd::calculate_len(digs);
-
-        const int n_limbs = it - &EXP_DIGITS[0];
-
-        exp_base_10 = static_cast<int>(digits) - 1 + (8 * n_limbs) - std::abs(exp);
-
-        const auto exp_base_10_ABS = std::abs(exp_base_10);
-
-        std::memset(&buff[len], '0', exp_base_10_ABS);
-        std::swap(buff[len - 1], buff[len]);
-        len += exp_base_10_ABS;
-
-        if(exp_base_10_ABS > PRECISION + 1) // if there are more leading zeros than precision available ...
-        {
-          return 1 + PRECISION + 1;
-        }
-
-        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
-        carry = Helpers::Assembly::umulh32(carr, DEC8);
-
-        buff[len - 1] += digs;
-        len += Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
-        it--;
       }
       else
       {
         Algos::Compute::DecimalExpansion::PositiveExponent(EXP_DIGITS, exp);
       }
 
-      for(; it >= &EXP_DIGITS[0] && len < PRECISION + 9; it--)
+      while(*it == 0) // 2^0 is 1 so no way its 0 infinetly
       {
-        const uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
-        digs = static_cast<unsigned>(prod >> 32U) + carry;
-        carr = static_cast<unsigned>(prod);
+        it--;
+      }
+
+      int exp_base_10, precision_missing = PRECISION;
+      unsigned carry = 0, rem, len_written;
+      uint64_t prod = static_cast<uint64_t>(*it) * mantissa;
+      auto digs = static_cast<unsigned>(prod >> 32U) + carry;
+      auto carr = static_cast<unsigned>(prod);
+
+      const auto digits = static_cast<int>(Helpers::Simd::calculate_len(digs));
+
+      const int n_limbs = static_cast<int>(it - &EXP_DIGITS[0]);
+
+      exp_base_10 = digits - 1 + (n_limbs << 3U) - std::abs(exp);
+
+      if(exp_base_10 < 0)
+      {
+        buff[len++] = '0';
+        buff[len++] = '.';
+
+        const auto exp_base_10_ABS = std::abs(exp_base_10) - 1; // already wrote the 0 :)
+        const auto n_zeros = static_cast<unsigned>(std::min(exp_base_10_ABS, precision_missing));
+
+        std::memset(&buff[len], '0', n_zeros);
+        precision_missing -= n_zeros;
+        len += n_zeros;
+
+        if(exp_base_10_ABS > PRECISION) // if there are more leading zeros than precision available ...
+        {
+          return len;
+        }
 
         Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
         carry = Helpers::Assembly::umulh32(carr, DEC8);
 
         buff[len - 1] += digs;
-        len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+        len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+        precision_missing -= static_cast<int>(len_written);
+        len += len_written;
+        it--;
+
+        for(; it >= &EXP_DIGITS[0] && precision_missing > 0; it--)
+        {
+          prod = static_cast<uint64_t>(*it) * mantissa;
+          digs = static_cast<unsigned>(prod >> 32U) + carry;
+          carr = static_cast<unsigned>(prod);
+
+          Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
+          carry = Helpers::Assembly::umulh32(carr, DEC8);
+
+          buff[len - 1] += digs;
+          len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+          len += len_written;
+          precision_missing -= static_cast<int>(len_written);
+        }
+
+        len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
+        len += len_written;
+        precision_missing -= static_cast<int>(len_written);
+
+        if(precision_missing > 0)
+        {
+          std::memset(&buff[len], '0', precision_missing);
+          len += static_cast<int>(len_written);
+        }
+
+        len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
+      }
+      else
+      {
+        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
+        carry = Helpers::Assembly::umulh32(carr, DEC8);
+
+        buff[len - 1] += digs;
+        len += Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+        it--;
+
+        for(; it >= &EXP_DIGITS[0] && len < exp_base_10; it--)
+        {
+          prod = static_cast<uint64_t>(*it) * mantissa;
+          digs = static_cast<unsigned>(prod >> 32U) + carry;
+          carr = static_cast<unsigned>(prod);
+
+          Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
+          carry = Helpers::Assembly::umulh32(carr, DEC8);
+
+          buff[len - 1] += digs;
+          len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+        }
+
+        if(it <= &EXP_DIGITS[0])
+        {
+          len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
+        }
       }
 
-      len += Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], carry);
-
-      if(size_t i = 1 + PRECISION + 1; buff[i] > '5')
+      if(size_t i = len, MAX = len + std::abs(precision_missing); buff[i] > '5')
       {
-        buff[1 + PRECISION]++;
+        buff[len - 1]++;
       }
       else if(buff[i] == '5')
       {
         i++;
-        for(; i < len && buff[i] == '0'; i++)
+        for(; i < MAX && buff[i] == '0'; i++)
         {
         }
-        if(i != len)
+        if(i < MAX)
         {
-          buff[1 + PRECISION]++;
+          buff[len - 1]++;
         }
       }
 
-      return 1 + PRECISION + 1;
+      return len;
     }
   };
 
