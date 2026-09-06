@@ -188,6 +188,8 @@ namespace
           continue;
         }
 
+        open_logging = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+
         const auto log_val = std::strtold(open_logging.c_str(), nullptr);
         const auto ref_val = std::strtold(std_format.c_str(), nullptr);
 
@@ -355,6 +357,25 @@ BOOST_AUTO_TEST_CASE(test_all_floating_point_v)
   test_and_benchmark_float(static_cast<float>(0), 4);
   test_and_benchmark_float(static_cast<float>(0), 5);
   test_and_benchmark_float(static_cast<float>(0), 6);
+  test_and_benchmark_float(static_cast<float>(0), 7);
+  test_and_benchmark_float(static_cast<float>(0), 8);
+  test_and_benchmark_float(static_cast<float>(0), 9);
+  test_and_benchmark_float(static_cast<float>(0), 10);
+  test_and_benchmark_float(static_cast<float>(0), 11);
+  test_and_benchmark_float(static_cast<float>(0), 12);
+  test_and_benchmark_float(static_cast<float>(0), 13);
+  test_and_benchmark_float(static_cast<float>(0), 14);
+  test_and_benchmark_float(static_cast<float>(0), 15);
+  test_and_benchmark_float(static_cast<float>(0), 16);
+  test_and_benchmark_float(static_cast<float>(0), 17);
+  test_and_benchmark_float(static_cast<float>(0), 18);
+  test_and_benchmark_float(static_cast<float>(0), 19);
+  test_and_benchmark_float(static_cast<float>(0), 20);
+  test_and_benchmark_float(static_cast<float>(0), 21);
+  test_and_benchmark_float(static_cast<float>(0), 22);
+  test_and_benchmark_float(static_cast<float>(0), 23);
+  test_and_benchmark_float(static_cast<float>(0), 24);
+  test_and_benchmark_float(static_cast<float>(0), 25);
   // doubles
   // test_and_benchmark_float(static_cast<double>(0), 1);
   // test_and_benchmark_float(static_cast<double>(0), 2);

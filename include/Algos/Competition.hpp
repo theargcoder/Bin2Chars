@@ -14,7 +14,7 @@ namespace Bin2Chars::Numeric::Std
   template <bool SCIENTIFIC, typename Type>
   static auto to_string(Type value, const auto &PRECISION)
   {
-    std::array<char, 64> buf;
+    std::array<char, 2048> buf;
 
     if constexpr(std::is_floating_point_v<Type>)
     {
@@ -118,7 +118,7 @@ namespace Bin2Chars::Numeric::Ryu
   {
     static std::string ToStr(double v, const int &PRECISION)
     {
-      char buffer[32];
+      char buffer[2048];
       const int len = d2exp_buffered_n(v, PRECISION, &buffer[0]);
       return std::string{ &buffer[0], static_cast<size_t>(len) };
     }
