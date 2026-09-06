@@ -1,10 +1,12 @@
 #include <array>
 #include <cassert>
 #include <cstdint>
+#include <cstdio>
 #include <cstring>
 #include <immintrin.h>
 #include <iomanip>
 #include <iostream>
+#include <string>
 
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
 
@@ -321,7 +323,7 @@ int main()
 
 #elif defined(__AVX2__)
 
-int main()
+int not_main()
 {
   constexpr uint16_t POW_5_E[] = { 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024 };
   constexpr uint32_t POW_5_CACHE[] = {
@@ -749,6 +751,98 @@ int main()
 #error "this algorithm is not supported for this architecture; this architecture is too old (pre __AVX2__)"
 #endif
 
+// int printer_arr_MSB_8_digit()
+int main()
+{
+  // 308 decimal digits require 39 base-10^8 words
+  constexpr unsigned NUM_WORDS = 39;
+  constexpr uint64_t MAGIC_10E8 = 1441151881ULL;
+  constexpr int SHIFT_10E8 = 57;
+
+  std::string accesors = "#include <cstdint> \n\n";
+  accesors += " constexpr uint16_t K_TO_POW_2_BOUNDARIES[] =  {\n";
+  std::string cache = " constexpr uint32_t POW_2_CACHE[] = { \n";
+
+  int k = 0, st_idx = 0;
+  for(; k <= 1024; k++)
+  {
+    std::array<uint32_t, NUM_WORDS> NEW_ARR = { 0 };
+    NEW_ARR[0] = 1; // initialize 2^0 = 1
+    // Loop k times (multiply by 32 in each iteration)
+    unsigned i;
+    for(i = 0; i + 5 < k; i += 5)
+    {
+      uint32_t carry = 0;
+      for(unsigned int &w : NEW_ARR)
+      {
+        uint64_t pp = ((uint64_t)w << 5U) + carry;
+        carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+        w = (uint32_t)(pp - carry * 100'000'000U);
+      }
+    }
+
+    const unsigned miss = k - i;
+    uint32_t carry = 0;
+    for(unsigned int &w : NEW_ARR)
+    {
+      uint64_t pp = ((uint64_t)w << miss) + carry;
+      carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+      w = (uint32_t)(pp - carry * 100'000'000U);
+    }
+
+    // Find most significant non-zero chunk
+    int top_word = NUM_WORDS - 1;
+    while(top_word > 0 && NEW_ARR[top_word] == 0)
+    {
+      --top_word;
+    }
+
+    accesors += std::to_string(st_idx);
+    accesors += ", ";
+    st_idx += top_word + 1;
+
+    cache += " // ";
+    cache += " k = ";
+    cache += std::to_string(k);
+    cache += "\n";
+
+    int xx = 0, yy = 0;
+    // Output formatted result
+    for(int w = 0; w <= top_word; w++)
+    {
+      if(xx == 8)
+      {
+        if(yy == 0)
+        {
+          cache += "// 0 -- hello \n";
+        }
+        else
+        {
+          cache += " // ";
+          cache += std::to_string(yy);
+          cache += " - anotherone \n";
+        }
+        xx = 0, yy++;
+      }
+      cache += std::to_string(NEW_ARR[w]);
+      cache += ", ";
+      xx++;
+    }
+    cache += " // ";
+    cache += std::to_string(yy);
+    cache += " - anotherone \n";
+    cache += "\n";
+  }
+  accesors += std::to_string(st_idx);
+  accesors += "};\n";
+  cache += "};\n";
+
+  std::cout << accesors;
+  std::cout << cache;
+
+  return 0;
+}
+
 int printer_arr()
 {
   std::cout << " constexpr uint8_t POW_5_E[] = {";
@@ -832,6 +926,160 @@ int printer_arr()
   }
   std::cout << "\b};\n";
 
+  return 0;
+}
+
+int test_original_vs_new_proposal_2()
+{
+  constexpr uint64_t MAGIC_10E8 = 1441151881ULL;
+  constexpr int SHIFT_10E8 = 57;
+  constexpr unsigned NUM_WORDS = 40; // 40 words * 8 digits = 320 digits (fits 2^1023's 308 digits safely)
+
+  for(int k = 0; k < 1024; k++)
+  {
+  backwards:
+    std::array<uint32_t, NUM_WORDS> ORIG_ARR = { 0 };
+    ORIG_ARR[0] = 1; // 2^0 = 1
+
+    uint32_t bits_remaining = k;
+    while(bits_remaining > 0)
+    {
+      uint32_t step = (bits_remaining > 6) ? 6 : bits_remaining;
+      uint32_t multiplier = 1U << step;
+
+      uint32_t carry = 0;
+      for(uint32_t &w : ORIG_ARR)
+      {
+        uint64_t p = (uint64_t)w * multiplier + carry;
+        carry = (uint32_t)((p * MAGIC_10E8) >> SHIFT_10E8);
+        w = (uint32_t)(p - (uint64_t)carry * 100'000'000ULL);
+      }
+      bits_remaining -= step;
+    }
+
+    int top_word_orig = NUM_WORDS - 1;
+    while(top_word_orig > 0 && ORIG_ARR[top_word_orig] == 0)
+    {
+      --top_word_orig;
+    }
+
+    std::string option_1 = std::to_string(ORIG_ARR[top_word_orig]);
+    for(int w = top_word_orig - 1; w >= 0; --w)
+    {
+      char buf[9];
+      std::snprintf(buf, sizeof(buf), "%08u", ORIG_ARR[w]);
+      option_1 += buf;
+    }
+
+    std::array<uint32_t, NUM_WORDS> NEW_ARR = { 0 };
+    NEW_ARR[0] = 1; // 2^0 = 1
+
+    // Loop k times (multiply by 2 in each iteration)
+    unsigned i;
+    for(i = 0; i + 5 < k; i += 5)
+    {
+      uint32_t carry = 0;
+      for(unsigned int &w : NEW_ARR)
+      {
+        uint64_t pp = ((uint64_t)w << 5U) + carry;
+        carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+        w = (uint32_t)(pp - carry * 100'000'000U);
+      }
+    }
+
+    const unsigned miss = k - i;
+    uint32_t carry = 0;
+    for(unsigned int &w : NEW_ARR)
+    {
+      uint64_t pp = ((uint64_t)w << miss) + carry;
+      carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+      w = (uint32_t)(pp - carry * 100'000'000U);
+    }
+
+    // Find most significant non-zero chunk
+    int top_word = NUM_WORDS - 1;
+    while(top_word > 0 && NEW_ARR[top_word] == 0)
+    {
+      --top_word;
+    }
+
+    if(top_word > 0)
+    {
+      const auto top_wrd = NEW_ARR[top_word];
+
+      const unsigned MSB_LEN = (top_wrd >= 10'000'000)  ? 8
+                               : (top_wrd >= 1'000'000) ? 7
+                               : (top_wrd >= 100'000)   ? 6
+                               : (top_wrd >= 10'000)    ? 5
+                               : (top_wrd >= 1'000)     ? 4
+                               : (top_wrd >= 100)       ? 3
+                               : (top_wrd >= 10)        ? 2
+                                                        : 1;
+
+      if(MSB_LEN < 8)
+      {
+        constexpr uint32_t POW10[] = { 1, 10, 100, 1'000, 10'000, 100'000, 1'000'000, 10'000'000, 100'000'000 };
+
+        const uint32_t carry_pow_10 = POW10[MSB_LEN];
+        const uint32_t curr_pow_10 = POW10[8 - MSB_LEN];
+
+        carry = NEW_ARR[0] / carry_pow_10;
+        NEW_ARR[0] %= carry_pow_10;
+
+        for(unsigned j = 1; j < static_cast<unsigned>(top_word); ++j)
+        {
+          auto &curr = NEW_ARR[j];
+
+          const uint32_t next_carry = curr / carry_pow_10;
+
+          curr %= carry_pow_10;
+          curr *= curr_pow_10;
+          curr += carry;
+
+          carry = next_carry;
+        }
+
+        // MSB keeps ALL of its digits and receives the final carry.
+        NEW_ARR[top_word] = NEW_ARR[top_word] * curr_pow_10 + carry;
+      }
+
+      std::string option_2;
+
+      if(top_word == 0)
+      {
+        option_2 = std::to_string(NEW_ARR[0]);
+      }
+      else
+      {
+        // MSB: variable before normalization, but after normalization should be 8 digits.
+        option_2 = std::to_string(NEW_ARR[top_word]);
+
+        // Middle chunks: exactly 8 decimal digits.
+        for(int w = top_word - 1; w >= 1; --w)
+        {
+          char buf[9];
+          std::snprintf(buf, sizeof(buf), "%08u", NEW_ARR[w]);
+          option_2 += buf;
+        }
+
+        {
+          char buf[9];
+          std::snprintf(buf, sizeof(buf), "%0*u", MSB_LEN, NEW_ARR[0]);
+          option_2 += buf;
+        }
+      }
+
+      if(option_1 != option_2)
+      {
+        std::cout << "error @ k = " << k << std::endl;
+        goto backwards;
+      }
+
+      // Exact string equality assertion
+      assert(option_1 == option_2);
+    }
+  }
+  std::cout << "All 1024 iterations matched perfectly!\n";
   return 0;
 }
 
@@ -922,9 +1170,103 @@ int test_original_vs_new_proposal()
   return 0;
 }
 
+int new_proposal_2()
+{
+  for(int k = 0; k < 1024; k++)
+  {
+    // 308 decimal digits require 39 base-10^8 words
+    constexpr unsigned NUM_WORDS = 39;
+    constexpr uint64_t MAGIC_10E8 = 1441151881ULL;
+    constexpr int SHIFT_10E8 = 57;
+
+    std::array<uint32_t, NUM_WORDS> NEW_ARR = { 0 };
+    NEW_ARR[0] = 1; // initialize 2^0 = 1
+
+    // Loop k times (multiply by 2 in each iteration)
+    unsigned i;
+    for(i = 0; i + 5 < k; i += 5)
+    {
+      uint32_t carry = 0;
+      for(unsigned int &w : NEW_ARR)
+      {
+        uint64_t pp = ((uint64_t)w << 5U) + carry;
+        carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+        w = (uint32_t)(pp - carry * 100'000'000U);
+      }
+    }
+
+    const unsigned miss = k - i;
+    uint32_t carry = 0;
+    for(unsigned int &w : NEW_ARR)
+    {
+      uint64_t pp = ((uint64_t)w << miss) + carry;
+      carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+      w = (uint32_t)(pp - carry * 100'000'000U);
+    }
+
+    // Find most significant non-zero chunk
+    int top_word = NUM_WORDS - 1;
+    while(top_word > 0 && NEW_ARR[top_word] == 0)
+    {
+      --top_word;
+    }
+
+    if(top_word > 0)
+    {
+      const auto top_wrd = NEW_ARR[top_word];
+
+      const unsigned MSB_LEN = (top_wrd >= 10'000'000)  ? 8
+                               : (top_wrd >= 1'000'000) ? 7
+                               : (top_wrd >= 100'000)   ? 6
+                               : (top_wrd >= 10'000)    ? 5
+                               : (top_wrd >= 1'000)     ? 4
+                               : (top_wrd >= 100)       ? 3
+                               : (top_wrd >= 10)        ? 2
+                                                        : 1;
+
+      if(MSB_LEN < 8)
+      {
+        constexpr uint32_t POW10[] = { 1, 10, 100, 1'000, 10'000, 100'000, 1'000'000, 10'000'000, 100'000'000 };
+
+        const uint32_t carry_pow_10 = POW10[MSB_LEN];
+        const uint32_t curr_pow_10 = POW10[8 - MSB_LEN];
+
+        carry = NEW_ARR[0] / carry_pow_10;
+        NEW_ARR[0] %= carry_pow_10;
+
+        for(unsigned j = 1; j < static_cast<unsigned>(top_word); ++j)
+        {
+          auto &curr = NEW_ARR[j];
+
+          const uint32_t next_carry = curr / carry_pow_10;
+
+          curr %= carry_pow_10;
+          curr *= curr_pow_10;
+          curr += carry;
+
+          carry = next_carry;
+        }
+
+        // MSB keeps ALL of its digits and receives the final carry.
+        NEW_ARR[top_word] = NEW_ARR[top_word] * curr_pow_10 + carry;
+      }
+    }
+
+    // Output formatted result
+    std::cout << NEW_ARR[top_word]; // Unpadded leading chunk
+    for(int w = top_word - 1; w >= 0; --w)
+    {
+      std::cout << std::setfill('0') << std::setw(8) << NEW_ARR[w];
+    }
+    std::cout << "\n";
+  }
+
+  return 0;
+}
+
 int new_proposal()
 {
-  for(int k = 1023; k < 1024; k++)
+  for(int k = 0; k < 1024; k++)
   {
     // 308 decimal digits require 39 base-10^8 words
     constexpr unsigned NUM_WORDS = 39;

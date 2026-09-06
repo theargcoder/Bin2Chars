@@ -582,7 +582,7 @@ int main()
 
 #elif defined(__AVX2__)
 
-int main()
+int not_main()
 {
   constexpr uint16_t POW_5_E[] = { 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024 };
   constexpr uint32_t POW_5_CACHE[] = {
@@ -2171,6 +2171,107 @@ int __main()
 #error "this algorithm is not supported for this architecture; this architecture is too old (pre __AVX2__)"
 #endif
 #endif
+
+// int printer_arr_MSB_8_digs()
+int main()
+{
+  std::string accesors = "#include <cstdint> \n\n";
+  accesors += " constexpr uint32_t K_TO_POW_5_BOUNDARIES[] =  {\n";
+  std::string cache = " constexpr uint32_t POW_5_CACHE[] = { \n";
+
+  constexpr unsigned NUM_WORDS = 96;
+
+  unsigned k = 0, st_idx = 0;
+  for(; k <= 1074; k++)
+  {
+    std::array<uint32_t, NUM_WORDS> NEW_ARR = { 0 };
+    NEW_ARR[0] = 1; // Initialize 5^0 = 1
+    constexpr uint64_t MAGIC_10E8 = 1441151881ULL;
+    constexpr int SHIFT_10E8 = 57;
+
+    // Main loop: Process in steps of 5^2 = 25 (halves total loop iterations)
+    const uint32_t pairs = k / 2; // 537 passes of x25
+    for(uint32_t i = 0; i < pairs; ++i)
+    {
+      uint32_t carry = 0;
+      for(unsigned int &w : NEW_ARR)
+      {
+        // Max pp = 99,999,999 * 25 + 24 = 2,499,999,999 (fits safely in 32-bit uint)
+        uint64_t pp = (uint64_t)w * 25U + carry;
+
+        // Fast division by 10^8
+        carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+
+        // Fast remainder: pp % 10^8
+        w = (uint32_t)(pp - carry * 100'000'000U);
+      }
+    }
+
+    // Handle odd exponent leftover (5^1)
+    if(k % 2 != 0)
+    {
+      uint32_t carry = 0;
+      for(unsigned int &w : NEW_ARR)
+      {
+        uint64_t pp = (uint64_t)w * 5U + carry;
+        carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+        w = (uint32_t)(pp - carry * 100'000'000U);
+      }
+    }
+
+    // Find most significant non-zero chunk
+    int top_word = NUM_WORDS - 1;
+    while(top_word > 0 && NEW_ARR[top_word] == 0)
+    {
+      --top_word;
+    }
+
+    accesors += std::to_string(st_idx);
+    accesors += ", ";
+    st_idx += top_word + 1;
+
+    cache += " // ";
+    cache += " k = ";
+    cache += std::to_string(k);
+    cache += "\n";
+
+    int xx = 0, yy = 0;
+    // Output formatted result
+    for(int w = 0; w <= top_word; w++)
+    {
+      if(xx == 8)
+      {
+        if(yy == 0)
+        {
+          cache += "// 0 -- hello \n";
+        }
+        else
+        {
+          cache += " // ";
+          cache += std::to_string(yy);
+          cache += " - anotherone \n";
+        }
+        xx = 0, yy++;
+      }
+      cache += std::to_string(NEW_ARR[w]);
+      cache += ", ";
+      xx++;
+    }
+    cache += " // ";
+    cache += std::to_string(yy);
+    cache += " - anotherone \n";
+    cache += "\n";
+  }
+
+  accesors += std::to_string(st_idx);
+  accesors += " };\n";
+  cache += "};\n";
+
+  std::cout << accesors;
+  std::cout << cache;
+
+  return 0;
+}
 
 int printer_arr()
 {

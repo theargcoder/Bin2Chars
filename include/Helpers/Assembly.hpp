@@ -5,6 +5,7 @@
 #include <exception>
 #include <iostream>
 #include <sched.h>
+#include <utility>
 #if defined(__x86_64__)
 #include <chrono>
 #include <thread>
@@ -141,6 +142,23 @@ namespace Bin2Chars::Helpers::Assembly
       std::terminate();
     }
 #elif defined(__ARM_NEON) || defined(__aarch64__)
+#endif
+  }
+
+  template <std::size_t N, typename T>
+  void prefetch_elements(const T *ptr)
+  {
+    const char *base_addr = reinterpret_cast<const char *>(ptr + 1);
+
+    constexpr std::size_t total_bytes = N * sizeof(T);
+
+    constexpr std::size_t num_lines = (total_bytes + 63) / 64 + 1;
+
+#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) { (..., _mm_prefetch(base_addr + (Is * 64), _MM_HINT_T0)); }(std::make_index_sequence<num_lines>{});
+
+#elif defined(__ARM_NEON) || defined(__aarch64__)
+    [&]<std::size_t... Is>(std::index_sequence<Is...>) { (..., __builtin_prefetch(base_addr + (Is * 64), 0, 3)); }(std::make_index_sequence<num_lines>{});
 #endif
   }
 
