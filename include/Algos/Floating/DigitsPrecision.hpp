@@ -216,18 +216,22 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         precision_missing -= static_cast<int>(len_written);
       }
 
-      const uint64_t final_total = static_cast<uint64_t>(frac) * DEC8;
-      digs = static_cast<unsigned>(final_total >> 32U);
-      frac = static_cast<unsigned>(final_total);
+      while(precision_missing >= 0 && frac != 0) // write all digits and change since they are needed for rounding
+      {
+        const uint64_t step_total = static_cast<uint64_t>(frac) * DEC8;
+        digs = static_cast<unsigned>(step_total >> 32U);
+        frac = static_cast<unsigned>(step_total);
 
-      len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
-      len += len_written;
-      precision_missing -= static_cast<int>(len_written);
+        len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+        len += len_written;
+        precision_missing -= static_cast<int>(len_written);
+      }
 
       if(precision_missing > 0)
       {
         std::memset(&buff[len], '0', precision_missing);
         len += static_cast<int>(precision_missing);
+        precision_missing = 0; // CRITICAL: Prevent double-adding length at the end!
       }
 
       if(PRECISION > 0)
