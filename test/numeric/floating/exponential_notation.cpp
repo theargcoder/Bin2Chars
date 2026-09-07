@@ -1,7 +1,5 @@
-#define BOOST_TEST_MODULE scientific_notation
-#include <boost/test/included/unit_test.hpp>
-#include <boost/test/tools/old/interface.hpp>
-#include <boost/test/unit_test_suite.hpp>
+#define BOOST_TEST_MODULE ExponentialNotationTest
+#include <boost/test/unit_test.hpp>
 
 #include <bit>
 #include <chrono>
@@ -9,135 +7,20 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <format>
-#include <ios>
-#include <iostream>
 #include <limits>
-#include <ostream>
 #include <random>
 #include <string>
-#include <string_view>
 #include <tuple>
 #include <type_traits>
+
+#include "ryu/ryu.h"
 
 #include "include/Algos/Competition.hpp"
 #include "include/Algos/Floating/Exponential.hpp"
 #include "include/Helpers/Assembly.hpp"
+#include "include/Helpers/Tests.hpp"
 
-namespace
-{
-  struct LogHexStr
-  {
-    std::string_view label;
-    std::string_view num_str;
-    LogHexStr(const std::string &_label, const std::string &_num_str) : label(_label), num_str(_num_str) {};
-  };
-
-  const auto log_str_and_into_hex = []<typename... Args>(const Args &...logs)
-  {
-    std::string log = "we have:";
-
-    ((log += std::format(" {} = '{}'", logs.label, logs.num_str)), ...);
-
-    std::cout << log << std::endl;
-
-    auto print_hex = [](std::string_view in)
-    {
-      for(unsigned char c : in)
-        std::cout << std::hex << (int)c << " ";
-
-      std::cout << std::dec << '\n';
-    };
-
-    (print_hex(logs.num_str), ...);
-  };
-
-  struct BenchResult
-  {
-    std::string_view label;
-    std::chrono::nanoseconds time;
-    uint64_t cycles;
-
-    BenchResult(const char *str, std::chrono::nanoseconds nano, uint64_t cpu_cycles) : label(str), time(nano), cycles(cpu_cycles) {};
-  };
-
-  template <typename T, typename... Args>
-  auto log_time_tables(T, const char *ACTION, const int &PRECISION, const Args &...times)
-  {
-    using namespace std::chrono;
-
-    // ANSI Color Codes
-    const std::string_view RESET = "\033[0m";
-    const std::string_view GREEN = "\033[32m";
-    const std::string_view RED = "\033[31m";
-    const std::string_view YELLOW = "\033[33m";
-
-    const auto SIZE = sizeof...(times);
-
-    // Calculate average time (using double to keep precision)
-    const auto total_cpu_cycles = (times.cycles + ...);
-    const double average_cycles = static_cast<double>(total_cpu_cycles) / SIZE;
-    const auto total_ns = (times.time + ...).count();
-    const double average_ns = static_cast<double>(total_ns) / SIZE;
-
-    auto get_color = [&](nanoseconds val) -> std::string_view
-    {
-      if(val.count() == 0)
-        return RESET;
-
-      double ratio = static_cast<double>(val.count()) / average_ns;
-
-      if(std::abs(1.0 - ratio) <= 0.03)
-        return YELLOW;
-
-      return (val.count() < average_ns) ? GREEN : RED;
-    };
-
-    const auto get_label_cell = [&](const BenchResult &res) { return std::format(" | {: >15}", res.label); };
-
-    const auto get_val_cell = [&](const BenchResult &res, auto unit_type)
-    {
-      auto color = get_color(res.time);
-      auto val = duration_cast<duration<double, typename decltype(unit_type)::period>>(res.time).count();
-      return std::format(" | {}{: >15.3f}{}", color, val, RESET);
-    };
-
-    auto get_val_cpu_cycles = [&](const BenchResult &res)
-    {
-      auto color = (static_cast<double>(res.cycles) < average_cycles) ? GREEN : RED;
-      return std::format(" | {}{: >15}{}", color, res.cycles, RESET);
-    };
-
-    std::string header_row = std::format("{:>15}", "Unit");
-    ((header_row += get_label_cell(times)), ...);
-
-    std::string row_sec = std::format("{:>15}", "Seconds");
-    ((row_sec += get_val_cell(times, seconds{})), ...);
-
-    std::string row_milli = std::format("{:>15}", "Milliseconds");
-    ((row_milli += get_val_cell(times, milliseconds{})), ...);
-
-    std::string row_micro = std::format("{:>15}", "Microseconds");
-    ((row_micro += get_val_cell(times, microseconds{})), ...);
-
-    std::string row_cpu_cycles = std::format("{:>15}", "Cpu Cycles");
-    ((row_cpu_cycles += get_val_cpu_cycles(times)), ...);
-
-    std::string type_name = std::is_same_v<float, T> ? "float32_t" : "float64_t";
-    std::string title = std::format("Action '{}' with precision '{}' {} COMPARISON (Avg: {:.3f} millisec) ", ACTION, PRECISION, type_name, average_ns / 1'000'000);
-    int total_width = 15 + (SIZE * 18); // 15 for label + 18 per column (| + color + 15 chars)
-
-    std::cout << "\n" << std::format("{:=^{}}", title, total_width) << "\n";
-    std::cout << header_row << "\n";
-    std::cout << std::string(total_width, '-') << "\n";
-    std::cout << row_sec << "\n";
-    std::cout << row_milli << "\n";
-    std::cout << row_micro << "\n";
-    std::cout << row_cpu_cycles << "\n";
-    std::cout << std::string(total_width, '=') << "\n";
-  }
-
-} // namespace
+using namespace Bin2Chars::Tests;
 
 namespace
 {
@@ -189,7 +72,7 @@ namespace
         const auto log_val = std::strtold(open_logging.c_str(), nullptr);
         const auto ref_val = std::strtold(std_format.c_str(), nullptr);
 
-        if(log_val != ref_val)
+        if(std::bit_cast<__uint128_t>(log_val) != static_cast<__uint128_t>(ref_val))
         {
           BOOST_CHECK_EQUAL(log_val, ref_val);
           log_str_and_into_hex(LogHexStr("open_logging", open_logging), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
@@ -197,7 +80,7 @@ namespace
           open_logging = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
 
           char buffer[1024];
-          d2exp_buffered(val, PRECISION, buffer);
+          d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
 
           errors++;
         }
@@ -250,7 +133,7 @@ namespace
         if(open_logging.contains("nan") && std_format.contains("nan"))
           continue;
 
-        if(log_val != ref_val) // if(!almost_equal(i, log_val, ref_val))
+        if(std::bit_cast<__uint128_t>(log_val) != static_cast<__uint128_t>(ref_val))
         {
           BOOST_CHECK_EQUAL(log_val, ref_val);
           log_str_and_into_hex(LogHexStr("open_logging", open_logging), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
@@ -258,7 +141,7 @@ namespace
           open_logging = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
 
           char buffer[1024];
-          d2exp_buffered(val, PRECISION, buffer);
+          d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
 
           lim++;
         }
@@ -299,30 +182,38 @@ namespace
     // ---- around powers of ten ----
     for(int e = -20; e <= 20; ++e)
     {
-      const T val = std::pow(T{ 10 }, e);
+      const T val = static_cast<T>(std::pow(static_cast<T>(10), e));
       lopper_format_exponential(PRECISION, true, val, EPS * val, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
       lopper_format_exponential(PRECISION, false, val, EPS * val, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
     }
 
     // ---- medium magnitude sweeps ----
-    lopper_format_exponential(PRECISION, true, T{ 1 }, EPS, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, T{ 100 }, EPS * T{ 100 }, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, T{ 1e6 }, EPS * T{ 1e6 }, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(1), EPS, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(100), EPS * static_cast<T>(100), open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
+                              ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(1e6), EPS * static_cast<T>(1e6), open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
+                              ryu_cycles);
 
     // ---- large numbers ----
     lopper_format_exponential(PRECISION, false, MAX, EPS * MAX, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, false, MAX / T{ 10 }, EPS * MAX, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, false, MAX / T{ 1000 }, EPS * MAX, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, false, MAX / static_cast<T>(10), EPS * MAX, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, false, MAX / static_cast<T>(1000), EPS * MAX, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
 
     // ---- randomish mantissa coverage ----
-    lopper_format_exponential(PRECISION, true, T{ 1.234 }, T{ 0.0001 }, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, T{ 123.456 }, T{ 0.01 }, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, false, T{ 98765.4321 }, T{ 0.1 }, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(1.234), static_cast<T>(0.0001), open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
+                              ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(123.456), static_cast<T>(0.01), open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
+                              ryu_cycles);
+    lopper_format_exponential(PRECISION, false, static_cast<T>(98765.4321), static_cast<T>(0.1), open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
+                              ryu_cycles);
 
     // ---- randomish mantissa coverage ----
-    lopper_format_exponential(PRECISION, true, T{ 1.234 }, T{ 0.0001 }, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, T{ 123.456 }, T{ 0.01 }, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, false, T{ 98765.4321 }, T{ 0.1 }, open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(1.234), static_cast<T>(0.0001), open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
+                              ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(123.456), static_cast<T>(0.01), open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
+                              ryu_cycles);
+    lopper_format_exponential(PRECISION, false, static_cast<T>(98765.4321), static_cast<T>(0.1), open_logging_time, open_logging_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
+                              ryu_cycles);
 
     // ---- MASSIVE CHAOS FUZZER ----
     // 1 million purely random bit-patterns per precision level

@@ -8,7 +8,6 @@
 #include <string>
 #include <type_traits>
 
-#include "include/Algos/Compute/DecimalExpansion.hpp"
 #include "include/Algos/Integer.hpp"
 #include "include/Constants/Constants.hpp"
 #include "include/Helpers/Assembly.hpp"
@@ -49,7 +48,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
   template <>
   struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, float>
   {
-    static unsigned ToStr(char *__restrict__ buff, const float &input, int PRECISION)
+    static unsigned ToStr(char *__restrict__ /*buff*/, const float & /*input*/, int /*PRECISION*/)
     {
       return 0U;
     }
@@ -58,7 +57,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
   template <>
   struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::TRUNCATE, double>
   {
-    static unsigned ToStr(char *__restrict__ buff, const double &input, int PRECISION)
+    static unsigned ToStr(char *__restrict__ /*buff*/, const double & /*input*/, int /*PRECISION*/)
     {
       return 0U;
     }
@@ -107,8 +106,8 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         {
           len = 2;
           std::memcpy(&buff[0], "0.", len);
-          std::memset(&buff[len], '0', PRECISION);
-          len += PRECISION;
+          std::memset(&buff[len], '0', static_cast<size_t>(PRECISION));
+          len += static_cast<unsigned>(PRECISION);
         }
 
         return len;
@@ -124,7 +123,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
                 : Helpers::Assembly::prefetch_elements<39>(&POW_2_CACHE[K_TO_POW_2_BOUNDARIES[exp]]);
 
       unsigned start_idx = 0;
-      if(input < 0.0)
+      if(input < 0.0F)
       {
         buff[len++] = '-';
         start_idx = 1;
@@ -152,20 +151,20 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         const auto exp_base_10_ABS = std::abs(exp_base_10);
         const auto n_zeros = static_cast<unsigned>(std::min(exp_base_10_ABS, precision_missing));
         std::memset(&buff[len], '0', n_zeros);
-        precision_missing -= n_zeros;
+        precision_missing -= static_cast<int>(n_zeros);
         len += n_zeros;
 
         if(exp_base_10_ABS - 1 > PRECISION)
         {
           buff[len++] = '0';
-          buff[(input < 0.0) ? 2 : 1] = '.';
+          buff[(input < 0.0F) ? 2 : 1] = '.';
           return len;
         }
       }
       else
       {
-        int_len = exp_base_10 + 1;
-        precision_missing = int_len + PRECISION;
+        int_len = static_cast<unsigned>(exp_base_10) + 1;
+        precision_missing = static_cast<int>(int_len) + PRECISION;
       }
 
       len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
@@ -229,8 +228,8 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       if(precision_missing > 0)
       {
-        std::memset(&buff[len], '0', precision_missing);
-        len += static_cast<int>(precision_missing);
+        std::memset(&buff[len], '0', static_cast<size_t>(precision_missing));
+        len += static_cast<unsigned>(precision_missing);
         precision_missing = 0; // CRITICAL: Prevent double-adding length at the end!
       }
 
@@ -245,7 +244,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       }
 
       len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
-      const size_t MAX = len + std::abs(precision_missing);
+      const size_t MAX = len + static_cast<unsigned>(std::abs(precision_missing));
 
       bool round_up = false;
       if(MAX > len)
@@ -287,7 +286,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
           if(trailing_zeros) // bankers round
           {
-            round_up = ((buff[len - 1] - '0') & 1U);
+            round_up = (static_cast<unsigned>(buff[len - 1] - '0') & 1U);
           }
           else // round
           {
@@ -342,7 +341,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
   template <>
   struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, double>
   {
-    static unsigned ToStr(char *__restrict__ buff, const double &input, int PRECISION)
+    static unsigned ToStr(char *__restrict__ /*buff*/, const double & /*input*/, int /*PRECISION*/)
     {
       return 0U;
     }

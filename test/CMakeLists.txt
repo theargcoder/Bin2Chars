@@ -5,7 +5,10 @@ function(add_bin2chars_test name src)
 
   add_executable(${name} ${src})
 
-  target_link_libraries(${name} PRIVATE Bin2Chars)
+  target_link_libraries(${name} PRIVATE Bin2Chars Boost::unit_test_framework)
+
+  # Required on Linux when dynamically linking against system Boost binaries
+  target_compile_definitions(${name} PRIVATE BOOST_TEST_DYN_LINK)
 
   add_test(NAME ${name} COMMAND ${name})
 

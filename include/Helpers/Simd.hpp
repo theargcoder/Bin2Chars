@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <limits>
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
 #include <immintrin.h> // x86 SIMD
@@ -22,6 +23,7 @@ namespace Bin2Chars::Helpers::Simd
      * @brief Maps a bit-width to the appropriate unsigned integer type.
      * Special case: 8-bit lanes are mapped to uint16_t to prevent debugger ASCII rendering.
      */
+
     template <size_t BitWidth>
     struct LaneType
     {
@@ -40,28 +42,28 @@ namespace Bin2Chars::Helpers::Simd
     {
       constexpr size_t total_bytes = sizeof(RegType);
       constexpr size_t num_lanes = (total_bytes * 8) / BitWidth;
-      using T = typename LaneType<BitWidth>::type;
+      using NumOfElemns = typename LaneType<BitWidth>::type;
 
-      std::array<T, num_lanes> result;
+      std::array<NumOfElemns, num_lanes> result;
 
       if constexpr(BitWidth == 8)
       {
         // Intermediary buffer to avoid debugger ASCII char issues
         alignas(RegType) uint8_t buffer[total_bytes];
 
-        if constexpr(std::is_same_v<RegType, __m64>)
+        if constexpr(sizeof(RegType) == sizeof(__m64))
         {
           _mm_stream_pi(reinterpret_cast<__m64 *>(buffer), reg);
         }
-        else if constexpr(std::is_same_v<RegType, __m128i>)
+        else if constexpr(sizeof(RegType) == sizeof(__m128i))
         {
           _mm_storeu_si128(reinterpret_cast<__m128i *>(buffer), reg);
         }
-        else if constexpr(std::is_same_v<RegType, __m256i>)
+        else if constexpr(sizeof(RegType) == sizeof(__m256i))
         {
           _mm256_storeu_si256(reinterpret_cast<__m256i *>(buffer), reg);
         }
-        else if constexpr(std::is_same_v<RegType, __m512i>)
+        else if constexpr(sizeof(RegType) == sizeof(__m512i))
         {
           _mm512_storeu_si512(reinterpret_cast<void *>(buffer), reg);
         }
@@ -74,19 +76,19 @@ namespace Bin2Chars::Helpers::Simd
       else
       {
         // Direct store for 16, 32, and 64-bit lanes
-        if constexpr(std::is_same_v<RegType, __m64>)
+        if constexpr(sizeof(RegType) == sizeof(__m64))
         {
           _mm_stream_pi(reinterpret_cast<__m64 *>(result.data()), reg);
         }
-        else if constexpr(std::is_same_v<RegType, __m128i>)
+        else if constexpr(sizeof(RegType) == sizeof(__m128i))
         {
           _mm_storeu_si128(reinterpret_cast<__m128i *>(result.data()), reg);
         }
-        else if constexpr(std::is_same_v<RegType, __m256i>)
+        else if constexpr(sizeof(RegType) == sizeof(__m256i))
         {
           _mm256_storeu_si256(reinterpret_cast<__m256i *>(result.data()), reg);
         }
-        else if constexpr(std::is_same_v<RegType, __m512i>)
+        else if constexpr(sizeof(RegType) == sizeof(__m512i))
         {
           _mm512_storeu_si512(reinterpret_cast<void *>(result.data()), reg);
         }
@@ -97,7 +99,7 @@ namespace Bin2Chars::Helpers::Simd
 #endif
   } // namespace Debug
 
-  using uint128_t = unsigned __int128;
+  using uint128_t = __uint128_t;
 
   static constexpr uint128_t ENTRY(uint64_t digits, uint64_t offset) noexcept
   {
@@ -133,7 +135,7 @@ namespace Bin2Chars::Helpers::Simd
 
   template <typename T>
     requires std::is_integral_v<T> && std::is_unsigned_v<T>
-  __attribute__((always_inline)) static unsigned calculate_len(const T &input)
+  inline __attribute__((always_inline)) static unsigned calculate_len(const T &input)
   {
     using LEN_TABLE = LenTable<T>;
     if constexpr(std::is_same_v<T, uint64_t>)
@@ -346,6 +348,13 @@ namespace Bin2Chars::Helpers::Simd
     static unsigned Multiply(const auto &, const uint32_t *, uint32_t &, uint32_t &, uint32_t &) noexcept;
 
     template <typename T>
+      requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
+    static unsigned Multiply(const auto &, const uint32_t *, uint32_t &, uint32_t &, uint32_t &) noexcept
+    {
+      return 0U;
+    }
+
+    template <typename T>
       requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
     static uint32_t WriteEightCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept;
 
@@ -371,21 +380,21 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m128i INDICES = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
-      const uint64_t res_1 = ((uint128_t)input * 0x39A5652FB1137857ULL) >> 115U;
-      const uint64_t prod_2 = ((uint128_t)input * 0x232F33025BD42233ULL) >> 101U;
-      const uint64_t prod_3 = ((uint128_t)input * 0xABCC77118461CEFDULL) >> 90U;
-      const uint64_t prod_4 = ((uint128_t)input * 0x346DC5D63886594BULL) >> 75U;
+      const auto res_1 = static_cast<uint64_t>((static_cast<uint128_t>(input) * 0x39A5652FB1137857ULL) >> 115U);
+      const auto prod_2 = static_cast<uint64_t>((static_cast<uint128_t>(input) * 0x232F33025BD42233ULL) >> 101U);
+      const auto prod_3 = static_cast<uint64_t>((static_cast<uint128_t>(input) * 0xABCC77118461CEFDULL) >> 90U);
+      const auto prod_4 = static_cast<uint64_t>((static_cast<uint128_t>(input) * 0x346DC5D63886594BULL) >> 75U);
 
       const uint64_t res_2 = prod_2 - (res_1 * 10'000);
       const uint64_t res_3 = prod_3 - (prod_2 * 10'000);
       const uint64_t res_4 = prod_4 - (prod_3 * 10'000);
       const uint64_t res_5 = input - (prod_4 * 10'000);
 
-      const __m128i u64_res_1 = _mm_set1_epi16(static_cast<uint16_t>(res_1));
-      const __m128i u64_res_2 = _mm_set1_epi16(static_cast<uint16_t>(res_2));
-      const __m128i u64_res_3 = _mm_set1_epi16(static_cast<uint16_t>(res_3));
-      const __m128i u64_res_4 = _mm_set1_epi16(static_cast<uint16_t>(res_4));
-      const __m128i u64_res_5 = _mm_set1_epi16(static_cast<uint16_t>(res_5));
+      const __m128i u64_res_1 = _mm_set1_epi16(static_cast<int16_t>(res_1));
+      const __m128i u64_res_2 = _mm_set1_epi16(static_cast<int16_t>(res_2));
+      const __m128i u64_res_3 = _mm_set1_epi16(static_cast<int16_t>(res_3));
+      const __m128i u64_res_4 = _mm_set1_epi16(static_cast<int16_t>(res_4));
+      const __m128i u64_res_5 = _mm_set1_epi16(static_cast<int16_t>(res_5));
 
       const unsigned len = calculate_len(input);
 
@@ -416,8 +425,8 @@ namespace Bin2Chars::Helpers::Simd
       const __m128i u16_shf_x10_5 = _mm_add_epi16(u16_shifted_5_x8, u16_shifted_5_x2);
 
       const __m128i ZERO_CHAR = _mm_set1_epi8('0');
-      const __m128i LEAZ_Z_TOP_MID_LANES = _mm_set1_epi8(lead_z_top);
-      const __m128i LEAZ_Z_BOT_LANES = _mm_set1_epi8(lead_z_bot);
+      const __m128i LEAZ_Z_TOP_MID_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z_top));
+      const __m128i LEAZ_Z_BOT_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z_bot));
 
       const __m128i u16_slided_12 = _mm_slli_si128(u16_shf_x10_12, 2);
       const __m128i u16_slided_34 = _mm_slli_si128(u16_shf_x10_34, 2);
@@ -442,7 +451,7 @@ namespace Bin2Chars::Helpers::Simd
       const __m128i output_chars_top = _mm_shuffle_epi8(ascii_vec_top, final_indices_top_mid);
       const __m128i output_chars_bot = _mm_shuffle_epi8(ascii_vec_bot, final_indices_bot);
 
-      _mm_storeu_si128(reinterpret_cast<__m128i *>(buff), output_chars_top);
+      _mm_storeu_si128(reinterpret_cast<__m128i_u *>(buff), output_chars_top);
 
       _mm_storeu_si32(reinterpret_cast<void *>(buff + bot_offset), output_chars_bot);
 
@@ -453,9 +462,9 @@ namespace Bin2Chars::Helpers::Simd
     uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
     {
 
-      const __m512i val = _mm512_set1_epi32(input);
+      const __m512i val = _mm512_set1_epi32(static_cast<int32_t>(input));
       // clang-format off
-      const __m512i M_MAGIC_10_0 = _mm512_setr_epi32(0x12E0BE83U, 0x5798EE24U, 0xAD7F29ACU, 0x0C6F7A0CU, 0x4F8B588FU, 0xA36E2EB2U, 0x0624DD30U, 0x47AE147BU, 0x9999999AU, 0, 0, 0, 0, 0, 0, 0);
+      const __m512i M_MAGIC_10_0 = _mm512_setr_epi32(static_cast<int32_t>(0x12E0BE83),static_cast<int32_t>( 0x5798EE24),static_cast<int32_t>(0xAD7F29AC), static_cast<int32_t>(0x0C6F7A0C), static_cast<int32_t>(0x4F8B588F), static_cast<int32_t>(0xA36E2EB2), static_cast<int32_t>(0x0624DD30), static_cast<int32_t>(0x47AE147B), static_cast<int32_t>(0x9999999A), 0, 0, 0, 0, 0, 0, 0);
       // clang-format on
       const __m512i M_SHIFTS_10_0 = _mm512_setr_epi32(29, 26, 23, 19, 16, 13, 9, 6, 3, 0, 0, 0, 0, 0, 0, 0);
       const __m128i INDICES = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
@@ -472,7 +481,7 @@ namespace Bin2Chars::Helpers::Simd
       const unsigned len = calculate_len(input);
       const unsigned lead_z = 10U - len;
 
-      const __m128i LEAD_Z_LANES = _mm_set1_epi8(lead_z);
+      const __m128i LEAD_Z_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z));
       const __m128i ASCII_ZERO = _mm_set1_epi8('0');
 
       const __m512i res_times_2 = _mm512_slli_epi32(res_vec, 1);
@@ -503,9 +512,9 @@ namespace Bin2Chars::Helpers::Simd
     uint32_t WriteEightCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
     {
 
-      const __m512i val = _mm512_set1_epi32(input);
+      const __m512i val = _mm512_set1_epi32(static_cast<int32_t>(input));
       // clang-format off
-      const __m512i M_MAGIC_10_0 = _mm512_setr_epi32(0x12E0BE83U, 0x5798EE24U, 0xAD7F29ACU, 0x0C6F7A0CU, 0x4F8B588FU, 0xA36E2EB2U, 0x0624DD30U, 0x47AE147BU, 0x9999999AU, 0, 0, 0, 0, 0, 0, 0);
+      const __m512i M_MAGIC_10_0 = _mm512_setr_epi32(static_cast<int32_t>(0x12E0BE83),static_cast<int32_t>( 0x5798EE24),static_cast<int32_t>(0xAD7F29AC), static_cast<int32_t>(0x0C6F7A0C), static_cast<int32_t>(0x4F8B588F), static_cast<int32_t>(0xA36E2EB2), static_cast<int32_t>(0x0624DD30), static_cast<int32_t>(0x47AE147B), static_cast<int32_t>(0x9999999A), 0, 0, 0, 0, 0, 0, 0);
       // clang-format on
       const __m512i M_SHIFTS_10_0 = _mm512_setr_epi32(29, 26, 23, 19, 16, 13, 9, 6, 3, 0, 0, 0, 0, 0, 0, 0);
       const __m128i INDICES = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
@@ -522,7 +531,7 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m512i res_vec = _mm512_mask_blend_epi32(0x0200, shifted_32, val);
 
-      const __m128i LEAD_Z_LANES = _mm_set1_epi8(lead_z);
+      const __m128i LEAD_Z_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z));
       const __m128i ASCII_ZERO = _mm_set1_epi8('0');
 
       const __m512i res_times_2 = _mm512_slli_epi32(res_vec, 1);
@@ -878,10 +887,10 @@ namespace Bin2Chars::Helpers::Simd
     {
       const uint64_t u8_acii_zero = 0x3030'3030'3030'3030ULL;
 
-      const uint64_t dig_1 = (uint64_t)input * 0xD1B71759U >> 45U;
-      const unsigned prod_2 = (uint64_t)input * 0x10624DD3U >> 38U;
-      const unsigned prod_3 = (uint64_t)input * 0x51EB851FU >> 37U;
-      const unsigned prod_4 = (uint64_t)input * 0xCCCCCCCDU >> 35U;
+      const uint64_t dig_1 = (static_cast<uint64_t>(input) * 0xD1B71759U) >> 45U;
+      const auto prod_2 = static_cast<uint32_t>((static_cast<uint64_t>(input) * 0x10624DD3U) >> 38U);
+      const auto prod_3 = static_cast<uint32_t>((static_cast<uint64_t>(input) * 0x51EB851FU) >> 37U);
+      const auto prod_4 = static_cast<uint32_t>((static_cast<uint64_t>(input) * 0xCCCCCCCDU) >> 35U);
 
       const unsigned len = calculate_len(input);
       const unsigned lead_z = (5U - len) << 3U;
@@ -897,7 +906,7 @@ namespace Bin2Chars::Helpers::Simd
       const uint64_t u8_chars = u8_res_shf + u8_acii_zero;
 
       // Final Store (8 bytes)
-      *reinterpret_cast<uint64_t *>(buff) = u8_chars;
+      std::memcpy(buff, &u8_chars, sizeof(u8_chars));
 
       return len;
     }
@@ -907,8 +916,8 @@ namespace Bin2Chars::Helpers::Simd
     {
       const unsigned u8_acii_zero = 0x3030'3030U;
 
-      const unsigned dig_1 = (unsigned)input * 0x0290U >> 16U;
-      const unsigned prod_2 = (unsigned)input * 0x199A >> 16U;
+      const unsigned dig_1 = static_cast<unsigned>(input) * 0x0290U >> 16U;
+      const unsigned prod_2 = static_cast<unsigned>(input) * 0x199A >> 16U;
 
       const unsigned len = (input < 10) ? 1U : (input < 100) ? 2U : 3U;
       const unsigned lead_z = (3U - len) << 3U;
@@ -921,7 +930,7 @@ namespace Bin2Chars::Helpers::Simd
       const unsigned u8_res_shf = u8_packed >> lead_z;
       const unsigned u8_chars = u8_res_shf + u8_acii_zero;
 
-      *reinterpret_cast<unsigned *>(buff) = u8_chars;
+      std::memcpy(buff, &u8_chars, sizeof(u8_chars));
 
       return len;
     }

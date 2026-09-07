@@ -55,7 +55,7 @@ namespace Bin2Chars::Helpers::Templating::Types
   };
 
   template <>
-  struct make_unsigned<__int128>
+  struct make_unsigned<__int128_t>
   {
     using type = __uint128_t;
   };

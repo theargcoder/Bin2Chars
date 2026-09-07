@@ -11,9 +11,9 @@
 namespace Bin2Chars::Helpers::Math::Constexpr
 {
   template <typename T>
-  static constexpr T abs(T x)
+  static constexpr T abs(T val)
   {
-    return x < 0 ? -x : x;
+    return val < 0 ? -val : val;
   }
 
   template <typename BaseType, typename ExpType>
@@ -54,67 +54,71 @@ namespace Bin2Chars::Helpers::Math::Constexpr
 
   // --- Natural Logarithm (ln x) ---
   template <typename T>
-  static constexpr T ln(T x)
+  static constexpr T ln(T val)
   {
-    if(x <= 0)
+    if(val <= 0)
     {
       return std::numeric_limits<T>::quiet_NaN();
     }
-    if(x == 1)
+    if(val == 1)
     {
       return 0;
     }
 
-    int k = 0;
-    while(x > 1.5)
+    constexpr T lim_1 = 1.5;
+    constexpr T lim_2 = 0.75;
+
+    int k_it = 0;
+    while(val > lim_1)
     {
-      x /= 2;
-      k++;
+      val /= 2;
+      k_it++;
     }
-    while(x < 0.75)
+    while(val < lim_2)
     {
-      x *= 2;
-      k--;
+      val *= 2;
+      k_it--;
     }
 
-    T z = x;
+    T zed = val;
     const constexpr T ln2 = std::numbers::ln2_v<long double>;
 
-    T y = (z - 1) / (z + 1);
-    T y2 = y * y;
-    T term = y;
-    T sum = y;
+    T y_1 = (zed - 1) / (zed + 1);
+    T y_2 = y_1 * y_1;
+    T term = y_1;
+    T sum = y_1;
     for(int i = 3; i < 70; i += 2)
     {
-      term *= y2;
+      term *= y_2;
       sum += term / i;
     }
-    return 2 * sum + (T)k * ln2;
+    return 2 * sum + static_cast<T>(k_it) * ln2;
   }
 
   // --- Exponential (e^x) ---
   template <typename T>
-  static constexpr T exp(T x)
+  static constexpr T exp(T val)
   {
-    if(x == 0)
+    if(val == 0)
     {
       return 1;
     }
 
     const constexpr T ln2 = std::numbers::ln2_v<T>;
-    int k = static_cast<int>(x / ln2);
-    T f = x - static_cast<T>(k) * ln2;
+    int kk = static_cast<int>(val / ln2);
+    T ff = val - static_cast<T>(kk) * ln2;
 
     T term = 1;
     T sum = 1;
-    for(int i = 1; i < 50; ++i)
+    constexpr auto LIM = 50;
+    for(int i = 1; i < LIM; ++i)
     {
-      term *= f / i;
+      term *= ff / i;
       sum += term;
     }
 
     // FIXED: ipow now handles negatives cleanly
-    return sum * ipow(T{ 2 }, k);
+    return sum * ipow(T{ 2 }, kk);
   }
 
   // --- The Full Pow (Floating Point Exponent) ---
@@ -152,12 +156,13 @@ namespace Bin2Chars::Helpers::Math::Constexpr
 
   template <typename T>
     requires(std::is_integral_v<T> || std::is_same_v<T, __uint128_t>)
-  static consteval int log10(T x)
+  static consteval int log10(T val)
   {
+    constexpr T BASE = 10;
     int digits = 0;
-    while(x >= 10)
+    while(val >= BASE)
     {
-      x /= 10;
+      val /= BASE;
       ++digits;
     }
     return digits;
@@ -183,31 +188,34 @@ namespace Bin2Chars::Helpers::Math::Constexpr
 
   template <typename T>
     requires std::is_floating_point_v<T>
-  static consteval T log10(T x)
+  static consteval T log10(T val)
   {
-    if(x <= 0)
+    if(val <= T{ 0 })
     {
       return std::numeric_limits<T>::quiet_NaN();
     }
-    if(x == 1)
+
+    if(val == T{ 1 }) // NOLINT
     {
-      return 0;
+      return T{ 0 };
     }
 
-    // Multiply by 1 / ln(10)
-    const constexpr T inv_ln10 = std::numbers::log10e_v<T>;
+    constexpr T inv_ln10 = std::numbers::log10e_v<T>;
 
-    return ln(x) * inv_ln10;
+    return ln(val) * inv_ln10;
   }
 
   template <typename T>
     requires(std::is_unsigned_v<T> && std::is_integral_v<T>) || std::is_same_v<__uint128_t, T>
   static constexpr bool is_pow10(T n)
   {
-    return (n >= 10) && ([]<typename Type> (Type x) constexpr {
-        while (x % 10 == 0)
-            x /= 10;
-        return x == 1;
+    constexpr T BASE = 10;
+    return (n >= BASE) && ([]<typename Type> (Type val) constexpr {
+        while (val % BASE== 0) 
+        {
+            val /=  BASE;
+        }
+        return val == 1;
     })(n);
   }
 
@@ -236,10 +244,10 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
     static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
 
     // clang-format off
-    if constexpr(N == 1)      { n = static_cast<uint16_t>((uint32_t(n) * 0xCCCDU) >> 19); }
-    else if constexpr(N == 2) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x47AFU) >> 16); n = (((n - t) >> 1) + t) >> 6;  }
-    else if constexpr(N == 3) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x625U) >> 16); n = (((n - t) >> 1) + t) >> 9;   }
-    else if constexpr(N == 4) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0xA36FU) >> 16); n = (((n - t) >> 1) + t) >> 13; }
+    if constexpr(N == 1)      { n = static_cast<uint16_t>((static_cast<uint32_t>(n) * 0xCCCDU) >> 19U); }
+    else if constexpr(N == 2) { const auto t = static_cast<uint16_t>((uint32_t(n) * 0x47AFU) >> 16U); n = static_cast<uint16_t>((static_cast<uint16_t>(n - t) >> 1U) + t) >> 6U;  }
+    else if constexpr(N == 3) { const auto t = static_cast<uint16_t>((uint32_t(n) * 0x625U) >> 16U); n = static_cast<uint16_t>((static_cast<uint16_t>(n - t) >> 1U) + t) >> 9U;   }
+    else if constexpr(N == 4) { const auto t = static_cast<uint16_t>((uint32_t(n) * 0xA36FU) >> 16U); n = static_cast<uint16_t>((static_cast<uint16_t>(n - t) >> 1U) + t) >> 13U; }
     // clang-format on
   }
 
@@ -859,8 +867,8 @@ namespace Bin2Chars::Helpers::Math::IEEE754
       const auto u32low_1e9 = Helpers::Assembly::umulh32(u32low_prod_0, DEC9);
       const auto u32hig_prod_1 = static_cast<uint32_t>(u64_prod_1 >> 32U);
 
-      result = u64_prod_0 >> 32U;
-      next_9_digits = u32hig_prod_1 + u32low_1e9;
+      result = static_cast<uint32_t>(u64_prod_0 >> 32U);
+      next_9_digits = static_cast<uint32_t>(u32hig_prod_1) + u32low_1e9;
 
       while(next_9_digits >= DEC9)
       {
@@ -877,62 +885,20 @@ namespace Bin2Chars::Helpers::Math::IEEE754
       const uint64_t m_high_mid = static_cast<uint64_t>(table[0]) * DEC9 + table[1];
       const auto p_low_top = static_cast<uint32_t>(Helpers::Assembly::umulh64(mantissa, table[2]));
 
-      const __uint128_t u128_prod = (__uint128_t)mantissa * m_high_mid;
-      const auto p_hi_mid_rem_times_1e9 = static_cast<uint32_t>(Helpers::Assembly::umulh64(u128_prod, DEC9));
+      const __uint128_t u128_prod = static_cast<__uint128_t>(mantissa) * m_high_mid;
+      const auto p_hi_mid_rem_times_1e9 = static_cast<uint32_t>(Helpers::Assembly::umulh64(static_cast<uint64_t>(u128_prod), DEC9));
 
-      result = u128_prod >> 64U;
+      result = static_cast<uint64_t>(u128_prod >> 64U);
       next_9_digits = p_low_top + p_hi_mid_rem_times_1e9;
 
       while(next_9_digits >= DEC9)
       {
         result++;
-        next_9_digits -= DEC9;
+        next_9_digits -= static_cast<uint32_t>(DEC9);
       }
     }
   } // namespace Exponential
 
-  namespace Fixed
-  {
-    template <typename T>
-      requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
-    static unsigned Multiply(const auto &, const uint32_t *, uint32_t &, uint32_t &, uint32_t &) noexcept;
-
-    template <>
-    unsigned Multiply<float>(const uint32_t &mantissa, const uint32_t *table, uint32_t &first_9_digits, uint32_t &middle_9_digits, uint32_t &last_9_digits) noexcept
-    {
-      const constexpr uint32_t DEC8 = 100'000'000U;
-      const constexpr uint32_t DEC9 = 1'000'000'000U;
-
-      const uint64_t u64_prod_0 = static_cast<uint64_t>(mantissa) * table[0];
-      const uint64_t u64_prod_1 = static_cast<uint64_t>(mantissa) * table[1];
-      const uint64_t u64_prod_2 = static_cast<uint64_t>(mantissa) * table[2];
-
-      const auto u32_0_prod_low = static_cast<uint32_t>(u64_prod_0);
-      const auto u32_1_prod_low = static_cast<uint32_t>(u64_prod_1);
-      const auto u32_1_prod_hig = static_cast<uint32_t>(u64_prod_1 >> 32U);
-      const auto u32_2_prod_hig = static_cast<uint32_t>(u64_prod_2 >> 32U);
-      const uint32_t u32_0_prod_low_1e9 = (uint64_t)u32_0_prod_low * DEC9 >> 32U;
-      const uint32_t u32_1_prod_low_1e9 = (uint64_t)u32_1_prod_low * DEC9 >> 32U;
-
-      first_9_digits = u64_prod_0 >> 32U;
-      middle_9_digits = u32_1_prod_hig + u32_0_prod_low_1e9;
-      last_9_digits = u32_2_prod_hig + u32_1_prod_low_1e9;
-
-      const unsigned fir9 = ((first_9_digits < DEC8)) + ((~((first_9_digits >= DEC9) & 0b1U)) & 0b1U);
-      const unsigned mid9 = ((middle_9_digits < DEC8)) + ((~((middle_9_digits >= DEC9) & 0b1U)) & 0b1U);
-      const unsigned las9 = ((last_9_digits < DEC8)) + ((~((last_9_digits >= DEC9) & 0b1U)) & 0b1U);
-
-      const unsigned status = fir9 | mid9 << 8U | las9 << 16U;
-
-      return status;
-    }
-
-    template <>
-    unsigned Multiply<float>(const uint64_t &mantissa, const uint32_t *table, uint32_t &first_9_digits, uint32_t &middle_9_digits, uint32_t &last_9_digits) noexcept
-    {
-      return 0U;
-    }
-  } // namespace Fixed
 } // namespace Bin2Chars::Helpers::Math::IEEE754
 
 //
