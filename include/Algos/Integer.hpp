@@ -19,14 +19,14 @@
 
 namespace Bin2Chars::Numeric::Integral
 {
-  template <int N>
+  template <size_t N>
   struct char_array_len
   {
     int length;
     char array[N];
   };
 
-  template <int N>
+  template <size_t N>
   struct char_array
   {
     int start_idx;
@@ -55,7 +55,7 @@ namespace Bin2Chars::Numeric::Integral
       const auto rem = val % BASE;
       val /= BASE;
 
-      *--it = '0' + rem;
+      *--it = static_cast<char>('0' + rem);
 
     } while(val);
 
@@ -68,7 +68,7 @@ namespace Bin2Chars::Numeric::Integral
       *--it = '+';
     }
 
-    buff.start_idx = it - &buff.array[0];
+    buff.start_idx = static_cast<int>(it - &buff.array[0]);
 
     return buff;
   }
@@ -78,7 +78,7 @@ namespace Bin2Chars::Numeric::Integral
   static std::string ToStr(const T &input)
   {
     const auto buff = Numeric::Integral::ToStrCharArray<FORCE_SIGN>(input);
-    return std::string(&buff.array[buff.start_idx], sizeof(buff.array) - buff.start_idx);
+    return std::string(&buff.array[buff.start_idx], sizeof(buff.array) - static_cast<size_t>(buff.start_idx));
   }
 
   template <typename T>
@@ -105,7 +105,7 @@ namespace Bin2Chars::Numeric::Integral
                               {
                                 const bool neg = input < 0;
                                 using UT = Helpers::Templating::Types::make_unsigned_t<T>;
-                                UT val = (neg) ? ~(static_cast<UT>(input)) + 1U : input;
+                                UT val = (neg) ? ~(static_cast<UT>(input)) + 1U : static_cast<UT>(input);
 
                                 *ptr = '-';
 
@@ -142,7 +142,7 @@ namespace Bin2Chars::Numeric::Integral
     return buff;
   }
 
-  template <int N, typename T>
+  template <size_t N, typename T>
     requires(std::is_integral_v<T> && std::is_unsigned_v<T>) || std::is_same_v<T, __uint128_t>
   static void ToStrReverseWriteToCharArrayResult(T &val, T &rem, char_array<N> &out_char)
   {
@@ -152,14 +152,14 @@ namespace Bin2Chars::Numeric::Integral
     {
       Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(val, rem);
 
-      *--it = '0' + rem;
+      *--it = static_cast<char>('0' + rem);
 
     } while(val);
 
     out_char.start_idx = it - &out_char.array[0];
   }
 
-  template <bool FORCE_SIGN = false, int N, typename T>
+  template <bool FORCE_SIGN = false, size_t N, typename T>
     requires std::is_integral_v<T> || std::is_same_v<T, __uint128_t>
   static void ToStrReverseWriteToCharArray(const T &input, char_array<N> &out_char, const int &st_idx)
   {
@@ -176,7 +176,7 @@ namespace Bin2Chars::Numeric::Integral
       const auto rem = val % BASE;
       val /= BASE;
 
-      *--it = '0' + rem;
+      *--it = static_cast<char>('0' + rem);
 
     } while(val);
 
@@ -192,7 +192,7 @@ namespace Bin2Chars::Numeric::Integral
     out_char.start_idx = it - &out_char.array[0];
   }
 
-  template <uint32_t CAP_FORCE_LENGTH, int N, typename T>
+  template <uint32_t CAP_FORCE_LENGTH, size_t N, typename T>
     requires std::is_integral_v<T> || std::is_same_v<T, __uint128_t>
   static void ToStrReverseWriteToCharArrayForceAndCapLength(const T &input, char_array<N> &out_char, const int &st_idx)
   {
@@ -213,7 +213,7 @@ namespace Bin2Chars::Numeric::Integral
       const auto rem = val % BASE;
       val /= BASE;
 
-      *--it = '0' + rem;
+      *--it = static_cast<char>('0' + rem);
 
     } while(val && i < CAP_FORCE_LENGTH);
 
@@ -231,7 +231,7 @@ namespace Bin2Chars::Numeric::Integral
     out_char.start_idx = it - &out_char.array[0];
   }
 
-  template <uint32_t CAP_LENGTH, int N, typename T>
+  template <uint32_t CAP_LENGTH, size_t N, typename T>
     requires std::is_integral_v<T> || std::is_same_v<T, __uint128_t>
   static auto ToStrReverseWriteToCharArrayCapLengthStopAtNthCharReturnRemainder(const T &input, char_array<N> &out_char, const uint32_t &st_idx, const uint32_t stp_idx)
   {
@@ -251,7 +251,7 @@ namespace Bin2Chars::Numeric::Integral
       rem = val % BASE;
       val /= BASE;
 
-      *--it = '0' + rem;
+      *--it = static_cast<char>('0' + rem);
 
     } while(val && i < stp_idx && i < CAP_LENGTH);
 

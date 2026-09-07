@@ -14,12 +14,12 @@
 
 namespace Bin2Chars::Helpers::Assembly
 {
-  __attribute__((always_inline)) static auto umulh32(const uint64_t &a, const uint32_t &b) noexcept
+  inline __attribute__((always_inline)) static auto umulh32(const uint64_t &a, const uint32_t &b) noexcept
   {
     return static_cast<uint32_t>((a * b) >> 32U);
   }
 
-  __attribute__((always_inline)) static uint64_t umulh64(const uint64_t &a, const uint64_t &b) noexcept
+  inline __attribute__((always_inline)) static uint64_t umulh64(const uint64_t &a, const uint64_t &b) noexcept
   {
 #if defined(__x86_64__)
     uint64_t hi;
@@ -90,8 +90,8 @@ namespace Bin2Chars::Helpers::Assembly
       auto end_tsc = Helpers::Assembly::timer_end();
       auto end = steady_clock::now();
 
-      auto ns = duration_cast<nanoseconds>(end - start).count();
-      return (end_tsc - start_tsc) * 1'000'000'000ull / ns;
+      auto ns = static_cast<uint64_t>(duration_cast<nanoseconds>(end - start).count());
+      return (end_tsc - start_tsc) * 1'000'000'000ULL / ns;
     }();
 
     return freq;
@@ -111,14 +111,14 @@ namespace Bin2Chars::Helpers::Assembly
     static const uint64_t freq = rdtsc_freq();
 
     // avoid overflow with 128-bit math
-    return (uint64_t)(static_cast<__uint128_t>(ticks) * 1'000'000'000ULL / freq);
+    return static_cast<uint64_t>(static_cast<__uint128_t>(ticks) * 1'000'000'000ULL / freq);
   }
 
-  inline void pin_thread_to_cpu(int cpu_id)
+  inline void pin_thread_to_cpu(const unsigned &cpu_id)
   {
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
     cpu_set_t allowed;
-    CPU_ZERO(&allowed); // ✅ initialize
+    CPU_ZERO(&allowed); // initialize
 
     if(sched_getaffinity(0, sizeof(allowed), &allowed) != 0)
     {

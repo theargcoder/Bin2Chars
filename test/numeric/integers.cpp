@@ -1,18 +1,12 @@
-#define BOOST_TEST_MODULE IntegerTests
-#include <boost/test/included/unit_test.hpp>
+#define BOOST_TEST_MODULE IntegersTest
 #include <boost/test/tools/old/interface.hpp>
-#include <boost/test/unit_test_suite.hpp>
-#include <boost/type_index.hpp>
+#include <boost/test/unit_test.hpp>
 
 #include <chrono>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
-#include <format>
-#include <iostream>
 #include <limits>
 #include <string>
-#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
@@ -20,126 +14,9 @@
 #include "include/Algos/Competition.hpp"
 #include "include/Algos/Integer.hpp"
 #include "include/Helpers/Assembly.hpp"
+#include "include/Helpers/Tests.hpp"
 
-namespace
-{
-  struct LogHexStr
-  {
-    std::string_view label;
-    std::string_view num_str;
-    LogHexStr(const std::string &_label, const std::string &_num_str) : label(_label), num_str(_num_str)
-    {
-    }
-  };
-
-  template <typename... Args>
-  auto log_str_and_into_hex(const Args &...logs)
-  {
-    std::string log = "we have:";
-
-    ((log += std::format(" {} = '{}'", logs.label, logs.num_str)), ...);
-
-    std::cout << log << std::endl;
-
-    auto print_hex = [](std::string_view in)
-    {
-      for(unsigned char c : in)
-        std::cout << std::hex << (int)c << " ";
-
-      std::cout << std::dec << '\n';
-    };
-
-    (print_hex(logs.num_str), ...);
-  }
-
-  struct BenchResult
-  {
-    std::string_view label;
-    std::chrono::nanoseconds time;
-    uint64_t cycles;
-
-    BenchResult(const char *str, std::chrono::nanoseconds nano, uint64_t cpu_cycles) : label(str), time(nano), cycles(cpu_cycles)
-    {
-    }
-  };
-
-  template <typename T, typename... Args>
-  auto log_time_tables(T, const char *ACTION, const int &N, const Args &...times)
-  {
-    using namespace std::chrono;
-
-    // ANSI Color Codes
-    const std::string_view RESET = "\033[0m";
-    const std::string_view GREEN = "\033[32m";
-    const std::string_view RED = "\033[31m";
-    const std::string_view YELLOW = "\033[33m";
-
-    const auto SIZE = sizeof...(times);
-
-    // Calculate average time (using double to keep precision)
-    const auto total_cpu_cycles = (times.cycles + ...);
-    const double average_cycles = static_cast<double>(total_cpu_cycles) / SIZE;
-    const auto total_ns = (times.time + ...).count();
-    const double average_ns = static_cast<double>(total_ns) / SIZE;
-
-    auto get_color = [&](nanoseconds val) -> std::string_view
-    {
-      if(val.count() == 0)
-        return RESET;
-
-      double ratio = static_cast<double>(val.count()) / average_ns;
-
-      if(std::abs(1.0 - ratio) <= 0.03)
-        return YELLOW;
-
-      return (val.count() < average_ns) ? GREEN : RED;
-    };
-
-    const auto get_label_cell = [&](const BenchResult &res) { return std::format(" | {: >15}", res.label); };
-
-    const auto get_val_cell = [&](const BenchResult &res, auto unit_type)
-    {
-      auto color = get_color(res.time);
-      auto val = duration_cast<duration<double, typename decltype(unit_type)::period>>(res.time).count();
-      return std::format(" | {}{: >15.3f}{}", color, val, RESET);
-    };
-
-    auto get_val_cpu_cycles = [&](const BenchResult &res)
-    {
-      auto color = (static_cast<double>(res.cycles) < average_cycles) ? GREEN : RED;
-      return std::format(" | {}{: >15}{}", color, res.cycles, RESET);
-    };
-
-    std::string header_row = std::format("{:>15}", "Unit");
-    ((header_row += get_label_cell(times)), ...);
-
-    std::string row_sec = std::format("{:>15}", "Seconds");
-    ((row_sec += get_val_cell(times, seconds{})), ...);
-
-    std::string row_milli = std::format("{:>15}", "Milliseconds");
-    ((row_milli += get_val_cell(times, milliseconds{})), ...);
-
-    std::string row_micro = std::format("{:>15}", "Microseconds");
-    ((row_micro += get_val_cell(times, microseconds{})), ...);
-
-    std::string row_cpu_cycles = std::format("{:>15}", "Cpu Cycles");
-    ((row_cpu_cycles += get_val_cpu_cycles(times)), ...);
-
-    std::string type_name = boost::typeindex::type_id<T>().pretty_name();
-    std::string title = std::format("Action '{}' digits '{}' {} COMPARISON (Avg: {:.3f} millisec) ", ACTION, N, type_name, average_ns / 1'000'000);
-    int total_width = 15 + (SIZE * 18); // 15 for label + 18 per column (| + color + 15 chars)
-
-    std::cout << "\n" << std::format("{:=^{}}", title, total_width) << "\n";
-    std::cout << header_row << "\n";
-    std::cout << std::string(total_width, '-') << "\n";
-    std::cout << row_sec << "\n";
-    std::cout << row_milli << "\n";
-    std::cout << row_micro << "\n";
-    std::cout << row_cpu_cycles << "\n";
-    std::cout << std::string(total_width, '=') << "\n";
-  }
-
-} // namespace
+using namespace Bin2Chars::Tests;
 
 namespace
 {
@@ -160,8 +37,14 @@ namespace
     while(cycles < WISHED_RANGE && errors < MAX_ERRORS)
     {
       cycles += RANGE;
-      for(Type i = DELIM, lim = 0, max_iter = 0; ((PLUS) ? i < DELIM + RANGE : i > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
-          (PLUS) ? i += JUMP : i -= JUMP, max_iter++)
+      using LoopType = std::intmax_t;
+
+      const auto delim = static_cast<LoopType>(DELIM);
+      const auto jump = static_cast<LoopType>(JUMP);
+      const auto range = static_cast<LoopType>(RANGE);
+
+      for(LoopType i = delim, lim = 0, max_iter = 0; (PLUS ? i < delim + range : i > delim - range) && lim < static_cast<LoopType>(MAX_ERRORS) && max_iter < range;
+          (PLUS ? i += jump : i -= jump), ++max_iter)
       {
         const auto st_log = Bin2Chars::Helpers::Assembly::timer_start();
         our_log = Bin2Chars::Numeric::Integral::ToStr(i);
@@ -234,22 +117,21 @@ namespace
     // ---- Around powers of two (Bit boundaries) ----
     for(int e = 1; e < std::numeric_limits<T>::digits; ++e)
     {
-      const T val = UNIT << e;
+      const T val = static_cast<T>(UNIT << e);
       looper_ints<N>(true, val, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
                      simdy_lib_time, simdy_lib_cycles);
       looper_ints<N>(false, val, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
                      simdy_lib_time, simdy_lib_cycles);
     }
 
-    // ---- Around powers of ten (String length boundaries) ----
-    for(T val = 10; val > 0 && val < MAX / 10; val *= 10)
+    for(std::intmax_t val = 10; val > 0 && val < static_cast<std::intmax_t>(MAX) / 10; val *= 10)
     {
-      looper_ints<N>(true, val, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                     simdy_lib_time, simdy_lib_cycles);
-      looper_ints<N>(false, val, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                     simdy_lib_time, simdy_lib_cycles);
-    }
+      looper_ints<N>(true, static_cast<T>(val), UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time,
+                     std_lib_to_str_cycles, simdy_lib_time, simdy_lib_cycles);
 
+      looper_ints<N>(false, static_cast<T>(val), UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time,
+                     std_lib_to_str_cycles, simdy_lib_time, simdy_lib_cycles);
+    }
     // ---- Large magnitude sweeps (Sparse) ----
     if constexpr(sizeof(T) >= 4)
     {

@@ -36,7 +36,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     unsigned len = 0;
 
-    if(input < 0.0)
+    if(input < 0.0F)
     {
       buff[len++] = '-';
     }
@@ -72,12 +72,12 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     const auto *table = &Floating::DIGITS[exp_base_10_int][0];
     exp_base_10_int = (((exp_base_10_int - Floating::BIAS) * 78'913) >> 18U);
 
-    unsigned first_9_digits, middle_9_digits, last_9_digits, remainder;
+    unsigned first_9_digits = 0, middle_9_digits = 0, last_9_digits = 0, remainder = 0;
     const unsigned mul_cmp_res = Helpers::Simd::x86_64::Multiply<float>(mantissa, table, first_9_digits, middle_9_digits, last_9_digits);
 
-    int lvl_1 = (1 - (mul_cmp_res & 0b11U));
-    int lvl_2 = (1 - ((mul_cmp_res & 0b11'0000'0000U) >> 8U));
-    int lvl_3 = (1 - ((mul_cmp_res & 0b11'0000'0000'0000'0000U) >> 16U));
+    int lvl_1 = (1 - static_cast<int>(static_cast<unsigned>(mul_cmp_res) & 0b11U));
+    int lvl_2 = (1 - static_cast<int>((static_cast<unsigned>(mul_cmp_res) & 0b11'0000'0000U) >> 8U));
+    int lvl_3 = (1 - static_cast<int>((static_cast<unsigned>(mul_cmp_res) & 0b11'0000'0000'0000'0000U) >> 16U));
 
     int round_lvl_1 = 8 + lvl_1;
     int round_lvl_2 = 8 + lvl_2;
@@ -118,7 +118,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
         }
       }
 
-      const auto precision_val = PRECISION_TABLE[PRECISION];
+      const auto precision_val = PRECISION_TABLE[static_cast<size_t>(PRECISION)];
       if(first_9_digits >= precision_val)
       {
         Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(first_9_digits);
@@ -160,7 +160,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
         }
       }
 
-      const auto precision_val = PRECISION_TABLE[this_precision];
+      const auto precision_val = PRECISION_TABLE[static_cast<size_t>(this_precision)];
       if(middle_9_digits >= precision_val)
       {
         while(middle_9_digits > precision_val)
@@ -213,7 +213,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
         }
       }
 
-      const auto precision_val = PRECISION_TABLE[this_precision];
+      const auto precision_val = PRECISION_TABLE[static_cast<size_t>(this_precision)];
       if(last_9_digits >= precision_val)
       {
         while(last_9_digits > precision_val)
@@ -249,7 +249,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     buff[len++] = (exp_base_10_int < 0) ? '-' : '+';
 
-    const unsigned exp_abs = std::abs(exp_base_10_int);
+    const auto exp_abs = static_cast<unsigned>(std::abs(exp_base_10_int));
 
     len += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<uint16_t>(&buff[len], static_cast<uint16_t>(exp_abs));
 
@@ -318,18 +318,18 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     if(digits_10 < min_precision)
     {
-      digits_10 *= BASE;
+      digits_10 = static_cast<uint32_t>(digits_10 * BASE);
       remainder = Helpers::Math::Magic::Division::div_by_10_pow_n<8>(extra_digits);
       digits_10 += remainder;
-      extra_digits -= remainder * DEC8;
-      extra_digits *= BASE;
+      extra_digits -= static_cast<uint32_t>(remainder * DEC8);
+      extra_digits = static_cast<uint32_t>(extra_digits * BASE);
       exp_base_10_int--;
     }
     else if(digits_10 > max_precision)
     {
       Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<1>(digits_10, remainder);
       Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(extra_digits);
-      extra_digits += remainder * DEC8;
+      extra_digits += static_cast<uint32_t>(remainder * DEC8);
       exp_base_10_int++;
     }
 
@@ -340,7 +340,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     else
     {
       remainder = Helpers::Math::Magic::Division::div_by_10_pow_n<8>(extra_digits);
-      extra_digits -= remainder * DEC8;
+      extra_digits -= static_cast<uint32_t>(remainder * DEC8);
     }
 
     const bool extra = extra_digits != 0 || (PRECISION < 17 && remainder != 0);
@@ -371,7 +371,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
       }
     }
 
-    if(digits_10 >= precision_table[PRECISION])
+    if(digits_10 >= precision_table[static_cast<size_t>(PRECISION)])
     {
       Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(digits_10);
       exp_base_10_int++;
@@ -383,13 +383,13 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     std::swap(buff[len - 1], buff[len]);
 
-    len += remainder;
+    len += static_cast<unsigned>(remainder);
 
     buff[len++] = 'e';
 
     buff[len++] = (exp_base_10_int < 0) ? '-' : '+';
 
-    const unsigned exp_abs = std::abs(exp_base_10_int);
+    const auto exp_abs = static_cast<unsigned>(std::abs(exp_base_10_int));
 
     len += Numeric::Integral::ToStrFowardWriteSIMDReturnLen<uint16_t>(&buff[len], static_cast<uint16_t>(exp_abs));
 

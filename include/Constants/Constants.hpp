@@ -62,11 +62,11 @@ namespace Bin2Chars::Constants::Tables
   {
   public:
     static const constexpr auto MANTISSA_BITS = std::numeric_limits<double>::digits - 1;
-    static const constexpr auto EXPONENT_BIAS = std::numeric_limits<double>::max_exponent - 1;
-    static const constexpr auto MIN_BIN_EXP = std::numeric_limits<double>::min_exponent - std::numeric_limits<double>::digits; // Smallest binary exponent (subnormal limit)
-    static const constexpr auto MAX_BIN_EXP = std::numeric_limits<double>::max_exponent;                                       // Largest binary exponent
-    static const constexpr auto BIAS = -MIN_BIN_EXP;                                                                           // Offset so that table[BIAS] corresponds to 2^0
-    static const constexpr auto TABLE_BIAS = std::is_same_v<double, T> ? 0 : BIAS + std::numeric_limits<float>::min_exponent;  // Offset so that float's have correct locations
+    static const constexpr int EXPONENT_BIAS = std::numeric_limits<double>::max_exponent - 1;
+    static const constexpr int MIN_BIN_EXP = std::numeric_limits<double>::min_exponent - std::numeric_limits<double>::digits; // Smallest binary exponent (subnormal limit)
+    static const constexpr auto MAX_BIN_EXP = std::numeric_limits<double>::max_exponent;                                      // Largest binary exponent
+    static const constexpr auto BIAS = -MIN_BIN_EXP;                                                                          // Offset so that table[BIAS] corresponds to 2^0
+    static const constexpr auto TABLE_BIAS = std::is_same_v<double, T> ? 0 : BIAS + std::numeric_limits<float>::min_exponent; // Offset so that float's have correct locations
 
     static const constexpr auto SIZE = MAX_BIN_EXP - MIN_BIN_EXP + 1;
     static const constexpr auto MAX_DIGITS10 = std::numeric_limits<T>::digits10;
@@ -2198,7 +2198,7 @@ namespace Bin2Chars::Constants::Tables
     static constexpr auto GetPrecistionTableImpl(std::index_sequence<I...> /*unused*/)
     {
       constexpr auto N = sizeof...(I);
-      return std::array<Type, N>{ Type{ 10 } * (Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, I))... };
+      return std::array<Type, N>{ { Type{ 10 } * (Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, I))... } };
     }
 
     template <typename Type>

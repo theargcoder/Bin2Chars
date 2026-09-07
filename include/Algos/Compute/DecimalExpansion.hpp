@@ -1,5 +1,8 @@
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+
 #include <array>
 #include <cstdint>
 #include <immintrin.h>
@@ -379,6 +382,8 @@ namespace Algos::Compute::DecimalExpansion
   } // namespace Exponent
 
   constexpr auto MAX_ARRAY_SIZE = 96;
+  void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent);
+  void NegativeExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent);
 
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
   void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent)
@@ -392,23 +397,23 @@ namespace Algos::Compute::DecimalExpansion
 
     const __m512i ZERO = _mm512_setzero_si512();
 
-    __m512i rrprime_1 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX])));
-    __m512i rrprime_2 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX + 8])));
-    __m512i rrprime_3 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX + 16])));
-    __m512i rrprime_4 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX + 24])));
-    __m512i rrprime_5 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_2_CACHE[BASE_IDX + 32])));
+    __m512i rrprime_1 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_2_CACHE[BASE_IDX])));
+    __m512i rrprime_2 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_2_CACHE[BASE_IDX + 8])));
+    __m512i rrprime_3 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_2_CACHE[BASE_IDX + 16])));
+    __m512i rrprime_4 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_2_CACHE[BASE_IDX + 24])));
+    __m512i rrprime_5 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_2_CACHE[BASE_IDX + 32])));
 
     const __m512i R_10E8 = _mm512_set1_epi64(100'000'000U);
     const __m512i R_MAGIC_10E8 = _mm512_set1_epi64(1'441'151'881U);
 
-    int e = E_0;
+    int e = static_cast<int>(E_0);
     for(; e + 5 < exponent; e += 5) // each iteration has ~25 cycle latency --- since 8 iterations is worst case then 200 cycle latency just in this loop ...
     {
-      const __m512i u64_prod_1 = _mm512_slli_epi64(rrprime_1, 5);
-      const __m512i u64_prod_2 = _mm512_slli_epi64(rrprime_2, 5);
-      const __m512i u64_prod_3 = _mm512_slli_epi64(rrprime_3, 5);
-      const __m512i u64_prod_4 = _mm512_slli_epi64(rrprime_4, 5);
-      const __m512i u64_prod_5 = _mm512_slli_epi64(rrprime_5, 5);
+      const __m512i u64_prod_1 = _mm512_slli_epi64(rrprime_1, 5U);
+      const __m512i u64_prod_2 = _mm512_slli_epi64(rrprime_2, 5U);
+      const __m512i u64_prod_3 = _mm512_slli_epi64(rrprime_3, 5U);
+      const __m512i u64_prod_4 = _mm512_slli_epi64(rrprime_4, 5U);
+      const __m512i u64_prod_5 = _mm512_slli_epi64(rrprime_5, 5U);
       const __m512i u64_magic_prod_1 = _mm512_mul_epu32(u64_prod_1, R_MAGIC_10E8);
       const __m512i u64_magic_prod_2 = _mm512_mul_epu32(u64_prod_2, R_MAGIC_10E8);
       const __m512i u64_magic_prod_3 = _mm512_mul_epu32(u64_prod_3, R_MAGIC_10E8);
@@ -442,9 +447,9 @@ namespace Algos::Compute::DecimalExpansion
       rrprime_5 = _mm512_sub_epi32(rrprime_5, u64_magic_res_x10E8_5);
     }
 
-    const auto missing = static_cast<unsigned>(exponent - e);
+    const int missing = exponent - e;
 
-    if(missing)
+    if(missing > 0)
     {
       const __m512i u64_prod_1 = _mm512_slli_epi64(rrprime_1, missing);
       const __m512i u64_prod_2 = _mm512_slli_epi64(rrprime_2, missing);
@@ -489,12 +494,12 @@ namespace Algos::Compute::DecimalExpansion
     const __m256i u32_pack_4 = _mm512_cvtepi64_epi32(rrprime_4);
     const __m256i u32_pack_5 = _mm512_cvtepi64_epi32(rrprime_5);
 
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[0]), u32_pack_1);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[8]), u32_pack_2);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[16]), u32_pack_3);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[24]), u32_pack_4);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[32]), u32_pack_5);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[40]), _mm512_castsi512_si256(ZERO));
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[0]), u32_pack_1);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[8]), u32_pack_2);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[16]), u32_pack_3);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[24]), u32_pack_4);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[32]), u32_pack_5);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[40]), _mm512_castsi512_si256(ZERO));
     _mm512_storeu_si512(&SIMD_ARRAY[48], ZERO);
     _mm512_storeu_si512(&SIMD_ARRAY[64], ZERO);
     _mm512_storeu_si512(&SIMD_ARRAY[80], ZERO);
@@ -511,18 +516,18 @@ namespace Algos::Compute::DecimalExpansion
 
     const __m512i ZERO = _mm512_setzero_si512();
 
-    __m512i rrprime_1 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX])));
-    __m512i rrprime_2 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 8])));
-    __m512i rrprime_3 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 16])));
-    __m512i rrprime_4 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 24])));
-    __m512i rrprime_5 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 32])));
-    __m512i rrprime_6 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 40])));
-    __m512i rrprime_7 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 48])));
-    __m512i rrprime_8 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 56])));
-    __m512i rrprime_9 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 64])));
-    __m512i rrprime_10 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 72])));
-    __m512i rrprime_11 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 80])));
-    __m512i rrprime_12 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(&POW_5_CACHE[BASE_IDX + 88])));
+    __m512i rrprime_1 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX])));
+    __m512i rrprime_2 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 8])));
+    __m512i rrprime_3 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 16])));
+    __m512i rrprime_4 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 24])));
+    __m512i rrprime_5 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 32])));
+    __m512i rrprime_6 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 40])));
+    __m512i rrprime_7 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 48])));
+    __m512i rrprime_8 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 56])));
+    __m512i rrprime_9 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 64])));
+    __m512i rrprime_10 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 72])));
+    __m512i rrprime_11 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 80])));
+    __m512i rrprime_12 = _mm512_cvtepu32_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i_u *>(&POW_5_CACHE[BASE_IDX + 88])));
 
     const __m512i R_25 = _mm512_set1_epi64(25U);
     const __m512i R_10E8 = _mm512_set1_epi64(100'000'000U);
@@ -721,18 +726,18 @@ namespace Algos::Compute::DecimalExpansion
       const __m256i u32_pack_11 = _mm512_cvtepi64_epi32(rrprime_11);
       const __m256i u32_pack_12 = _mm512_cvtepi64_epi32(rrprime_12);
 
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[0]), u32_pack_1);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[8]), u32_pack_2);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[16]), u32_pack_3);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[24]), u32_pack_4);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[32]), u32_pack_5);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[40]), u32_pack_6);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[48]), u32_pack_7);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[56]), u32_pack_8);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[64]), u32_pack_9);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[72]), u32_pack_10);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[80]), u32_pack_11);
-      _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[88]), u32_pack_12);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[0]), u32_pack_1);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[8]), u32_pack_2);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[16]), u32_pack_3);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[24]), u32_pack_4);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[32]), u32_pack_5);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[40]), u32_pack_6);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[48]), u32_pack_7);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[56]), u32_pack_8);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[64]), u32_pack_9);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[72]), u32_pack_10);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[80]), u32_pack_11);
+      _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[88]), u32_pack_12);
     }
     //
   }
@@ -1464,3 +1469,5 @@ namespace Algos::Compute::DecimalExpansion
 #endif
 
 } // namespace Algos::Compute::DecimalExpansion
+
+#pragma GCC diagnostic pop

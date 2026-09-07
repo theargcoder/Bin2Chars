@@ -71,14 +71,13 @@ namespace Bin2Chars::Numeric::Std
         return n + 2;
       if(value < b4)
         return n + 3;
-      value /= b4;
+      value /= static_cast<Tp>(b4);
       n += 4;
     }
   }
 
-  // Write an unsigned integer value to the range [first,first+len).
-  // The caller is required to provide a buffer of exactly the right size
-  // (which can be determined by the __to_chars_len function).
+  // Write an unsigned integer value to the range [first,first+len). The caller is required to provide a buffer of exactly the right size (which can be determined by the
+  // __to_chars_len function).
   template <typename Tp>
   auto to_chars_impl(char *first, Tp val) noexcept
   {
@@ -105,7 +104,7 @@ namespace Bin2Chars::Numeric::Std
       first[0] = digits[num];
     }
     else
-      first[0] = '0' + val;
+      first[0] = static_cast<char>('0' + val);
 
     return len;
   }
@@ -119,7 +118,7 @@ namespace Bin2Chars::Numeric::Ryu
     static std::string ToStr(double v, const int &PRECISION)
     {
       char buffer[2048];
-      const int len = d2exp_buffered_n(v, PRECISION, &buffer[0]);
+      const int len = d2exp_buffered_n(v, static_cast<unsigned>(PRECISION), &buffer[0]);
       return std::string{ &buffer[0], static_cast<size_t>(len) };
     }
 
@@ -134,7 +133,7 @@ namespace Bin2Chars::Numeric::Ryu
     static std::string ToStr(double v, const int &PRECISION)
     {
       char buffer[2048];
-      const int len = d2fixed_buffered_n(v, PRECISION, &buffer[0]);
+      const int len = d2fixed_buffered_n(v, static_cast<unsigned>(PRECISION), &buffer[0]);
       return std::string{ &buffer[0], static_cast<size_t>(len) };
     }
 

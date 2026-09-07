@@ -1,8 +1,5 @@
-#define BOOST_TEST_MODULE compute_decimal_expansion
-
-#include <boost/test/included/unit_test.hpp>
-#include <boost/test/tools/old/interface.hpp>
-#include <boost/test/unit_test_suite.hpp>
+#define BOOST_TEST_MODULE ComputeDecimalTests
+#include <boost/test/unit_test.hpp>
 
 #include <array>
 #include <cstdint>
@@ -23,7 +20,7 @@ namespace
     RESULT[0] = 1; // initialize 2^0 = 1
 
     // Loop k times (multiply by 2 in each iteration)
-    unsigned i = 0;
+    int i = 0;
     for(i = 0; i + 5 < k; i += 5)
     {
       uint32_t carry = 0;
@@ -35,7 +32,7 @@ namespace
       }
     }
 
-    const unsigned miss = static_cast<unsigned>(k) - i;
+    const int miss = k - i;
     uint32_t carry = 0;
     for(unsigned int &w : RESULT)
     {

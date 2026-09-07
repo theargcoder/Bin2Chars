@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <vector>
@@ -76,20 +78,22 @@ int main(int argc, char **argv)
 }
 */
 
-int main(int argc, char **argv)
+int main(int /*unused*/, char ** /*unused*/)
 {
   // 1. Pin to a specific core to avoid cross-core TSC sync issues
   Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(3);
 
-  static constexpr auto TRIALS = 100'000'000;
-  std::vector<uint32_t> random_inputs(TRIALS);
+  using test_t = uint64_t;
+
+  static constexpr size_t TRIALS = 10'000'000;
+  std::vector<test_t> random_inputs(TRIALS);
   std::vector<uint64_t> simdy_times(TRIALS);
   std::vector<uint64_t> std_times(TRIALS);
 
   // 2. Pre-generate randoms to completely destroy std::to_string branch prediction
-  std::mt19937 rng(42);
-  std::uniform_int_distribution<uint16_t> dist(100, 4294967295); // Mix of digits
-  for(int i = 0; i < TRIALS; ++i)
+  std::mt19937 rng(23);
+  std::uniform_int_distribution<test_t> dist(0, static_cast<test_t>(std::numeric_limits<test_t>::max())); // Mix of digits
+  for(size_t i = 0; i < TRIALS; ++i)
   {
     random_inputs[i] = dist(rng);
   }
@@ -97,18 +101,18 @@ int main(int argc, char **argv)
   char buff[32];
 
   // 3. The Measurement Loop
-  for(int i = 0; i < TRIALS; ++i)
+  for(size_t i = 0; i < TRIALS; ++i)
   {
-    uint16_t current_num = random_inputs[i];
+    const auto current_num = static_cast<test_t>(random_inputs[i]);
 
     const uint64_t st_simdy = Bin2Chars::Helpers::Assembly::timer_start();
 
-    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<uint16_t>(&buff[0], current_num);
+    const auto len = Bin2Chars::Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<test_t>(&buff[0], current_num);
 
     const uint64_t en_simdy = Bin2Chars::Helpers::Assembly::timer_end();
 
     // Force compiler to materialize the result
-    asm volatile("" : : "m"(*(char (*)[32])buff), "r"(len) : "memory");
+    asm volatile("" : : "m"(*reinterpret_cast<char (*)[32]>(buff)), "r"(len) : "memory");
 
     simdy_times[i] = en_simdy - st_simdy;
 
@@ -119,7 +123,7 @@ int main(int argc, char **argv)
     const uint64_t en_std = Bin2Chars::Helpers::Assembly::timer_end();
 
     // Force compiler to materialize the result
-    asm volatile("" : : "m"(*(char (*)[32])buff), "r"(pp) : "memory");
+    asm volatile("" : : "m"(*reinterpret_cast<char (*)[32]>(buff)), "r"(pp) : "memory");
     std_times[i] = en_std - st_std;
   }
 
@@ -132,11 +136,11 @@ int main(int argc, char **argv)
 
   // The Minimum is the "perfect" hardware run.
   // The Median is the true realistic "Cold" run, ignoring OS interrupts.
-  printf("\n=== PERFECT STATS (Cold Data, Unpredictable Branches, %d runs) ===\n", TRIALS);
+  printf("\n=== PERFECT STATS (Cold Data, Unpredictable Branches, %ld runs) ===\n", TRIALS);
   printf("SIMDY     | Min: %4lu | Median: %4lu | Mean: %.3f | 95th Percentile: %4lu\n", simdy_times[0], simdy_times[TRIALS / 2],
-         static_cast<double>(simdy_accum) / simdy_times.size(), simdy_times[TRIALS * 95 / 100]);
-  printf("TO_STRING | Min: %4lu | Median: %4lu | Mean: %.3f | 95th Percentile: %4lu\n", std_times[0], std_times[TRIALS / 2], static_cast<double>(std_accum) / std_times.size(),
-         std_times[TRIALS * 95 / 100]);
+         static_cast<double>(simdy_accum) / static_cast<double>(simdy_times.size()), simdy_times[TRIALS * 95 / 100]);
+  printf("TO_STRING | Min: %4lu | Median: %4lu | Mean: %.3f | 95th Percentile: %4lu\n", std_times[0], std_times[TRIALS / 2],
+         static_cast<double>(std_accum) / static_cast<double>(std_times.size()), std_times[TRIALS * 95 / 100]);
 
   return 0;
 }
