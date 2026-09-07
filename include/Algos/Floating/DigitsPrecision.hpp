@@ -79,8 +79,8 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       const constexpr unsigned DEC8 = 100'000'000U;
 
-      Helpers::Assembly::prefetch_elements<1026>(K_TO_POW_2_BOUNDARIES);
-      Helpers::Assembly::prefetch_elements<1076>(K_TO_POW_5_BOUNDARIES);
+      Helpers::Assembly::prefetch_elements<1026>(Bin2Chars::Tables::PositiveExponent::INDICES);
+      Helpers::Assembly::prefetch_elements<1076>(Bin2Chars::Tables::NegativeExponent::INDICES);
 
       unsigned len = 0;
       unsigned mantissa;
@@ -115,12 +115,15 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       exp -= Floating::BIAS;
 
-      const uint32_t *it_beg = (exp < 0) ? &POW_5_CACHE[K_TO_POW_5_BOUNDARIES[std::abs(exp)]] : &POW_2_CACHE[K_TO_POW_2_BOUNDARIES[exp]];
-      const uint32_t *it_end = (exp < 0) ? &POW_5_CACHE[0] + K_TO_POW_5_BOUNDARIES[std::abs(exp) + 1] : &POW_2_CACHE[0] + K_TO_POW_2_BOUNDARIES[exp + 1];
+      const uint32_t *it_beg = (exp < 0) ? &Bin2Chars::Tables::NegativeExponent::TABLE[Bin2Chars::Tables::NegativeExponent::TABLE[std::abs(exp)]]
+                                         : &Bin2Chars::Tables::PositiveExponent::TABLE[Bin2Chars::Tables::PositiveExponent::INDICES[exp]];
+
+      const uint32_t *it_end = (exp < 0) ? &Bin2Chars::Tables::NegativeExponent::TABLE[0] + Bin2Chars::Tables::NegativeExponent::INDICES[std::abs(exp) + 1]
+                                         : &Bin2Chars::Tables::PositiveExponent::TABLE[0] + Bin2Chars::Tables::PositiveExponent::INDICES[exp + 1];
       const uint32_t *it = it_end - 1;
 
-      (exp < 0) ? Helpers::Assembly::prefetch_elements<96>(&POW_5_CACHE[K_TO_POW_5_BOUNDARIES[std::abs(exp)]])
-                : Helpers::Assembly::prefetch_elements<39>(&POW_2_CACHE[K_TO_POW_2_BOUNDARIES[exp]]);
+      (exp < 0) ? Helpers::Assembly::prefetch_elements<96>(&Bin2Chars::Tables::NegativeExponent::TABLE[Bin2Chars::Tables::NegativeExponent::INDICES[std::abs(exp)]])
+                : Helpers::Assembly::prefetch_elements<39>(&Bin2Chars::Tables::PositiveExponent::TABLE[Bin2Chars::Tables::PositiveExponent::INDICES[exp]]);
 
       unsigned start_idx = 0;
       if(input < 0.0F)

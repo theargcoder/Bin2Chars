@@ -19,7 +19,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Default build type
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE
-      Debug
+      Release
       CACHE STRING "Build type: Debug, Release, RelWithDebInfo, MinSizeRel"
             FORCE)
 endif()
