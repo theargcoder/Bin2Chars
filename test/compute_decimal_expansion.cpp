@@ -1,3 +1,4 @@
+#include <boost/test/tools/old/interface.hpp>
 #define BOOST_TEST_MODULE ComputeDecimalTests
 #include <boost/test/unit_test.hpp>
 
@@ -8,6 +9,8 @@
 
 #include "include/Algos/Compute/DecimalExpansion.hpp"
 #include "include/Constants/Constants.hpp"
+#include "include/Tables/array_2n.hpp"
+#include "include/Tables/array_5n.hpp"
 
 namespace
 {
@@ -105,13 +108,40 @@ namespace
       std::memset(RESULT.data() + count, 0, first * sizeof(uint32_t));
     }
   }
+
+  void load_neg_exponent_from_table(std::array<unsigned, Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE> &RESULT, const int &k)
+  {
+    RESULT.fill(0);
+    const auto *it_beg = &Bin2Chars::Tables::NegativeExponent::TABLE[0] + Bin2Chars::Tables::NegativeExponent::INDICES[k];
+    const auto *it_end = &Bin2Chars::Tables::NegativeExponent::TABLE[0] + Bin2Chars::Tables::NegativeExponent::INDICES[k + 1];
+
+    size_t i = 0;
+    for(const auto *it = it_beg; it < it_end; it++)
+    {
+      RESULT[i++] = *it;
+    }
+  }
+
+  void load_pos_exponent_from_table(std::array<unsigned, Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE> &RESULT, const int &k)
+  {
+    RESULT.fill(0);
+    const auto *it_beg = &Bin2Chars::Tables::PositiveExponent::TABLE[0] + Bin2Chars::Tables::PositiveExponent::INDICES[k];
+    const auto *it_end = &Bin2Chars::Tables::PositiveExponent::TABLE[0] + Bin2Chars::Tables::PositiveExponent::INDICES[k + 1];
+
+    size_t i = 0;
+    for(const auto *it = it_beg; it < it_end; it++)
+    {
+      RESULT[i++] = *it;
+    }
+  }
+
 } // namespace
 
 BOOST_AUTO_TEST_CASE(test_all_2_pow_range_up_to_double)
 {
   using Table = Bin2Chars::Constants::Tables::Floating<double>;
 
-  std::array<unsigned, Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE> SIMD{}, REGULAR{};
+  std::array<unsigned, Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE> SIMD{}, REGULAR{}, TABLE{};
 
   for(int exponent = Table::MIN_BIN_EXP; exponent <= Table::MAX_BIN_EXP; exponent++)
   {
@@ -119,16 +149,19 @@ BOOST_AUTO_TEST_CASE(test_all_2_pow_range_up_to_double)
     {
       Algos::Compute::DecimalExpansion::PositiveExponent(SIMD, exponent);
       compute_pos_exponent_safe(REGULAR, exponent);
+      load_pos_exponent_from_table(TABLE, exponent);
     }
     else
     {
       Algos::Compute::DecimalExpansion::NegativeExponent(SIMD, std::abs(exponent));
       compute_neg_exponent_safe(REGULAR, std::abs(exponent));
+      load_neg_exponent_from_table(TABLE, std::abs(exponent));
     }
 
-    if(SIMD != REGULAR)
+    if(SIMD != REGULAR || REGULAR != TABLE)
     {
       BOOST_CHECK(SIMD == REGULAR);
+      BOOST_CHECK(TABLE == REGULAR);
       // exponent--; // loopback
     }
   }
