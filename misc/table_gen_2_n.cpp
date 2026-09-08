@@ -751,8 +751,8 @@ int not_main()
 #error "this algorithm is not supported for this architecture; this architecture is too old (pre __AVX2__)"
 #endif
 
-// int printer_arr_MSB_8_digit()
-int main()
+int printer_arr_MSB_8_digit()
+// int main()
 {
   // 308 decimal digits require 39 base-10^8 words
   constexpr unsigned NUM_WORDS = 39;

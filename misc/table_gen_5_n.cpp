@@ -2172,8 +2172,8 @@ int __main()
 #endif
 #endif
 
-// int printer_arr_MSB_8_digs()
-int main()
+int printer_arr_MSB_8_digs()
+// int main()
 {
   std::string accesors = "#include <cstdint> \n\n";
   accesors += " constexpr uint32_t K_TO_POW_5_BOUNDARIES[] =  {\n";

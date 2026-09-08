@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "include/Algos/Compute/DecimalExpansion.hpp"
+#include "include/Algos/Compute/ExponentDecimalExpansion.hpp"
 #include "include/Constants/Constants.hpp"
 #include "include/Tables/array_2n.hpp"
 #include "include/Tables/array_5n.hpp"

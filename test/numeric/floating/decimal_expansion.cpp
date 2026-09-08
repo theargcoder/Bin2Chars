@@ -16,7 +16,7 @@
 #include "ryu/ryu.h"
 
 #include "include/Algos/Competition.hpp"
-#include "include/Algos/Floating/DigitsPrecision.hpp"
+#include "include/Algos/Floating/DecimalExpansion.hpp"
 #include "include/Helpers/Assembly.hpp"
 #include "include/Helpers/Tests.hpp"
 
