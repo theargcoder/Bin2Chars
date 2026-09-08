@@ -559,74 +559,6 @@ namespace Bin2Chars::Helpers::Simd
     }
 
 #elif defined(__AVX2__)
-    /**
-     * @brief Maps a bit-width to the appropriate unsigned integer type.
-     * Special case: 8-bit lanes are mapped to uint16_t to prevent debugger ASCII rendering.
-     */
-    template <size_t BitWidth>
-    struct LaneType
-    {
-      using type
-          = std::conditional_t<BitWidth == 8, uint16_t,
-                               std::conditional_t<BitWidth == 16, uint16_t, std::conditional_t<BitWidth == 32, uint32_t, std::conditional_t<BitWidth == 64, uint64_t, void>>>>;
-    };
-    /**
-     * @brief Extracts lanes from __m128i, __m256i, or __m512i registers into a std::array.
-     * @tparam BitWidth The size of the lane in bits (8, 16, 32, 64).
-     * @param reg The SIMD register to extract from.
-     */
-    template <size_t BitWidth, typename RegType>
-    inline auto extract_lanes(const RegType &reg)
-    {
-      constexpr size_t total_bytes = sizeof(RegType);
-      constexpr size_t num_lanes = (total_bytes * 8) / BitWidth;
-      using T = typename LaneType<BitWidth>::type;
-
-      std::array<T, num_lanes> result;
-
-      if constexpr(BitWidth == 8)
-      {
-        // Intermediary buffer to avoid debugger ASCII char issues
-        alignas(RegType) uint8_t buffer[total_bytes];
-
-        if constexpr(std::is_same_v<RegType, __m64>)
-        {
-          _mm_stream_pi(reinterpret_cast<__m64 *>(buffer), reg);
-        }
-        else if constexpr(std::is_same_v<RegType, __m128i>)
-        {
-          _mm_storeu_si128(reinterpret_cast<__m128i *>(buffer), reg);
-        }
-        else if constexpr(std::is_same_v<RegType, __m256i>)
-        {
-          _mm256_storeu_si256(reinterpret_cast<__m256i *>(buffer), reg);
-        }
-
-        for(size_t i = 0; i < num_lanes; ++i)
-        {
-          result[i] = static_cast<uint16_t>(buffer[i]);
-        }
-      }
-      else
-      {
-        // Direct store for 16, 32, and 64-bit lanes
-        if constexpr(std::is_same_v<RegType, __m64>)
-        {
-          _mm_stream_pi(reinterpret_cast<__m64 *>(result.data()), reg);
-        }
-        else if constexpr(std::is_same_v<RegType, __m128i>)
-        {
-          _mm_storeu_si128(reinterpret_cast<__m128i *>(result.data()), reg);
-        }
-        else if constexpr(std::is_same_v<RegType, __m256i>)
-        {
-          _mm256_storeu_si256(reinterpret_cast<__m256i *>(result.data()), reg);
-        }
-      }
-
-      return result;
-    }
-
     template <>
     uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
     {
@@ -635,21 +567,21 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m128i INDICES = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
-      const uint64_t res_1 = ((uint128_t)input * 0x39A5652FB1137857ULL) >> 115U;
-      const uint64_t prod_2 = ((uint128_t)input * 0x232F33025BD42233ULL) >> 101U;
-      const uint64_t prod_3 = ((uint128_t)input * 0xABCC77118461CEFDULL) >> 90U;
-      const uint64_t prod_4 = ((uint128_t)input * 0x346DC5D63886594BULL) >> 75U;
+      const auto res_1 = static_cast<uint64_t>((static_cast<uint128_t>(input) * 0x39A5652FB1137857ULL) >> 115U);
+      const auto prod_2 = static_cast<uint64_t>((static_cast<uint128_t>(input) * 0x232F33025BD42233ULL) >> 101U);
+      const auto prod_3 = static_cast<uint64_t>((static_cast<uint128_t>(input) * 0xABCC77118461CEFDULL) >> 90U);
+      const auto prod_4 = static_cast<uint64_t>((static_cast<uint128_t>(input) * 0x346DC5D63886594BULL) >> 75U);
 
       const uint64_t res_2 = prod_2 - (res_1 * 10'000);
       const uint64_t res_3 = prod_3 - (prod_2 * 10'000);
       const uint64_t res_4 = prod_4 - (prod_3 * 10'000);
       const uint64_t res_5 = input - (prod_4 * 10'000);
 
-      const __m128i u64_res_1 = _mm_set1_epi32(static_cast<uint32_t>(res_1));
-      const __m128i u64_res_2 = _mm_set1_epi32(static_cast<uint32_t>(res_2));
-      const __m128i u64_res_3 = _mm_set1_epi32(static_cast<uint32_t>(res_3));
-      const __m128i u64_res_4 = _mm_set1_epi32(static_cast<uint32_t>(res_4));
-      const __m128i u64_res_5 = _mm_set1_epi32(static_cast<uint32_t>(res_5));
+      const __m128i u64_res_1 = _mm_set1_epi32(static_cast<int32_t>(res_1));
+      const __m128i u64_res_2 = _mm_set1_epi32(static_cast<int32_t>(res_2));
+      const __m128i u64_res_3 = _mm_set1_epi32(static_cast<int32_t>(res_3));
+      const __m128i u64_res_4 = _mm_set1_epi32(static_cast<int32_t>(res_4));
+      const __m128i u64_res_5 = _mm_set1_epi32(static_cast<int32_t>(res_5));
 
       const unsigned len = calculate_len(input);
 
@@ -689,8 +621,8 @@ namespace Bin2Chars::Helpers::Simd
       const __m128i u16_shf_x10_5 = _mm_add_epi16(u16_shifted_5_x8, u16_shifted_5_x2);
 
       const __m128i ZERO_CHAR = _mm_set1_epi8('0');
-      const __m128i LEAZ_Z_TOP_MID_LANES = _mm_set1_epi8(lead_z_top);
-      const __m128i LEAZ_Z_BOT_LANES = _mm_set1_epi8(lead_z_bot);
+      const __m128i LEAZ_Z_TOP_MID_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z_top));
+      const __m128i LEAZ_Z_BOT_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z_bot));
 
       const __m128i u16_slided_12 = _mm_slli_si128(u16_shf_x10_12, 2);
       const __m128i u16_slided_34 = _mm_slli_si128(u16_shf_x10_34, 2);
@@ -715,7 +647,7 @@ namespace Bin2Chars::Helpers::Simd
       const __m128i output_chars_top = _mm_shuffle_epi8(ascii_vec_top, final_indices_top_mid);
       const __m128i output_chars_bot = _mm_shuffle_epi8(ascii_vec_bot, final_indices_bot);
 
-      _mm_storeu_si128(reinterpret_cast<__m128i *>(buff), output_chars_top);
+      _mm_storeu_si128(reinterpret_cast<__m128i_u *>(buff), output_chars_top);
 
       _mm_storeu_si32(reinterpret_cast<void *>(buff + bot_offset), output_chars_bot);
 
@@ -725,7 +657,7 @@ namespace Bin2Chars::Helpers::Simd
     template <>
     uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
     {
-      const __m256i VAL = _mm256_set1_epi32(input);
+      const __m256i VAL = _mm256_set1_epi32(static_cast<int32_t>(input));
 
       const __m256i M_MAGIC_u64 = { 0x55E63B89ULL, 0x431BDE83ULL, 0xD1B71759ULL, 0x51EB851FULL };
       const __m256i M_SHIFTS_u64 = { 57, 50, 45, 37 };
@@ -776,7 +708,7 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m128i ZERO_NUMS = _mm_setzero_si128();
       const __m128i ZERO_CHAR = _mm_set1_epi8('0');
-      const __m128i LEAD_Z_LANES = _mm_set1_epi8(lead_z);
+      const __m128i LEAD_Z_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z));
 
       const __m128i res_shf_blen_top = _mm_blend_epi16(res_shifted_top_x10, ZERO_NUMS, 0b0101'0101);
       const __m128i res_shf_blen_bot = _mm_blend_epi16(res_shifted_bot_x10, ZERO_NUMS, 0b0101'0101);
@@ -803,7 +735,7 @@ namespace Bin2Chars::Helpers::Simd
     template <>
     uint32_t WriteEightCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
     {
-      const __m256i VAL = _mm256_set1_epi32(input);
+      const __m256i VAL = _mm256_set1_epi32(static_cast<int32_t>(input));
 
       const __m256i M_MAGIC_u64 = { 0x55E63B89ULL, 0x431BDE83ULL, 0xD1B71759ULL, 0x51EB851FULL };
       const __m256i M_SHIFTS_u64 = { 57, 50, 45, 37 };
@@ -854,7 +786,7 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m128i ZERO_NUMS = _mm_setzero_si128();
       const __m128i ZERO_CHAR = _mm_set1_epi8('0');
-      const __m128i LEAD_Z_LANES = _mm_set1_epi8(lead_z);
+      const __m128i LEAD_Z_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z));
 
       const __m128i res_shf_blen_top = _mm_blend_epi16(res_shifted_top_x10, ZERO_NUMS, 0b0101'0101);
       const __m128i res_shf_blen_bot = _mm_blend_epi16(res_shifted_bot_x10, ZERO_NUMS, 0b0101'0101);
