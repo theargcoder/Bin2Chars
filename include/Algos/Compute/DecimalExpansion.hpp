@@ -753,16 +753,16 @@ namespace Algos::Compute::DecimalExpansion
 
     const __m256i ZERO = _mm256_setzero_si256();
 
-    __m256i rrprime_1 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX])));
-    __m256i rrprime_2 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 4])));
-    __m256i rrprime_3 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 8])));
-    __m256i rrprime_4 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 12])));
-    __m256i rrprime_5 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 16])));
-    __m256i rrprime_6 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 20])));
-    __m256i rrprime_7 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 24])));
-    __m256i rrprime_8 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 28])));
-    __m256i rrprime_9 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 32])));
-    __m256i rrprime_10 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_2_CACHE[BASE_IDX + 36])));
+    __m256i rrprime_1 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX])));
+    __m256i rrprime_2 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 4])));
+    __m256i rrprime_3 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 8])));
+    __m256i rrprime_4 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 12])));
+    __m256i rrprime_5 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 16])));
+    __m256i rrprime_6 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 20])));
+    __m256i rrprime_7 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 24])));
+    __m256i rrprime_8 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 28])));
+    __m256i rrprime_9 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 32])));
+    __m256i rrprime_10 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_2_CACHE[BASE_IDX + 36])));
 
     const __m256i R_10E8 = _mm256_set1_epi64x(100'000'000U);
     const __m256i R_MAGIC_10E8 = _mm256_set1_epi64x(1'441'151'881U);
@@ -955,23 +955,23 @@ namespace Algos::Compute::DecimalExpansion
     const __m128i u32_pack_9 = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(rrprime_9, _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
     const __m128i u32_pack_10 = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(rrprime_10, _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
 
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[0]), u32_pack_1);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[4]), u32_pack_2);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[8]), u32_pack_3);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[12]), u32_pack_4);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[16]), u32_pack_5);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[20]), u32_pack_6);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[24]), u32_pack_7);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[28]), u32_pack_8);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[32]), u32_pack_9);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[36]), u32_pack_10);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[40]), ZERO);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[48]), ZERO);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[56]), ZERO);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[64]), ZERO);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[72]), ZERO);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[80]), ZERO);
-    _mm256_storeu_si256(reinterpret_cast<__m256i *>(&SIMD_ARRAY[88]), ZERO);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[0]), u32_pack_1);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[4]), u32_pack_2);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[8]), u32_pack_3);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[12]), u32_pack_4);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[16]), u32_pack_5);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[20]), u32_pack_6);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[24]), u32_pack_7);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[28]), u32_pack_8);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[32]), u32_pack_9);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[36]), u32_pack_10);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[40]), ZERO);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[48]), ZERO);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[56]), ZERO);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[64]), ZERO);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[72]), ZERO);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[80]), ZERO);
+    _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(&SIMD_ARRAY[88]), ZERO);
   }
 
   void NegativeExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent)
@@ -985,30 +985,30 @@ namespace Algos::Compute::DecimalExpansion
 
     const __m256i ZERO = _mm256_setzero_si256();
 
-    __m256i rrprime_1 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX])));
-    __m256i rrprime_2 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 4])));
-    __m256i rrprime_3 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 8])));
-    __m256i rrprime_4 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 12])));
-    __m256i rrprime_5 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 16])));
-    __m256i rrprime_6 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 20])));
-    __m256i rrprime_7 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 24])));
-    __m256i rrprime_8 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 28])));
-    __m256i rrprime_9 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 32])));
-    __m256i rrprime_10 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 36])));
-    __m256i rrprime_11 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 40])));
-    __m256i rrprime_12 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 44])));
-    __m256i rrprime_13 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 48])));
-    __m256i rrprime_14 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 52])));
-    __m256i rrprime_15 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 56])));
-    __m256i rrprime_16 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 60])));
-    __m256i rrprime_17 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 64])));
-    __m256i rrprime_18 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 68])));
-    __m256i rrprime_19 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 72])));
-    __m256i rrprime_20 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 76])));
-    __m256i rrprime_21 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 80])));
-    __m256i rrprime_22 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 84])));
-    __m256i rrprime_23 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 88])));
-    __m256i rrprime_24 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i *>(&POW_5_CACHE[BASE_IDX + 92])));
+    __m256i rrprime_1 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX])));
+    __m256i rrprime_2 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 4])));
+    __m256i rrprime_3 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 8])));
+    __m256i rrprime_4 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 12])));
+    __m256i rrprime_5 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 16])));
+    __m256i rrprime_6 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 20])));
+    __m256i rrprime_7 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 24])));
+    __m256i rrprime_8 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 28])));
+    __m256i rrprime_9 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 32])));
+    __m256i rrprime_10 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 36])));
+    __m256i rrprime_11 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 40])));
+    __m256i rrprime_12 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 44])));
+    __m256i rrprime_13 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 48])));
+    __m256i rrprime_14 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 52])));
+    __m256i rrprime_15 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 56])));
+    __m256i rrprime_16 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 60])));
+    __m256i rrprime_17 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 64])));
+    __m256i rrprime_18 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 68])));
+    __m256i rrprime_19 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 72])));
+    __m256i rrprime_20 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 76])));
+    __m256i rrprime_21 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 80])));
+    __m256i rrprime_22 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 84])));
+    __m256i rrprime_23 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 88])));
+    __m256i rrprime_24 = _mm256_cvtepu32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(&POW_5_CACHE[BASE_IDX + 92])));
 
     const __m256i R_25 = _mm256_set1_epi64x(25U);
     const __m256i R_10E8 = _mm256_set1_epi64x(100'000'000U);
@@ -1438,30 +1438,30 @@ namespace Algos::Compute::DecimalExpansion
     const __m128i u32_pack_23 = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(rrprime_23, _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
     const __m128i u32_pack_24 = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(rrprime_24, _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7)));
 
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[0]), u32_pack_1);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[4]), u32_pack_2);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[8]), u32_pack_3);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[12]), u32_pack_4);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[16]), u32_pack_5);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[20]), u32_pack_6);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[24]), u32_pack_7);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[28]), u32_pack_8);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[32]), u32_pack_9);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[36]), u32_pack_10);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[40]), u32_pack_11);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[44]), u32_pack_12);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[48]), u32_pack_13);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[52]), u32_pack_14);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[56]), u32_pack_15);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[60]), u32_pack_16);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[64]), u32_pack_17);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[68]), u32_pack_18);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[72]), u32_pack_19);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[76]), u32_pack_20);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[80]), u32_pack_21);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[84]), u32_pack_22);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[88]), u32_pack_23);
-    _mm_storeu_si128(reinterpret_cast<__m128i *>(&SIMD_ARRAY[92]), u32_pack_24);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[0]), u32_pack_1);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[4]), u32_pack_2);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[8]), u32_pack_3);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[12]), u32_pack_4);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[16]), u32_pack_5);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[20]), u32_pack_6);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[24]), u32_pack_7);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[28]), u32_pack_8);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[32]), u32_pack_9);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[36]), u32_pack_10);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[40]), u32_pack_11);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[44]), u32_pack_12);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[48]), u32_pack_13);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[52]), u32_pack_14);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[56]), u32_pack_15);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[60]), u32_pack_16);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[64]), u32_pack_17);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[68]), u32_pack_18);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[72]), u32_pack_19);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[76]), u32_pack_20);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[80]), u32_pack_21);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[84]), u32_pack_22);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[88]), u32_pack_23);
+    _mm_storeu_si128(reinterpret_cast<__m128i_u *>(&SIMD_ARRAY[92]), u32_pack_24);
   }
 
 #else

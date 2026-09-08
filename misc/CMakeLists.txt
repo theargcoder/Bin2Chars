@@ -211,7 +211,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 # Helper function
 # ------------------------------------------------------------
 
-function(add_logging_misc name src)
+function(add_bin2char_misc name src)
 
   add_executable(${name} ${src})
 
@@ -223,8 +223,7 @@ endfunction()
 # Misc experiments
 # ------------------------------------------------------------
 
-add_logging_misc(maybe maybe.cpp)
-add_logging_misc(maybe2n maybe2n.cpp)
-add_logging_misc(maybe2n_base maybe2n_base.cpp)
-add_logging_misc(maybe5n maybe5n.cpp)
-add_logging_misc(maybe5n_base maybe5n_base.cpp)
+add_bin2char_misc(table_gen_2_n table_gen_2_n.cpp)
+add_bin2char_misc(table_gen_5_n table_gen_5_n.cpp)
+add_bin2char_misc(table_prim_2_n table_prim_2_n.cpp)
+add_bin2char_misc(table_prim_5_n table_prim_5_n.cpp)

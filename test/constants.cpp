@@ -9,7 +9,7 @@
 
 #include <boost/multiprecision/cpp_bin_float.hpp>
 #include <boost/multiprecision/detail/default_ops.hpp>
-#include <boost/multiprecision/fwd.hpp>
+#include <boost/test/tools/old/interface.hpp>
 
 #include <cmath>
 #include <cstdint>
