@@ -115,7 +115,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       exp -= Floating::BIAS;
 
-      const uint32_t *it_beg = (exp < 0) ? &Bin2Chars::Tables::NegativeExponent::TABLE[Bin2Chars::Tables::NegativeExponent::TABLE[std::abs(exp)]]
+      const uint32_t *it_beg = (exp < 0) ? &Bin2Chars::Tables::NegativeExponent::TABLE[Bin2Chars::Tables::NegativeExponent::INDICES[std::abs(exp)]]
                                          : &Bin2Chars::Tables::PositiveExponent::TABLE[Bin2Chars::Tables::PositiveExponent::INDICES[exp]];
 
       const uint32_t *it_end = (exp < 0) ? &Bin2Chars::Tables::NegativeExponent::TABLE[0] + Bin2Chars::Tables::NegativeExponent::INDICES[std::abs(exp) + 1]
