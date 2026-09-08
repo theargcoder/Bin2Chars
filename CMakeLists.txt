@@ -262,11 +262,17 @@ if(IS_GCC OR IS_CLANG)
 
     add_compile_options(
       ${NATIVE_ARCH_FLAGS}
+      # GDB/LLDB stuff
       -O0
       -g3
-      # CodeLLDB
+      # For debugging
+      -fno-ipa-sra
       -fno-omit-frame-pointer
       -fno-optimize-sibling-calls
+      -fno-inline
+      -fno-inline-functions
+      -fno-inline-small-functions
+      -fno-default-inline
       # Variable tracking
       -fvar-tracking
       -fvar-tracking-assignments
@@ -279,6 +285,10 @@ if(IS_GCC OR IS_CLANG)
       -fsanitize=address
       -fsanitize=undefined
       -fsanitize=leak
+      # Without this the Address sanatizer prevents gdb/codelldb form reading
+      # the fucntion params :(
+      --param
+      asan-stack=0
       # Additional sanitizer coverage
       -fsanitize=bounds-strict
       -fsanitize=alignment

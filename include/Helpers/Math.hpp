@@ -745,7 +745,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
 
     static const constexpr uint8_t EXPONENT_ST = 23U;
     static const constexpr uint8_t MANTISSA_SHIFT = 8U;
-    static const constexpr uint8_t EXPONENT_LEFT_OFFSET = sizeof(float) * 8 - EXPONENT_ST - 1;
+    static const constexpr uint8_t EXPONENT_LEFT_OFFSET = 8;
     static const constexpr uint8_t EXPONENT_ALL_BITS_ON = 255U; // as defined in IEEE-754
 
     static const constexpr int16_t MIN_EXPONENT = std::numeric_limits<float>::min_exponent - std::numeric_limits<float>::digits;
