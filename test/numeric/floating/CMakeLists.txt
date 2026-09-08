@@ -1,2 +1,2 @@
 add_bin2chars_test(test_exponential_notation exponential_notation.cpp)
-add_bin2chars_test(test_n_digits_precision n_digits_precision.cpp)
+add_bin2chars_test(test_decimal_expansion decimal_expansion.cpp)

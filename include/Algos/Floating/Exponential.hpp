@@ -9,7 +9,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "include/Algos/Compute/DecimalExpansion.hpp"
 #include "include/Algos/Integer.hpp"
 #include "include/Constants/Constants.hpp"
 #include "include/Helpers/Math.hpp"
