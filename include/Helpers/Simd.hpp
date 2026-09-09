@@ -811,6 +811,98 @@ namespace Bin2Chars::Helpers::Simd
     }
 
 #else
+    constexpr char digits[201] = "0001020304050607080910111213141516171819"
+                                 "2021222324252627282930313233343536373839"
+                                 "4041424344454647484950515253545556575859"
+                                 "6061626364656667686970717273747576777879"
+                                 "8081828384858687888990919293949596979899";
+    template <>
+    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
+    {
+      const unsigned len = calculate_len(input);
+      unsigned pos = len - 1;
+      auto val = input;
+      while(val >= 100)
+      {
+        auto const num = (val % 100) * 2;
+        val /= 100;
+        buff[pos] = digits[num + 1];
+        buff[pos - 1] = digits[num];
+        pos -= 2;
+      }
+
+      if(val >= 10)
+      {
+        auto const num = val * 2;
+        buff[1] = digits[num + 1];
+        buff[0] = digits[num];
+      }
+      else
+      {
+        buff[0] = static_cast<char>('0' + val);
+      }
+
+      return len;
+    }
+
+    template <>
+    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    {
+      const unsigned len = calculate_len(input);
+      unsigned pos = len - 1;
+      auto val = input;
+      while(val >= 100)
+      {
+        auto const num = (val % 100) * 2;
+        val /= 100;
+        buff[pos] = digits[num + 1];
+        buff[pos - 1] = digits[num];
+        pos -= 2;
+      }
+
+      if(val >= 10)
+      {
+        auto const num = val * 2;
+        buff[1] = digits[num + 1];
+        buff[0] = digits[num];
+      }
+      else
+      {
+        buff[0] = static_cast<char>('0' + val);
+      }
+
+      return len;
+    }
+
+    template <>
+    uint32_t WriteEightCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    {
+      const unsigned len = calculate_len(input);
+      std::memset(buff, '0', 8);
+      unsigned pos = std::max(7U, len - 1U);
+      auto val = input;
+      while(val >= 100)
+      {
+        auto const num = (val % 100) * 2;
+        val /= 100;
+        buff[pos] = digits[num + 1];
+        buff[pos - 1] = digits[num];
+        pos -= 2;
+      }
+
+      if(val >= 10)
+      {
+        auto const num = val * 2;
+        buff[pos] = digits[num + 1];
+        buff[pos - 1] = digits[num];
+      }
+      else
+      {
+        buff[pos] = static_cast<char>('0' + val);
+      }
+
+      return std::max(8U, len);
+    }
 
 #endif
 

@@ -1,6 +1,7 @@
-#include <boost/test/tools/old/interface.hpp>
 #define BOOST_TEST_MODULE ComputeDecimalTests
+#include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include <array>
 #include <cstdint>
@@ -139,7 +140,7 @@ namespace
 
 BOOST_AUTO_TEST_CASE(test_all_2_pow_range_up_to_double)
 {
-  using Table = Bin2Chars::Constants::Tables::Floating<double>;
+  using Table = Algos::Compute::DecimalExpansion::Traits<double>;
 
   std::array<unsigned, Algos::Compute::DecimalExpansion::MAX_ARRAY_SIZE> SIMD{}, REGULAR{}, TABLE{};
 
