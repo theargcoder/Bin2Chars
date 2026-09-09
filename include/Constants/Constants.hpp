@@ -1,10 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <limits>
-#include <type_traits>
-
-#include "include/Helpers/Math.hpp"
 
 namespace Bin2Chars::Constants
 {
@@ -50,26 +46,5 @@ namespace Bin2Chars::Constants
     const constexpr static char *reset = "\033[0m";
   };
 } // namespace Bin2Chars::Constants
-
-namespace Bin2Chars::Constants::Tables
-{
-  template <typename T>
-    requires std::is_floating_point_v<T>
-  struct Floating
-  {
-  public:
-    static const constexpr auto MANTISSA_BITS = std::numeric_limits<double>::digits - 1;
-    static const constexpr int EXPONENT_BIAS = std::numeric_limits<double>::max_exponent - 1;
-    static const constexpr int MIN_BIN_EXP = std::numeric_limits<double>::min_exponent - std::numeric_limits<double>::digits; // Smallest binary exponent (subnormal limit)
-    static const constexpr auto MAX_BIN_EXP = std::numeric_limits<double>::max_exponent;                                      // Largest binary exponent
-    static const constexpr auto BIAS = -MIN_BIN_EXP;                                                                          // Offset so that table[BIAS] corresponds to 2^0
-    static const constexpr auto TABLE_BIAS = std::is_same_v<double, T> ? 0 : BIAS + std::numeric_limits<float>::min_exponent; // Offset so that float's have correct locations
-
-    static const constexpr auto SIZE = MAX_BIN_EXP - MIN_BIN_EXP + 1;
-    static const constexpr auto MAX_DIGITS10 = std::numeric_limits<T>::digits10;
-    static const constexpr auto MAX_EXP_DIGITS10
-        = static_cast<std::remove_cvref_t<decltype(MIN_BIN_EXP)>>(Bin2Chars::Helpers::Math::Constexpr::log10(T{ std::numeric_limits<T>::max_exponent10 }));
-  };
-} // namespace Bin2Chars::Constants::Tables
 
 //

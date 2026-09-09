@@ -8,8 +8,8 @@
 #include <string>
 #include <type_traits>
 
+#include "include/Algos/Compute/ExponentDecimalExpansion.hpp"
 #include "include/Algos/Integer.hpp"
-#include "include/Constants/Constants.hpp"
 #include "include/Helpers/Assembly.hpp"
 #include "include/Helpers/Math.hpp"
 #include "include/Helpers/Simd.hpp"
@@ -46,7 +46,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION)
     {
       using uint128_t = __uint128_t;
-      using Floating = Bin2Chars::Constants::Tables::Floating<T>;
+      using Floating = Algos::Compute::DecimalExpansion::Traits<T>;
 
       const constexpr unsigned DEC8 = 100'000'000U;
 

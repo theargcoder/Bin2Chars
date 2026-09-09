@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE IntegersTest
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include <chrono>
 #include <cstddef>
@@ -21,8 +22,8 @@ using namespace Bin2Chars::Tests;
 namespace
 {
   template <uint64_t N, typename Type>
-  auto looper_ints(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles,
-                   auto &std_lib_to_str_time, auto &std_lib_to_str_cycles, auto &simdy_time, auto &simdy_cycles) -> void
+  auto looper_ints(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &std_lib_time, auto &std_lib_cpu_cycles, auto &std_lib_to_str_time, auto &std_lib_to_str_cycles,
+                   auto &bin2chars_time, auto &bin2chars_cycles) -> void
   {
     const constexpr auto WISHED_RANGE = 100'000;
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
@@ -32,7 +33,8 @@ namespace
     uint32_t errors = 0;
     uint64_t cycles = 0;
 
-    std::string our_log, std_log, std_lib_to_str_log, simdy_log;
+    std::string std_log, std_lib_to_str_log, bin2chars_log;
+
     while(cycles < WISHED_RANGE && errors < MAX_ERRORS)
     {
       cycles += RANGE;
@@ -45,38 +47,32 @@ namespace
       for(LoopType i = delim, lim = 0, max_iter = 0; (PLUS ? i < delim + range : i > delim - range) && lim < static_cast<LoopType>(MAX_ERRORS) && max_iter < range;
           (PLUS ? i += jump : i -= jump), ++max_iter)
       {
-        const auto st_log = Bin2Chars::Helpers::Assembly::timer_start();
-        our_log = Bin2Chars::Numeric::Integral::ToStr(i);
-        const auto en_log = Bin2Chars::Helpers::Assembly::timer_end();
-
         const auto st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
-        std_log = Bin2Chars::Numeric::Std::to_string<false>(i, 123);
+        std_log = Bin2Chars::Numeric::Std::to_string<false, Type>(static_cast<Type>(i), 123);
         const auto en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
 
         const auto std_lib_to_st = Bin2Chars::Helpers::Assembly::timer_start();
-        std_lib_to_str_log = std::to_string(i);
+        std_lib_to_str_log = std::to_string(static_cast<Type>(i));
         const auto std_lib_to_en = Bin2Chars::Helpers::Assembly::timer_end();
 
         const auto simdy_st = Bin2Chars::Helpers::Assembly::timer_start();
-        simdy_log = Bin2Chars::Numeric::Integral::ToStrSIMD(i);
+        bin2chars_log = Bin2Chars::Numeric::Integral::ToStr<Type>(static_cast<Type>(i));
         const auto simdy_en = Bin2Chars::Helpers::Assembly::timer_end();
 
-        bin2chars_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_log - st_log)));
-        bin2chars_cpu_cycles += en_log - st_log;
         std_lib_time += std::chrono::duration_cast<std::chrono::nanoseconds>(
             static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_std_to_str - st_std_to_str)));
         std_lib_cpu_cycles += en_std_to_str - st_std_to_str;
         std_lib_to_str_time += std::chrono::duration_cast<std::chrono::nanoseconds>(
             static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(std_lib_to_en - std_lib_to_st)));
         std_lib_to_str_cycles += std_lib_to_en - std_lib_to_st;
-        simdy_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(simdy_en - simdy_st)));
-        simdy_cycles += simdy_en - simdy_st;
+        bin2chars_time
+            += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(simdy_en - simdy_st)));
+        bin2chars_cycles += simdy_en - simdy_st;
 
-        if(our_log != std_log || simdy_log != std_lib_to_str_log)
+        if(bin2chars_log != std_lib_to_str_log)
         {
-          BOOST_CHECK_EQUAL(our_log, std_log);
-          log_str_and_into_hex(LogHexStr("Bin2Chars::Numeric::ToStr", our_log), LogHexStr("std::to_chars", std_log), LogHexStr("std::to_string", std_lib_to_str_log),
-                               LogHexStr("Bin2Chars::Numeric::ToStrSIMD", simdy_log));
+          BOOST_CHECK_EQUAL(bin2chars_log, std_log);
+          log_str_and_into_hex(LogHexStr("std::to_chars", std_log), LogHexStr("std::to_string", std_lib_to_str_log), LogHexStr("Bin2Chars::ToStr", bin2chars_log));
 
           lim++;
           errors++;
@@ -88,65 +84,50 @@ namespace
   template <uint64_t N, typename T>
   auto tester_ints(const T & /*unused*/) -> auto
   {
-    std::chrono::nanoseconds tostr_integral_ours_took{ 0 };
     std::chrono::nanoseconds std_to_chars_took{ 0 };
     std::chrono::nanoseconds std_lib_to_str_time{ 0 };
-    std::chrono::nanoseconds simdy_lib_time{ 0 };
-    uint64_t helpers_math_cpu_cycles{ 0 };
+    std::chrono::nanoseconds bin2chars_time{ 0 };
     uint64_t std_lib_cpu_cycles{ 0 };
     uint64_t std_lib_to_str_cycles{ 0 };
-    uint64_t simdy_lib_cycles{ 0 };
+    uint64_t bin2chars_cycles{ 0 };
 
     const constexpr auto MIN = std::numeric_limits<T>::min();
     const constexpr auto MAX = std::numeric_limits<T>::max();
     const constexpr T UNIT = T{ 1 };
 
     // ---- Extremes and Zero Region ----
-    looper_ints<N>(true, MIN, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                   simdy_lib_time, simdy_lib_cycles);
-    looper_ints<N>(false, MAX, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                   simdy_lib_time, simdy_lib_cycles);
+    looper_ints<N>(true, MIN, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
+    looper_ints<N>(false, MAX, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
     ;
-    looper_ints<N>(true, T{ 0 }, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                   simdy_lib_time, simdy_lib_cycles);
-    looper_ints<N>(false, T{ 0 }, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                   simdy_lib_time, simdy_lib_cycles);
+    looper_ints<N>(true, T{ 0 }, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
+    looper_ints<N>(false, T{ 0 }, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
 
     // ---- Around powers of two (Bit boundaries) ----
     for(int e = 1; e < std::numeric_limits<T>::digits; ++e)
     {
       const T val = static_cast<T>(UNIT << e);
-      looper_ints<N>(true, val, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                     simdy_lib_time, simdy_lib_cycles);
-      looper_ints<N>(false, val, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                     simdy_lib_time, simdy_lib_cycles);
+      looper_ints<N>(true, val, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
+      looper_ints<N>(false, val, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
     }
 
     for(std::intmax_t val = 10; val > 0 && val < static_cast<std::intmax_t>(MAX) / 10; val *= 10)
     {
-      looper_ints<N>(true, static_cast<T>(val), UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time,
-                     std_lib_to_str_cycles, simdy_lib_time, simdy_lib_cycles);
+      looper_ints<N>(true, static_cast<T>(val), UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
 
-      looper_ints<N>(false, static_cast<T>(val), UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time,
-                     std_lib_to_str_cycles, simdy_lib_time, simdy_lib_cycles);
+      looper_ints<N>(false, static_cast<T>(val), UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
     }
     // ---- Large magnitude sweeps (Sparse) ----
     if constexpr(sizeof(T) >= 4)
     {
-      looper_ints<N>(true, MIN / 2, T{ 123 }, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                     simdy_lib_time, simdy_lib_cycles);
-      looper_ints<N>(false, MAX / 2, T{ 123 }, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles,
-                     simdy_lib_time, simdy_lib_cycles);
+      looper_ints<N>(true, MIN / 2, T{ 123 }, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
+      looper_ints<N>(false, MAX / 2, T{ 123 }, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
     }
 
     // ---- Randomish coverage ----
-    looper_ints<N>(true, T{ MAX / T{ 10 } }, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time,
-                   std_lib_to_str_cycles, simdy_lib_time, simdy_lib_cycles);
-    looper_ints<N>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time,
-                   std_lib_to_str_cycles, simdy_lib_time, simdy_lib_cycles);
+    looper_ints<N>(true, T{ MAX / T{ 10 } }, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
+    looper_ints<N>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
 
-    return std::make_tuple(tostr_integral_ours_took, helpers_math_cpu_cycles, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, simdy_lib_time,
-                           simdy_lib_cycles);
+    return std::make_tuple(std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
   }
 
   template <typename T, size_t... I>
@@ -155,8 +136,8 @@ namespace
   {
     auto res = tester_ints<1>(T{ 0 });
     ((res = tester_ints<I + 1>(T{ 0 }),
-      log_time_tables(T{ 0 }, "INTEGERS", I + 1, BenchResult("Numeric:ToStr", std::get<0>(res), std::get<1>(res)), BenchResult("std::to_chars", std::get<2>(res), std::get<3>(res)),
-                      BenchResult("std::to_string", std::get<4>(res), std::get<5>(res)), BenchResult("Numeric::ToStrSIMD", std::get<6>(res), std::get<7>(res)))),
+      log_time_tables(T{ 0 }, "INTEGERS", I + 1, BenchResult("std::to_chars", std::get<0>(res), std::get<1>(res)),
+                      BenchResult("std::to_string", std::get<2>(res), std::get<3>(res)), BenchResult("Bin2Chars::ToStr", std::get<4>(res), std::get<5>(res)))),
      ...);
   }
 
