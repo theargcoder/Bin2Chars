@@ -36,6 +36,7 @@ CompileFlags:
     # We deliberately DO NOT remove every -W flag because
     # CMake is now the single source of truth for diagnostics.
     - -fno-lifetime-dse
+    - -fno-ipa-sra
     - -fvar-tracking*
     - -fsanitize*
 

@@ -1,4 +1,5 @@
 #define BOOST_TEST_MODULE MagicMathTests
+#include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <chrono>
@@ -20,15 +21,13 @@ namespace
 {
 
   template <uint64_t N, typename Type>
-  auto looper_magic_division(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &open_logging_time, auto &open_logging_cpu_cycles, auto &std_lib_time,
-                             auto &std_lib_cpu_cycles) -> void
+  auto looper_magic_division(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles)
+      -> void
   {
     const constexpr auto WISHED_RANGE = 100'000;
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
     const constexpr Type RANGE = WISHED_RANGE < MAX_NUM ? static_cast<Type>(WISHED_RANGE) : MAX_NUM;
     const constexpr Type MAX_ERRORS = 10;
-
-    // OpenLogging logger;
 
     Type divisor = Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
 
@@ -42,8 +41,8 @@ namespace
       const auto regular_div_10 = i / divisor;
       const auto en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
 
-      open_logging_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
-      open_logging_cpu_cycles += en_log - st_log;
+      bin2chars_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
+      bin2chars_cpu_cycles += en_log - st_log;
       std_lib_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_std_to_str - st_std_to_str));
       std_lib_cpu_cycles += en_std_to_str - st_std_to_str;
 
@@ -59,15 +58,13 @@ namespace
   };
 
   template <uint64_t N, typename Type>
-  auto looper_magic_modulus(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &open_logging_time, auto &open_logging_cpu_cycles, auto &std_lib_time,
-                            auto &std_lib_cpu_cycles) -> void
+  auto looper_magic_modulus(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles)
+      -> void
   {
     const constexpr auto WISHED_RANGE = 100'000;
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
     const constexpr Type RANGE = WISHED_RANGE < MAX_NUM ? static_cast<Type>(WISHED_RANGE) : MAX_NUM;
     const constexpr Type MAX_ERRORS = 10;
-
-    // OpenLogging logger;
 
     Type divisor = Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
 
@@ -81,8 +78,8 @@ namespace
       const auto regular_div_10 = i % divisor;
       const uint64_t en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
 
-      open_logging_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
-      open_logging_cpu_cycles += en_log - st_log;
+      bin2chars_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
+      bin2chars_cpu_cycles += en_log - st_log;
       std_lib_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_std_to_str - st_std_to_str));
       std_lib_cpu_cycles += en_std_to_str - st_std_to_str;
 

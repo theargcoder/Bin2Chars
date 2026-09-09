@@ -195,7 +195,11 @@ namespace Bin2Chars::Helpers::Math::Constexpr
       return std::numeric_limits<T>::quiet_NaN();
     }
 
-    if(val == T{ 1 }) // NOLINT
+    // Safely check if val is approximately 1.0 using epsilon tolerance
+    const T diff = val - T{ 1 };
+    const T abs_diff = diff < T{ 0 } ? -diff : diff;
+
+    if(abs_diff <= std::numeric_limits<T>::epsilon())
     {
       return T{ 0 };
     }
@@ -736,15 +740,15 @@ namespace Bin2Chars::Helpers::Math::IEEE754
 {
   template <typename T>
     requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
-  static bool GetMantissaExponent(const T &input, auto &mantissa, int &exponent) noexcept;
+  static bool GetMantissaExponent(const T &input, uint64_t &mantissa, int &exponent) noexcept;
 
   template <>
-  bool GetMantissaExponent<float>(const float &input, uint32_t &mantissa, int &exponent) noexcept
+  bool GetMantissaExponent<float>(const float &input, uint64_t &mantissa, int &exponent) noexcept
   {
     using underlying = uint32_t;
 
     static const constexpr uint8_t EXPONENT_ST = 23U;
-    static const constexpr uint8_t MANTISSA_SHIFT = 8U;
+    static const constexpr uint8_t MANTISSA_SHIFT = 8U + 32U; // +32 since now we use uint64_t
     static const constexpr uint8_t EXPONENT_LEFT_OFFSET = 8;
     static const constexpr uint8_t EXPONENT_ALL_BITS_ON = 255U; // as defined in IEEE-754
 
@@ -766,13 +770,13 @@ namespace Bin2Chars::Helpers::Math::IEEE754
     if(exp >= EXPONENT_ALL_BITS_ON) [[unlikely]]
     {
       const underlying SIGN = bits & SIGN_ONLY;
-      mantissa = (man == 0) ? (SIGN) ? 2 : 1 : 0;
+      mantissa = (man == 0) ? ((SIGN) ? 2 : 1) : 0;
       return true;
     }
 
     if(exp > 0) [[likely]]
     {
-      mantissa = (man | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
+      mantissa = static_cast<uint64_t>(man | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
       exponent = exp + EXPONENT_TABLE_BIAS;
     }
     else
@@ -781,7 +785,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
 
       if(shift_internal <= EXPONENT_ST) [[likely]]
       {
-        mantissa = (((man << shift_internal) & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
+        mantissa = (((static_cast<uint64_t>(man) << shift_internal) & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
         exponent = 1 - shift_internal + EXPONENT_TABLE_BIAS;
       }
       else
@@ -821,7 +825,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
     if(exp >= EXPONENT_ALL_BITS_ON) [[unlikely]]
     {
       const underlying SIGN = bits & SIGN_ONLY;
-      mantissa = (man == 0) ? (SIGN) ? 2 : 1 : 0;
+      mantissa = (man == 0) ? ((SIGN) ? 2 : 1) : 0;
       return true;
     }
 
@@ -848,56 +852,6 @@ namespace Bin2Chars::Helpers::Math::IEEE754
 
     return false;
   }
-
-  namespace Exponential
-  {
-    template <typename T>
-      requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
-    static inline auto Multiply(const auto &mantissa, const uint32_t *table, auto &result, auto &next_9_digits) noexcept;
-
-    template <>
-    inline auto Multiply<float>(const uint32_t &mantissa, const uint32_t *table, uint32_t &result, uint32_t &next_9_digits) noexcept
-    {
-      const constexpr uint32_t DEC9 = 1'000'000'000U;
-
-      const uint64_t u64_prod_0 = static_cast<uint64_t>(mantissa) * table[0];
-      const uint64_t u64_prod_1 = static_cast<uint64_t>(mantissa) * table[1];
-
-      const auto u32low_prod_0 = static_cast<uint32_t>(u64_prod_0);
-      const auto u32low_1e9 = Helpers::Assembly::umulh32(u32low_prod_0, DEC9);
-      const auto u32hig_prod_1 = static_cast<uint32_t>(u64_prod_1 >> 32U);
-
-      result = static_cast<uint32_t>(u64_prod_0 >> 32U);
-      next_9_digits = static_cast<uint32_t>(u32hig_prod_1) + u32low_1e9;
-
-      while(next_9_digits >= DEC9)
-      {
-        result++;
-        next_9_digits -= DEC9;
-      }
-    }
-
-    template <>
-    inline auto Multiply<double>(const uint64_t &mantissa, const uint32_t *table, uint64_t &result, uint32_t &next_9_digits) noexcept
-    {
-      const constexpr uint64_t DEC9 = 1'000'000'000ULL;
-
-      const uint64_t m_high_mid = static_cast<uint64_t>(table[0]) * DEC9 + table[1];
-      const auto p_low_top = static_cast<uint32_t>(Helpers::Assembly::umulh64(mantissa, table[2]));
-
-      const __uint128_t u128_prod = static_cast<__uint128_t>(mantissa) * m_high_mid;
-      const auto p_hi_mid_rem_times_1e9 = static_cast<uint32_t>(Helpers::Assembly::umulh64(static_cast<uint64_t>(u128_prod), DEC9));
-
-      result = static_cast<uint64_t>(u128_prod >> 64U);
-      next_9_digits = p_low_top + p_hi_mid_rem_times_1e9;
-
-      while(next_9_digits >= DEC9)
-      {
-        result++;
-        next_9_digits -= static_cast<uint32_t>(DEC9);
-      }
-    }
-  } // namespace Exponential
 
 } // namespace Bin2Chars::Helpers::Math::IEEE754
 
