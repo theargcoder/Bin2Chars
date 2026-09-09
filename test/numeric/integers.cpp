@@ -21,7 +21,7 @@ using namespace Bin2Chars::Tests;
 namespace
 {
   template <uint64_t N, typename Type>
-  auto looper_ints(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &open_logging_time, auto &open_logging_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles,
+  auto looper_ints(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles,
                    auto &std_lib_to_str_time, auto &std_lib_to_str_cycles, auto &simdy_time, auto &simdy_cycles) -> void
   {
     const constexpr auto WISHED_RANGE = 100'000;
@@ -31,7 +31,6 @@ namespace
 
     uint32_t errors = 0;
     uint64_t cycles = 0;
-    // OpenLogging logger;
 
     std::string our_log, std_log, std_lib_to_str_log, simdy_log;
     while(cycles < WISHED_RANGE && errors < MAX_ERRORS)
@@ -62,9 +61,8 @@ namespace
         simdy_log = Bin2Chars::Numeric::Integral::ToStrSIMD(i);
         const auto simdy_en = Bin2Chars::Helpers::Assembly::timer_end();
 
-        open_logging_time
-            += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_log - st_log)));
-        open_logging_cpu_cycles += en_log - st_log;
+        bin2chars_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_log - st_log)));
+        bin2chars_cpu_cycles += en_log - st_log;
         std_lib_time += std::chrono::duration_cast<std::chrono::nanoseconds>(
             static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_std_to_str - st_std_to_str)));
         std_lib_cpu_cycles += en_std_to_str - st_std_to_str;
