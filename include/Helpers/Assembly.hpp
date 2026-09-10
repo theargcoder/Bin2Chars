@@ -35,47 +35,62 @@ namespace Bin2Chars::Helpers::Assembly
 #endif
   }
 
-  // Forces the CPU to finish all previous instructions before taking the timestamp
-  inline uint64_t timer_start()
-  {
 #if defined(__x86_64__)
-    // lfence ensures rdtsc doesn't execute too early.
-    // We use rdtsc here because we don't need the "wait for previous"
-    // behavior of rdtscp yet; lfence handles the barrier.
+
+  inline __attribute__((always_inline)) uint64_t timer_start() noexcept
+  {
+    asm volatile("" ::: "memory");
+
     _mm_lfence();
-    uint64_t t = __rdtsc();
-    _mm_lfence(); // Optional: keeps code from starting before t is read
+    const uint64_t t = __rdtsc();
+    _mm_lfence();
+
+    asm volatile("" ::: "memory");
+
     return t;
-#elif defined(__aarch64__)
-    uint64_t val;
-    // isb (Instruction Synchronization Barrier) is the ARM equivalent of a fence
-    asm volatile("isb" ::: "memory");
-    asm volatile("mrs %0, cntvct_el0" : "=r"(val));
-    return val;
-#endif
   }
 
-  // Ensures the code being measured finishes before taking the final timestamp
-  inline uint64_t timer_end()
+  inline __attribute__((always_inline)) uint64_t timer_end() noexcept
   {
-#if defined(__x86_64__)
     unsigned int unused;
-    uint64_t t = __rdtscp(&unused);
-    _mm_lfence(); // Serialize
+    const uint64_t t = __rdtscp(&unused);
+    _mm_lfence();
+
+    asm volatile("" ::: "memory");
+
     return t;
-#elif defined(__aarch64__)
-    uint64_t val;
-    asm volatile("isb" ::: "memory");
-    asm volatile("mrs %0, cntvct_el0" : "=r"(val));
-    return val;
-#else
-#error "Unsupported architecture"
-#endif
   }
+
+#elif defined(__aarch64__)
+
+  inline __attribute__((always_inline)) uint64_t timer_start() noexcept
+  {
+    asm volatile("isb" ::: "memory");
+
+    uint64_t t;
+    asm volatile("mrs %0, cntvct_el0" : "=r"(t) : : "memory");
+
+    return t;
+  }
+
+  inline __attribute__((always_inline)) uint64_t timer_end() noexcept
+  {
+    asm volatile("isb" ::: "memory");
+
+    uint64_t t;
+    asm volatile("mrs %0, cntvct_el0" : "=r"(t) : : "memory");
+
+    asm volatile("isb" ::: "memory");
+
+    return t;
+  }
+
+#endif
+
+#if defined(__x86_64__)
 
   inline uint64_t rdtsc_freq()
   {
-#if defined(__x86_64__)
     // This is the tricky part on x86
     // Best option: calibrate once using chrono
     static uint64_t freq = []
@@ -95,16 +110,20 @@ namespace Bin2Chars::Helpers::Assembly
     }();
 
     return freq;
+  }
 
 #elif defined(__aarch64__)
+
+  inline uint64_t rdtsc_freq()
+  {
     uint64_t freq;
     asm volatile("mrs %0, cntfrq_el0" : "=r"(freq));
     return freq;
+  }
 
 #else
 #error "Unsupported architecture"
 #endif
-  }
 
   inline uint64_t rdtsc_to_ns(uint64_t ticks)
   {
