@@ -199,7 +199,7 @@ namespace
 
     // ---- MASSIVE CHAOS FUZZER ----
     // 1 million purely random bit-patterns per precision level
-    // fuzzer_format_exponential(bannana, PRECISION, 1'000'000, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    fuzzer_format_exponential(bannana, PRECISION, 1'000'000, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
     fuzzer_format_exponential(bannana, PRECISION, 100'000, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
 
     return std::make_tuple(bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
@@ -211,7 +211,7 @@ namespace
   {
     const auto float_res = tester_format_exponential(static_cast<T>(0), PRECISION);
 
-    log_time_tables(T{ 0.0 }, "Exponential Formatting ", PRECISION, BenchResult("Bin2Chars", std::get<0>(float_res), std::get<1>(float_res)),
+    log_time_tables(static_cast<T>(0.0), "Exponential Formatting ", PRECISION, BenchResult("Bin2Chars", std::get<0>(float_res), std::get<1>(float_res)),
                     BenchResult("std::to_chars", std::get<2>(float_res), std::get<3>(float_res)), BenchResult("ryu", std::get<4>(float_res), std::get<5>(float_res)));
   };
 
@@ -227,7 +227,7 @@ BOOST_AUTO_TEST_CASE(test_all_floating_point_v)
     test_and_benchmark_float(static_cast<float>(0), i);
   }
 
-  // doubles not working for some reason
+  // doubles // all good
   for(int i = 1; i <= 800; i++)
   {
     test_and_benchmark_float(static_cast<double>(0), i);
