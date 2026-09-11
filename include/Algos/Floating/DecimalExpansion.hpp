@@ -180,7 +180,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
           }
         }
 
-        len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], rem);
+        len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
         len += len_written;
         precision_missing -= static_cast<int>(len_written);
       }
@@ -191,7 +191,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         digs = static_cast<unsigned>(step_total >> 64U);
         frac = static_cast<uint64_t>(step_total);
 
-        len_written = Helpers::Simd::x86_64::WriteEightCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+        len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], digs);
         len += len_written;
         precision_missing -= static_cast<int>(len_written);
       }

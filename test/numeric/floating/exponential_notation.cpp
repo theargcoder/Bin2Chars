@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE ExponentialNotationTest
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include <bit>
 #include <chrono>
@@ -70,21 +71,15 @@ namespace
         if(bin2chars.contains("nan") && std_format.contains("nan"))
           continue;
 
-        const auto log_val = std::strtold(bin2chars.c_str(), nullptr);
-        const auto ref_val = std::strtold(std_format.c_str(), nullptr);
+        BOOST_CHECK_EQUAL(bin2chars, std_format);
+        log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
-        if(std::bit_cast<__uint128_t>(log_val) != static_cast<__uint128_t>(ref_val))
-        {
-          BOOST_CHECK_EQUAL(log_val, ref_val);
-          log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
+        bin2chars = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
 
-          bin2chars = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
+        char buffer[1024];
+        d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
 
-          char buffer[1024];
-          d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
-
-          errors++;
-        }
+        errors++;
       }
     }
   };
@@ -126,24 +121,16 @@ namespace
 
       if(bin2chars != std_format)
       {
-        const auto log_val = std::strtold(bin2chars.c_str(), nullptr);
-        const auto ref_val = std::strtold(std_format.c_str(), nullptr);
-
         if(bin2chars.contains("nan") && std_format.contains("nan"))
           continue;
 
-        if(std::bit_cast<__uint128_t>(log_val) != static_cast<__uint128_t>(ref_val))
-        {
-          BOOST_CHECK_EQUAL(log_val, ref_val);
-          log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
+        BOOST_CHECK_EQUAL(bin2chars, std_format);
+        log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
-          bin2chars = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
+        bin2chars = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
 
-          char buffer[1024];
-          d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
-
-          lim++;
-        }
+        char buffer[1024];
+        d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
       }
     }
   };
@@ -232,52 +219,18 @@ namespace
 
 BOOST_AUTO_TEST_CASE(test_all_floating_point_v)
 {
+  Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(3);
+
   // floats
-  // test_and_benchmark_float(static_cast<float>(0), 1);
-  // test_and_benchmark_float(static_cast<float>(0), 2);
-  // test_and_benchmark_float(static_cast<float>(0), 3);
-  // test_and_benchmark_float(static_cast<float>(0), 4);
-  // test_and_benchmark_float(static_cast<float>(0), 5);
-  // test_and_benchmark_float(static_cast<float>(0), 6);
-  // test_and_benchmark_float(static_cast<float>(0), 7);
-  // test_and_benchmark_float(static_cast<float>(0), 8);
-  // test_and_benchmark_float(static_cast<float>(0), 9);
-  // test_and_benchmark_float(static_cast<float>(0), 10);
-  // test_and_benchmark_float(static_cast<float>(0), 11);
-  // test_and_benchmark_float(static_cast<float>(0), 12);
-  // test_and_benchmark_float(static_cast<float>(0), 12);
-  // test_and_benchmark_float(static_cast<float>(0), 13);
-  // test_and_benchmark_float(static_cast<float>(0), 15);
-  // test_and_benchmark_float(static_cast<float>(0), 16);
-  // test_and_benchmark_float(static_cast<float>(0), 17);
-  // test_and_benchmark_float(static_cast<float>(0), 18);
-  // test_and_benchmark_float(static_cast<float>(0), 19);
-  // test_and_benchmark_float(static_cast<float>(0), 20);
-  // test_and_benchmark_float(static_cast<float>(0), 21);
-  // test_and_benchmark_float(static_cast<float>(0), 22);
-  // test_and_benchmark_float(static_cast<float>(0), 23);
-  // test_and_benchmark_float(static_cast<float>(0), 24);
+  for(int i = 1; i <= 200; i++)
+  {
+    test_and_benchmark_float(static_cast<float>(0), i);
+  }
 
-  test_and_benchmark_float(static_cast<float>(0), 40);
   // doubles
-  test_and_benchmark_float(static_cast<double>(0), 1);
-  test_and_benchmark_float(static_cast<double>(0), 2);
-  test_and_benchmark_float(static_cast<double>(0), 3);
-  test_and_benchmark_float(static_cast<double>(0), 4);
-  test_and_benchmark_float(static_cast<double>(0), 5);
-  test_and_benchmark_float(static_cast<double>(0), 6);
-  test_and_benchmark_float(static_cast<double>(0), 7);
-  test_and_benchmark_float(static_cast<double>(0), 8);
-  test_and_benchmark_float(static_cast<double>(0), 9);
-  test_and_benchmark_float(static_cast<double>(0), 10);
-  test_and_benchmark_float(static_cast<double>(0), 11);
-  test_and_benchmark_float(static_cast<double>(0), 12);
-  test_and_benchmark_float(static_cast<double>(0), 13);
-  test_and_benchmark_float(static_cast<double>(0), 14);
-  test_and_benchmark_float(static_cast<double>(0), 15);
-  test_and_benchmark_float(static_cast<double>(0), 16);
-  test_and_benchmark_float(static_cast<double>(0), 17);
-
-  // tester_format_exponential(static_cast<long double>(0));
+  for(int i = 1; i <= 800; i++)
+  {
+    test_and_benchmark_float(static_cast<double>(0), i);
+  }
 }
 ///

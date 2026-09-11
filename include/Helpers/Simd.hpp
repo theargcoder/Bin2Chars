@@ -356,10 +356,6 @@ namespace Bin2Chars::Helpers::Simd
 
     template <typename T>
       requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
-    static uint32_t WriteEightCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept;
-
-    template <typename T>
-      requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
     static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept;
 
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
@@ -507,9 +503,12 @@ namespace Bin2Chars::Helpers::Simd
       return len;
     }
 
-    template <>
-    uint32_t WriteEightCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    template <size_t Num>
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint32_t &input) noexcept
     {
+      static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
+      constexpr unsigned MIN_LEN = Num;
+      constexpr unsigned MIN_LEAD_Z = 10 - Num;
 
       const __m512i val = _mm512_set1_epi32(static_cast<int32_t>(input));
       // clang-format off
@@ -521,7 +520,7 @@ namespace Bin2Chars::Helpers::Simd
       const __m512i prod = umul_hi_32x16(val, M_MAGIC_10_0);
 
       const unsigned len = calculate_len(input);
-      const unsigned lead_z = std::min(10U - len, 2U);
+      const unsigned lead_z = std::min(10U - len, MIN_LEAD_Z);
 
       const __m512i n_sub_t = _mm512_sub_epi32(val, prod);
       const __m512i n_sub_t_shf = _mm512_srli_epi32(n_sub_t, 1);
@@ -554,10 +553,10 @@ namespace Bin2Chars::Helpers::Simd
 
       _mm_storeu_si16(reinterpret_cast<void *>(buff + 8), top_top);
 
-      return std::max(len, 8U);
+      return std::max(len, MIN_LEN);
     }
 
-#elif defined(__AVX2__)
+#elif false && defined(__AVX2__)
     template <>
     uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
     {
@@ -732,9 +731,13 @@ namespace Bin2Chars::Helpers::Simd
       return len;
     }
 
-    template <>
-    uint32_t WriteEightCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    template <size_t Num>
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint32_t &input) noexcept
     {
+      static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
+      constexpr unsigned MIN_LEN = Num;
+      constexpr unsigned MIN_LEAD_Z = 10 - Num;
+
       const __m256i VAL = _mm256_set1_epi32(static_cast<int32_t>(input));
 
       const __m256i M_MAGIC_u64 = { 0x55E63B89ULL, 0x431BDE83ULL, 0xD1B71759ULL, 0x51EB851FULL };
@@ -746,7 +749,7 @@ namespace Bin2Chars::Helpers::Simd
       const __m256i prod = _mm256_mul_epu32(VAL, M_MAGIC_u64);
 
       const unsigned len = calculate_len(input);
-      const unsigned lead_z = std::min(10U - len, 2U);
+      const unsigned lead_z = std::min(10U - len, MIN_LEAD_Z);
 
       const __m256i shifted = _mm256_srlv_epi64(prod, M_SHIFTS_u64);
       const __m128i shifted_64 = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(shifted, PERMUTE_SHF_64));
@@ -807,7 +810,7 @@ namespace Bin2Chars::Helpers::Simd
 
       _mm_storeu_si16(reinterpret_cast<void *>(buff + 8), top_top);
 
-      return std::max(len, 8U);
+      return std::max(len, MIN_LEN);
     }
 
 #else
@@ -874,12 +877,15 @@ namespace Bin2Chars::Helpers::Simd
       return len;
     }
 
-    template <>
-    uint32_t WriteEightCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    template <size_t Num>
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint32_t &input) noexcept
     {
+      static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
+      constexpr unsigned MIN_LEN = Num;
+
       const unsigned len = calculate_len(input);
-      std::memset(buff, '0', 8);
-      unsigned pos = std::max(7U, len - 1U);
+      std::memset(buff, '0', MIN_LEN);
+      unsigned pos = std::max(MIN_LEN - 1, len - 1U);
       auto val = input;
       while(val >= 100)
       {
@@ -901,7 +907,7 @@ namespace Bin2Chars::Helpers::Simd
         buff[pos] = static_cast<char>('0' + val);
       }
 
-      return std::max(8U, len);
+      return std::max(len, MIN_LEN);
     }
 
 #endif
@@ -958,6 +964,40 @@ namespace Bin2Chars::Helpers::Simd
 
       return len;
     }
+
+    template <size_t Num>
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint16_t &input) noexcept
+    {
+      static_assert(Num <= 5, "uint16_t has AT MOST 5 digits");
+      constexpr unsigned MIN_LEN = Num;
+      constexpr unsigned MIN_LEAD_Z = (5 - Num) << 3U;
+
+      const uint64_t u8_acii_zero = 0x3030'3030'3030'3030ULL;
+
+      const uint64_t dig_1 = (static_cast<uint64_t>(input) * 0xD1B71759U) >> 45U;
+      const auto prod_2 = static_cast<uint32_t>((static_cast<uint64_t>(input) * 0x10624DD3U) >> 38U);
+      const auto prod_3 = static_cast<uint32_t>((static_cast<uint64_t>(input) * 0x51EB851FU) >> 37U);
+      const auto prod_4 = static_cast<uint32_t>((static_cast<uint64_t>(input) * 0xCCCCCCCDU) >> 35U);
+
+      const unsigned len = calculate_len(input);
+      const unsigned lead_z = std::min((5U - len) << 3U, MIN_LEAD_Z);
+
+      const uint64_t dig_2 = prod_2 - ((dig_1 << 3U) + (dig_1 << 1U));
+      const uint64_t dig_3 = prod_3 - ((prod_2 << 3U) + (prod_2 << 1U));
+      const uint64_t dig_4 = prod_4 - ((prod_3 << 3U) + (prod_3 << 1U));
+      const uint64_t dig_5 = input - ((prod_4 << 3U) + (prod_4 << 1U));
+
+      const uint64_t u8_res = dig_1 | dig_2 << 8U | dig_3 << 16U | dig_4 << 24U | dig_5 << 32U;
+
+      const uint64_t u8_res_shf = u8_res >> lead_z;
+      const uint64_t u8_chars = u8_res_shf + u8_acii_zero;
+
+      // Final Store (8 bytes)
+      std::memcpy(buff, &u8_chars, sizeof(u8_chars));
+
+      return std::max(len, MIN_LEN);
+    }
+
   } // namespace x86_64
 
 #endif
