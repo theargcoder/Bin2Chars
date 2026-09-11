@@ -273,22 +273,10 @@ if(IS_GCC OR IS_CLANG)
       -fno-inline-functions
       -fno-inline-small-functions
       -fno-default-inline
-      # Variable tracking
-      -fvar-tracking
-      -fvar-tracking-assignments
-      # Make uninitialized automatic variables obvious
-      -ftrivial-auto-var-init=pattern
-      # Stack protection
-      -fstack-protector-strong
-      -fstack-clash-protection
       # Address / UB / leak sanitizers
       -fsanitize=address
       -fsanitize=undefined
       -fsanitize=leak
-      # Without this the Address sanatizer prevents gdb/codelldb form reading
-      # the fucntion params :(
-      --param
-      asan-stack=0
       # Additional sanitizer coverage
       -fsanitize=bounds-strict
       -fsanitize=alignment
@@ -300,6 +288,12 @@ if(IS_GCC OR IS_CLANG)
       -fsanitize=enum
       -fsanitize=vptr
       -fsanitize=builtin
+      # Variable tracking -fvar-tracking -fvar-tracking-assignments Make
+      # uninitialized automatic variables obvious
+      -ftrivial-auto-var-init=pattern
+      # Stack protection
+      -fstack-protector-strong
+      -fstack-clash-protection
       # Stop immediately on sanitizer failure
       -fno-sanitize-recover=all
       # Language-specific warnings
@@ -309,7 +303,6 @@ if(IS_GCC OR IS_CLANG)
     # --------------------------------------------------------
     # Sanitizer runtime
     # --------------------------------------------------------
-
     add_link_options(-fsanitize=address -fsanitize=undefined -fsanitize=leak
                      -fno-sanitize-recover=all)
 
