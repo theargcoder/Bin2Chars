@@ -258,7 +258,8 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     buff[len++] = 'e';
     buff[len++] = (exp_base_10 < 0) ? '-' : '+';
 
-    len += Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<(std::is_same_v<T, float> ? 2 : 3)>(&buff[len], static_cast<uint16_t>(std::abs(exp_base_10)));
+    // minimum of 2 digits for exp; if there is 3 then 3 digits
+    len += Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<2>(&buff[len], static_cast<uint16_t>(std::abs(exp_base_10)));
 
     return len;
   }
