@@ -53,19 +53,19 @@ namespace Bin2Chars::Helpers::Simd
 
         if constexpr(sizeof(RegType) == sizeof(__m64))
         {
-          _mm_stream_pi(reinterpret_cast<__m64 *>(buffer), reg);
+          _mm_stream_pi(reinterpret_cast<__m64 *>(static_cast<void *>(buffer)), reg);
         }
         else if constexpr(sizeof(RegType) == sizeof(__m128i))
         {
-          _mm_storeu_si128(reinterpret_cast<__m128i *>(buffer), reg);
+          _mm_storeu_si128(reinterpret_cast<__m128i_u *>(static_cast<void *>(buffer)), reg);
         }
         else if constexpr(sizeof(RegType) == sizeof(__m256i))
         {
-          _mm256_storeu_si256(reinterpret_cast<__m256i *>(buffer), reg);
+          _mm256_storeu_si256(reinterpret_cast<__m256i_u *>(static_cast<void *>(buffer)), reg);
         }
         else if constexpr(sizeof(RegType) == sizeof(__m512i))
         {
-          _mm512_storeu_si512(reinterpret_cast<void *>(buffer), reg);
+          _mm512_storeu_si512(reinterpret_cast<void *>(static_cast<void *>(buffer)), reg);
         }
 
         for(size_t i = 0; i < num_lanes; ++i)
@@ -78,19 +78,19 @@ namespace Bin2Chars::Helpers::Simd
         // Direct store for 16, 32, and 64-bit lanes
         if constexpr(sizeof(RegType) == sizeof(__m64))
         {
-          _mm_stream_pi(reinterpret_cast<__m64 *>(result.data()), reg);
+          _mm_stream_pi(reinterpret_cast<__m64 *>(static_cast<void *>(result.data())), reg);
         }
         else if constexpr(sizeof(RegType) == sizeof(__m128i))
         {
-          _mm_storeu_si128(reinterpret_cast<__m128i *>(result.data()), reg);
+          _mm_storeu_si128(reinterpret_cast<__m128i *>(static_cast<void *>(result.data())), reg);
         }
         else if constexpr(sizeof(RegType) == sizeof(__m256i))
         {
-          _mm256_storeu_si256(reinterpret_cast<__m256i *>(result.data()), reg);
+          _mm256_storeu_si256(reinterpret_cast<__m256i *>(static_cast<void *>(result.data())), reg);
         }
         else if constexpr(sizeof(RegType) == sizeof(__m512i))
         {
-          _mm512_storeu_si512(reinterpret_cast<void *>(result.data()), reg);
+          _mm512_storeu_si512(reinterpret_cast<void *>(static_cast<void *>(result.data())), reg);
         }
       }
 
@@ -374,7 +374,6 @@ namespace Bin2Chars::Helpers::Simd
     template <>
     uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
     {
-
       const __m128i M_MAGICS_u16 = _mm_set1_epi64x(0x0000'199A'A3D8'8313);
       const __m128i M_SHIFTS_u16 = _mm_set1_epi64x(0x0000'0000'0006'0009);
 
@@ -563,7 +562,7 @@ namespace Bin2Chars::Helpers::Simd
     uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
     {
       const __m128i M_MAGICS_u16 = _mm_set_epi32(0x0000, 0x199A, 0xA3D8, 0x8313);
-      const __m128i M_SHIFTS_u16 = _mm_set_epi32(0x0000, 0000, 0x0006, 0x0009);
+      const __m128i M_SHIFTS_u16 = _mm_set_epi32(0x0000, 0x0000, 0x0006, 0x0009);
 
       const __m128i INDICES = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
 
@@ -657,13 +656,16 @@ namespace Bin2Chars::Helpers::Simd
     template <>
     uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
     {
+      constexpr uint32_t MAGIC_u32[] = { 0x55E63B89U, 0x431BDE83U, 0xD1B71759U, 0x51EB851FU };
+      constexpr uint32_t SHIFTS_u32[] = { 57, 50, 45, 37 };
+      constexpr uint8_t IND_u16[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+
       const __m256i VAL = _mm256_set1_epi32(static_cast<int32_t>(input));
 
-      const __m256i M_MAGIC_u64 = { 0x55E63B89ULL, 0x431BDE83ULL, 0xD1B71759ULL, 0x51EB851FULL };
-      const __m256i M_SHIFTS_u64 = { 57, 50, 45, 37 };
+      const __m256i M_MAGIC_u64 = _mm256_cvtepi32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(static_cast<const void *>(&MAGIC_u32[0]))));
+      const __m256i M_SHIFTS_u64 = _mm256_cvtepi32_epi64(_mm_loadu_si128(reinterpret_cast<const __m128i_u *>(static_cast<const void *>(&SHIFTS_u32[0]))));
 
-      const __m256i PERMUTE_SHF_64 = _mm256_setr_epi32(0, 2, 4, 6, 1, 3, 5, 7);
-      const __m128i INDICES = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+      const __m128i INDICES = _mm_loadu_si128(reinterpret_cast<const __m128i_u *>(static_cast<const void *>(&IND_u16[0])));
 
       const __m256i prod = _mm256_mul_epu32(VAL, M_MAGIC_u64);
 
@@ -671,15 +673,13 @@ namespace Bin2Chars::Helpers::Simd
       const unsigned lead_z = 10U - len;
 
       const __m256i shifted = _mm256_srlv_epi64(prod, M_SHIFTS_u64);
-      const __m128i shifted_64 = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(shifted, PERMUTE_SHF_64));
+      const __m128i shifted_64 = _mm256_castsi256_si128(_mm256_permute4x64_epi64(_mm256_shuffle_epi32(shifted, _MM_SHUFFLE(1, 3, 2, 0)), 0b11'01'10'00));
 
-      const __m128i shifted_64_x_64 = _mm_slli_epi64(shifted_64, 6);
-      const __m128i shifted_64_x_32 = _mm_slli_epi64(shifted_64, 5);
-
-      const __m128i shifted_64_x_4 = _mm_slli_epi64(shifted_64, 2);
-      const __m128i shifted_64_x_96 = _mm_add_epi64(shifted_64_x_64, shifted_64_x_32);
-
-      const __m128i shifted_64_x_100 = _mm_add_epi64(shifted_64_x_96, shifted_64_x_4);
+      const __m128i shifted_64_x_2 = _mm_slli_epi32(shifted_64, 1);
+      const __m128i shifted_64_x_3 = _mm_add_epi32(shifted_64, shifted_64_x_2);
+      const __m128i shifted_64_x_24 = _mm_slli_epi32(shifted_64_x_3, 3);
+      const __m128i shifted_64_x_25 = _mm_add_epi32(shifted_64_x_24, shifted_64);
+      const __m128i shifted_64_x_100 = _mm_slli_epi32(shifted_64_x_25, 2);
 
       const __m128i top_lanes = _mm_slli_si128(shifted_64_x_100, 4);
       const __m128i bot_lanes = _mm_shuffle_epi32(shifted_64_x_100, _MM_SHUFFLE(0, 1, 2, 3));
