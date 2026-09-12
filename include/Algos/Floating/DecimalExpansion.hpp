@@ -45,15 +45,17 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
   {
     static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION)
     {
-      using uint128_t = __uint128_t;
-      using Floating = Algos::Compute::DecimalExpansion::Traits<T>;
+      using base_t = uint64_t;    // std::conditional_t<std::is_same_v<float, T>, uint32_t, uint64_t>;
+      using wide_t = __uint128_t; //  std::conditional_t<std::is_same_v<float, T>, uint64_t, __uint128_t>;
+
+      constexpr auto SHIFT_T = 64U; // std::is_same_v<float, T> ? 32U : 64U;
 
       const constexpr unsigned DEC8 = 100'000'000U;
 
       unsigned len = 0;
-      uint64_t mantissa;
+      base_t mantissa;
       int exp;
-      if(Helpers::Math::IEEE754::GetMantissaExponent<T>(input, mantissa, exp)) [[unlikely]]
+      if(Helpers::Math::IEEE754::GetMantissaExponent<T, base_t>(input, mantissa, exp)) [[unlikely]]
       {
         if(mantissa == 0)
         {
@@ -80,8 +82,6 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
         return len;
       }
-
-      exp -= Floating::BIAS;
 
       const int abs_exp = std::abs(exp);
       const int pos_exp = (exp >= 0) ? exp : 0;
@@ -111,11 +111,11 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       const int expected_digits = static_cast<int>(Helpers::Simd::calculate_len(*(it)));
       const int n_limbs = static_cast<int>(it_end - it_beg - 1);
 
-      int exp_base_10 = expected_digits - 1 + (n_limbs << 3U) - (exp < 0 ? std::abs(exp) : 0);
+      int exp_base_10 = expected_digits - 1 + (n_limbs << 3U) - (exp < 0 ? abs_exp : 0);
 
-      const auto prod = static_cast<uint128_t>(*it) * mantissa;
-      auto digs = static_cast<uint32_t>(prod >> 64U);
-      auto frac = static_cast<uint64_t>(prod);
+      const wide_t prod = static_cast<wide_t>(*it) * mantissa;
+      unsigned digs = static_cast<unsigned>(prod >> SHIFT_T);
+      base_t frac = static_cast<base_t>(prod);
 
       const int actual_digits = (digs == 0) ? 1 : static_cast<int>(Helpers::Simd::calculate_len(digs));
       exp_base_10 -= (expected_digits - actual_digits);
@@ -145,11 +145,11 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       for(; it >= it_beg && precision_missing >= -8; it--) // 8 extra chars (1 chungk) should suffice for rounding purposes ... right??
       {
-        const auto prod = static_cast<uint128_t>(*it) * mantissa;
-        const auto total = static_cast<uint128_t>(frac) * DEC8 + prod;
+        const wide_t prod = static_cast<wide_t>(*it) * mantissa;
+        const wide_t total = static_cast<wide_t>(frac) * DEC8 + prod;
 
-        digs = static_cast<unsigned>(total >> 64U);
-        frac = static_cast<uint64_t>(total);
+        digs = static_cast<unsigned>(total >> SHIFT_T);
+        frac = static_cast<base_t>(total);
 
         Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
 
@@ -187,9 +187,9 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       while(precision_missing >= 0 && frac != 0) // write all digits and change since they are needed for rounding
       {
-        const auto step_total = static_cast<uint128_t>(frac) * DEC8;
-        digs = static_cast<unsigned>(step_total >> 64U);
-        frac = static_cast<uint64_t>(step_total);
+        const wide_t step_total = static_cast<wide_t>(frac) * DEC8;
+        digs = static_cast<unsigned>(step_total >> SHIFT_T);
+        frac = static_cast<base_t>(step_total);
 
         len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], digs);
         len += len_written;
