@@ -738,116 +738,113 @@ namespace Bin2Chars::Helpers::Math::Precision
 
 namespace Bin2Chars::Helpers::Math::IEEE754
 {
-  template <typename T>
-    requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
-  static bool GetMantissaExponent(const T &input, uint64_t &mantissa, int &exponent) noexcept;
+  template <typename Float_t, typename Mantissa_t>
+    requires std::is_floating_point_v<Float_t> && std::numeric_limits<Float_t>::is_iec559
+  static bool GetMantissaExponent(const Float_t &input, Mantissa_t &mantissa, int &exponent) noexcept;
 
   template <>
-  bool GetMantissaExponent<float>(const float &input, uint64_t &mantissa, int &exponent) noexcept
+  bool GetMantissaExponent<float, uint64_t>(const float &input, uint64_t &mantissa, int &exponent) noexcept
   {
     using underlying = uint32_t;
 
-    static const constexpr uint8_t EXPONENT_ST = 23U;
-    static const constexpr uint8_t MANTISSA_SHIFT = 8U + 32U; // +32 since now we use uint64_t
-    static const constexpr uint8_t EXPONENT_LEFT_OFFSET = 8;
-    static const constexpr uint8_t EXPONENT_ALL_BITS_ON = 255U; // as defined in IEEE-754
+    constexpr uint8_t EXPONENT_ST = 23;
+    constexpr uint8_t MANTISSA_SHIFT = 8 + 32; // +32 since now we use uint64_t
+    constexpr int8_t EXPONENT_LEFT_OFFSET = 8;
+    constexpr uint8_t EXPONENT_ALL_BITS_ON = 255; // as defined in IEEE-754
 
-    static const constexpr int16_t MIN_EXPONENT = std::numeric_limits<float>::min_exponent - std::numeric_limits<float>::digits;
-    static const constexpr int16_t EXPONENT_TABLE_OFFSET = std::numeric_limits<double>::min_exponent - std::numeric_limits<double>::digits;
-    static const constexpr int16_t EXPONENT_TABLE_BIAS = -EXPONENT_TABLE_OFFSET + MIN_EXPONENT + EXPONENT_ST;
-
-    static const constexpr underlying EXPONENT_ONLY = 0x7F800000U;
-    static const constexpr underlying MANTISSA_ONLY = 0x007FFFFFU;
-    static const constexpr underlying MANTISSA_IMPLICIT_1 = underlying{ 1 } << EXPONENT_ST;
-    static const constexpr underlying SIGN_ONLY = 0x80000000U;
+    constexpr int8_t NORM_BIAS = 126;
+    constexpr int8_t DENORM_BIAS = 125;
 
     const auto bits = std::bit_cast<underlying>(input);
 
-    const underlying man = bits & MANTISSA_ONLY;
+    const auto ALL_SIGN = 1ULL << 31U;
+    const auto ALL_NON_SIGN_BITS = ALL_SIGN - 1U;
+    const auto MANTISSA_MSB = 1ULL << EXPONENT_ST;
+    const auto ALL_MANTISSA = MANTISSA_MSB - 1;
+    const auto ALL_EXPONENT = ALL_NON_SIGN_BITS ^ ALL_MANTISSA;
 
-    const uint8_t exp = ((bits & EXPONENT_ONLY) >> EXPONENT_ST);
+    const underlying man = bits & ALL_MANTISSA;
 
-    if(exp >= EXPONENT_ALL_BITS_ON) [[unlikely]]
+    const auto exp = static_cast<int32_t>((bits & ALL_EXPONENT) >> EXPONENT_ST);
+
+    if(exp == EXPONENT_ALL_BITS_ON) [[unlikely]]
     {
-      const underlying SIGN = bits & SIGN_ONLY;
+      const underlying SIGN = bits & ALL_SIGN;
       mantissa = (man == 0) ? ((SIGN) ? 2 : 1) : 0;
       return true;
     }
 
     if(exp > 0) [[likely]]
     {
-      mantissa = static_cast<uint64_t>(man | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
-      exponent = exp + EXPONENT_TABLE_BIAS;
+      mantissa = static_cast<uint64_t>(man | MANTISSA_MSB) << MANTISSA_SHIFT;
+      exponent = exp - NORM_BIAS;
     }
     else
     {
-      const auto shift_internal = std::countl_zero(man) - EXPONENT_LEFT_OFFSET;
-
-      if(shift_internal <= EXPONENT_ST) [[likely]]
+      if(man == 0) [[unlikely]]
       {
-        mantissa = (((static_cast<uint64_t>(man) << shift_internal) & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
-        exponent = 1 - shift_internal + EXPONENT_TABLE_BIAS;
-      }
-      else
-      {
-        mantissa = std::numeric_limits<std::remove_cvref_t<decltype(mantissa)>>::max();
+        mantissa = 3;
         return true;
       }
+
+      const auto shift_internal = __builtin_clz(man) - EXPONENT_LEFT_OFFSET;
+
+      mantissa = static_cast<uint64_t>(man) << (shift_internal + MANTISSA_SHIFT);
+      exponent = -shift_internal - DENORM_BIAS;
     }
 
     return false;
   }
 
   template <>
-  bool GetMantissaExponent<double>(const double &input, uint64_t &mantissa, int &exponent) noexcept
+  bool GetMantissaExponent<double, uint64_t>(const double &input, uint64_t &mantissa, int &exponent) noexcept
   {
     using underlying = uint64_t;
 
-    static const constexpr uint8_t NUM_OF_BITS = sizeof(double) * 8U;
-    static const constexpr uint8_t EXPONENT_ST = 52U;
-    static const constexpr uint8_t MANTISSA_SHIFT = 11U;
-    static const constexpr uint8_t EXPONENT_LEFT_OFFSET = NUM_OF_BITS - EXPONENT_ST - 1;
+    constexpr uint8_t EXPONENT_ST = 52;
+    constexpr uint8_t MANTISSA_SHIFT = 11;
 
-    static const constexpr uint16_t EXPONENT_ALL_BITS_ON = 2047U; // as defined in IEEE-754
+    constexpr uint16_t EXPONENT_ALL_BITS_ON = 2047; // as defined in IEEE-754
 
-    static const constexpr underlying EXPONENT_ONLY = 0x7FF0000000000000ULL;
-    static const constexpr underlying MANTISSA_ONLY = 0x000FFFFFFFFFFFFFULL;
-    static const constexpr underlying MANTISSA_IMPLICIT_1 = underlying{ 1 } << EXPONENT_ST;
-
-    static const constexpr underlying SIGN_ONLY = 0x8000000000000000ULL;
+    constexpr uint16_t NORM_BIAS = 1022;
+    constexpr uint16_t DENORM_BIAS = 1021;
 
     const auto bits = std::bit_cast<underlying>(input);
 
-    const underlying man = bits & MANTISSA_ONLY;
+    const auto ALL_BITS = 1ULL << 63U;
+    const auto ALL_NON_SIGN_BITS = ALL_BITS - 1U;
+    const auto MANTISSA_MSB = 1ULL << EXPONENT_ST;
+    const auto ALL_MANTISSA = MANTISSA_MSB - 1;
+    const auto ALL_EXPONENT = ALL_NON_SIGN_BITS ^ ALL_MANTISSA;
 
-    const uint16_t exp = ((bits & EXPONENT_ONLY) >> EXPONENT_ST);
+    const underlying man = bits & ALL_MANTISSA;
 
-    if(exp >= EXPONENT_ALL_BITS_ON) [[unlikely]]
+    const auto exp = static_cast<int32_t>((bits & ALL_EXPONENT) >> EXPONENT_ST);
+
+    if(exp == EXPONENT_ALL_BITS_ON) [[unlikely]]
     {
-      const underlying SIGN = bits & SIGN_ONLY;
+      const underlying SIGN = bits & (ALL_BITS);
       mantissa = (man == 0) ? ((SIGN) ? 2 : 1) : 0;
       return true;
     }
 
     if(exp > 0) [[likely]]
     {
-      mantissa = (man | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
-      exponent = exp + EXPONENT_ST;
+      mantissa = (man | MANTISSA_MSB) << MANTISSA_SHIFT;
+      exponent = exp - NORM_BIAS;
     }
     else
     {
-      const auto shift_internal = std::countl_zero(man) - EXPONENT_LEFT_OFFSET;
-
-      if(shift_internal <= EXPONENT_ST) [[likely]]
+      if(man == 0) [[unlikely]]
       {
-        mantissa = (((man << shift_internal) & MANTISSA_ONLY) | MANTISSA_IMPLICIT_1) << MANTISSA_SHIFT;
-        exponent = 1 + EXPONENT_ST - shift_internal;
-      }
-      else
-      {
-        mantissa = std::numeric_limits<std::remove_cvref_t<decltype(mantissa)>>::max();
+        mantissa = 3;
         return true;
       }
+
+      const auto shift_internal = __builtin_clzl(man) - MANTISSA_SHIFT;
+
+      mantissa = static_cast<uint64_t>(man) << (shift_internal + MANTISSA_SHIFT);
+      exponent = -shift_internal - DENORM_BIAS;
     }
 
     return false;

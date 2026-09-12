@@ -167,7 +167,7 @@ namespace Bin2Chars::Helpers::Assembly
   template <std::size_t N, typename T>
   void prefetch_elements(const T *ptr)
   {
-    const char *base_addr = reinterpret_cast<const char *>(ptr + 1);
+    const char *base_addr = reinterpret_cast<const char *>(ptr);
 
     constexpr std::size_t total_bytes = N * sizeof(T);
 
