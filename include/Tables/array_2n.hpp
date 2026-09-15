@@ -2,7 +2,7 @@
 
 namespace Bin2Chars::Tables::PositiveExponent
 {
-  constexpr uint16_t INDICES[]
+  static constexpr uint16_t INDICES[]
       = { 0,     1,     2,     3,     4,     5,     6,     7,     8,     9,     10,    11,    12,    13,    14,    15,    16,    17,    18,    19,    20,    21,    22,    23,
           24,    25,    26,    27,    29,    31,    33,    35,    37,    39,    41,    43,    45,    47,    49,    51,    53,    55,    57,    59,    61,    63,    65,    67,
           69,    71,    73,    75,    77,    79,    81,    84,    87,    90,    93,    96,    99,    102,   105,   108,   111,   114,   117,   120,   123,   126,   129,   132,
@@ -50,7 +50,7 @@ namespace Bin2Chars::Tables::PositiveExponent
           0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0,     0 };
   // INDICES is zero padded AT THE END to avoid branching when prefetching; it serves no functionallity to algorithm since PositiveExponents have limit at 1023;
 
-  constexpr uint32_t TABLE[] = {
+  static constexpr uint32_t TABLE[] = {
     //  k = 0
     1, // 0 - anotherone
 

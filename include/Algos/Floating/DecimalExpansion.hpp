@@ -5,10 +5,10 @@
 #include <cmath>
 #include <cstdint>
 #include <cstring>
+#include <exception>
 #include <string>
 #include <type_traits>
 
-#include "include/Algos/Compute/ExponentDecimalExpansion.hpp"
 #include "include/Algos/Integer.hpp"
 #include "include/Helpers/Assembly.hpp"
 #include "include/Helpers/Math.hpp"
@@ -45,10 +45,15 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
   {
     static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION)
     {
-      using base_t = uint64_t;    // std::conditional_t<std::is_same_v<float, T>, uint32_t, uint64_t>;
-      using wide_t = __uint128_t; //  std::conditional_t<std::is_same_v<float, T>, uint64_t, __uint128_t>;
+      if(PRECISION < 0) // UB if negative precision
+      {
+        std::terminate();
+      }
 
-      constexpr auto SHIFT_T = 64U; // std::is_same_v<float, T> ? 32U : 64U;
+      using base_t = uint64_t;
+      using wide_t = __uint128_t;
+
+      constexpr auto SHIFT_T = 64U;
 
       const constexpr unsigned DEC8 = 100'000'000U;
 
@@ -73,8 +78,12 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         }
         else
         {
-          std::memcpy(&buff[0], "0.", len = 2);
-          std::memset(&buff[len], '0', static_cast<size_t>(PRECISION)), len += static_cast<unsigned>(PRECISION);
+          std::memset(&buff[0], '0', len = 1);
+          if(PRECISION > 0)
+          {
+            std::memset(&buff[len++], '.', 1);
+            std::memset(&buff[len], '0', static_cast<size_t>(PRECISION)), len += static_cast<unsigned>(PRECISION);
+          }
         }
 
         return len;
@@ -186,6 +195,11 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       }
       else
       {
+        if(PRECISION <= 0)
+        {
+          buff[len++] = '0';
+          return len;
+        }
         int_len = 1;
         buff[len++] = '.';
 

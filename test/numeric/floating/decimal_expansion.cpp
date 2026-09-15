@@ -229,13 +229,13 @@ BOOST_AUTO_TEST_CASE(test_all_floating_point_v)
   Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(3);
 
   // floats // all good
-  for(int i = 1; i <= 200; i++)
+  for(int i = 0; i <= 200; i++)
   {
     test_and_benchmark_float(static_cast<float>(0), i);
   }
 
   // doubles // all good
-  for(int i = 1; i <= 800; i++)
+  for(int i = 0; i <= 800; i++)
   {
     test_and_benchmark_float(static_cast<double>(0), i);
   }

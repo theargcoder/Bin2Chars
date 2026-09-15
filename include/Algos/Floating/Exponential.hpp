@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -21,6 +22,11 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   static unsigned ToStrCharArray(char *__restrict__ buff, const T &input, int PRECISION = Algos::Compute::DecimalExpansion::Traits<T>::MAX_DIGITS10)
   {
+    if(PRECISION < 0) // UB if negative precision
+    {
+      std::terminate();
+    }
+
     using base_t = uint64_t;
     using wide_t = __uint128_t;
 
@@ -48,8 +54,12 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
       }
       else
       {
-        std::memcpy(&buff[0], "0.", len = 2);
-        std::memset(&buff[len], '0', static_cast<size_t>(PRECISION)), len += static_cast<unsigned>(PRECISION);
+        buff[0] = '0', len = 1;
+        if(PRECISION > 0)
+        {
+          buff[len++] = '.';
+          std::memset(&buff[len], '0', static_cast<size_t>(PRECISION)), len += static_cast<unsigned>(PRECISION);
+        }
         std::memcpy(&buff[len], "e+00", 4), len += 4;
       }
 
@@ -80,8 +90,12 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
       buff[len++] = '-';
       start_idx = 1;
     }
-    buff[len++] = '.';
-    start_idx++;
+
+    if(PRECISION > 0)
+    {
+      buff[len++] = '.';
+      start_idx++;
+    }
 
     const int expected_digits = static_cast<int>(Helpers::Simd::calculate_len(*(it)));
     const int n_limbs = static_cast<int>(it_end - it_beg - 1);
@@ -242,7 +256,10 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
       }
     }
 
-    std::swap(buff[start_idx - 1], buff[start_idx]);
+    if(PRECISION > 0)
+    {
+      std::swap(buff[start_idx - 1], buff[start_idx]);
+    }
 
     buff[len++] = 'e';
     buff[len++] = (exp_base_10 < 0) ? '-' : '+';
