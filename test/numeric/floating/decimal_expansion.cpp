@@ -226,7 +226,7 @@ namespace
 
 BOOST_AUTO_TEST_CASE(test_all_floating_point_v)
 {
-  Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(3);
+  Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(0);
 
   // floats // all good
   for(int i = 0; i <= 200; i++)

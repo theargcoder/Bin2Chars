@@ -259,6 +259,8 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     // minimum of 2 digits for exp; if there is 3 then 3 digits
     len += Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<2>(&buff[len], static_cast<uint16_t>(std::abs(exp_base_10)));
 
+    buff[len] = '\0';
+
     return len;
   }
 
@@ -266,10 +268,12 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   static std::string ToStr(const T &input, const int &PRECISION = Algos::Compute::DecimalExpansion::Traits<T>::MAX_DIGITS10)
   {
-    char buff[64];
+    const auto size = static_cast<size_t>(PRECISION) + 30;
 
-    const uint32_t len = ToStrCharArray<T>(&buff[0], input, PRECISION);
+    std::string buff;
 
-    return std::string{ &buff[0], len };
+    buff.resize_and_overwrite(size, [&input, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept { return ToStrCharArray<T>(ptr, input, PRECISION); });
+
+    return buff;
   }
 } // namespace Bin2Chars::Numeric::Floating::ExponentialNotation

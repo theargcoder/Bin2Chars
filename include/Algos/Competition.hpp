@@ -12,43 +12,46 @@
 namespace Bin2Chars::Numeric::Std
 {
   template <bool SCIENTIFIC, typename Type>
-  static auto to_string(Type value, const auto &PRECISION)
+  static auto to_string(Type value, const int &PRECISION)
   {
-    std::array<char, 2048> buf;
+    std::string buff;
 
     if constexpr(std::is_floating_point_v<Type>)
     {
       if constexpr(SCIENTIFIC)
       {
-        auto [ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), value, std::chars_format::scientific, PRECISION);
-        if(ec != std::errc{})
-        {
-          return std::string{};
-        }
-
-        return std::string(buf.data(), ptr);
+        const auto size = static_cast<size_t>(PRECISION) + 30;
+        buff.resize_and_overwrite(size,
+                                  [&value, PRECISION](char *__restrict__ ptr, size_t in_size)
+                                  {
+                                    const auto [res_ptr, ec] = std::to_chars(ptr, ptr + in_size, value, std::chars_format::scientific, PRECISION);
+                                    return res_ptr - ptr;
+                                  });
+        return buff;
       }
       else
       {
-        auto [ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), value, std::chars_format::fixed, PRECISION);
-        if(ec != std::errc{})
-        {
-          return std::string{};
-        }
-
-        return std::string(buf.data(), ptr);
+        const auto size = static_cast<size_t>(PRECISION) + 340;
+        buff.resize_and_overwrite(size,
+                                  [&value, PRECISION](char *__restrict__ ptr, const size_t in_size)
+                                  {
+                                    const auto [res_ptr, ec] = std::to_chars(ptr, ptr + in_size, value, std::chars_format::fixed, PRECISION);
+                                    return res_ptr - ptr;
+                                  });
+        return buff;
       }
     }
     else if constexpr(std::is_integral_v<Type>)
     {
-      auto [ptr, ec] = std::to_chars(buf.data(), buf.data() + buf.size(), value);
+      constexpr size_t size = (sizeof(Type) == 1) ? 5 : (sizeof(Type) == 2) ? 8 : (sizeof(Type) <= 4) ? 11 : 20;
 
-      if(ec != std::errc{})
-      {
-        return std::string{};
-      }
-
-      return std::string(buf.data(), ptr);
+      buff.resize_and_overwrite(size,
+                                [&value, PRECISION](char *__restrict__ ptr, const size_t in_size)
+                                {
+                                  const auto [res_ptr, ec] = std::to_chars(ptr, ptr + in_size, value);
+                                  return res_ptr - ptr;
+                                });
+      return buff;
     }
   }
 
@@ -117,9 +120,13 @@ namespace Bin2Chars::Numeric::Ryu
   {
     static std::string ToStr(double v, const int &PRECISION)
     {
-      char buffer[2048];
-      const int len = d2exp_buffered_n(v, static_cast<unsigned>(PRECISION), &buffer[0]);
-      return std::string{ &buffer[0], static_cast<size_t>(len) };
+      const auto size = static_cast<size_t>(PRECISION) + 30;
+
+      std::string buff;
+
+      buff.resize_and_overwrite(size, [&v, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept { return d2exp_buffered_n(v, static_cast<unsigned>(PRECISION), ptr); });
+
+      return buff;
     }
 
     static std::string ToStr(float v, const int &PRECISION)
@@ -132,9 +139,14 @@ namespace Bin2Chars::Numeric::Ryu
   {
     static std::string ToStr(double v, const int &PRECISION)
     {
-      char buffer[2048];
-      const int len = d2fixed_buffered_n(v, static_cast<unsigned>(PRECISION), &buffer[0]);
-      return std::string{ &buffer[0], static_cast<size_t>(len) };
+      const auto size = static_cast<size_t>(PRECISION) + 340;
+
+      std::string buff;
+
+      buff.resize_and_overwrite(size,
+                                [&v, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept { return d2fixed_buffered_n(v, static_cast<unsigned>(PRECISION), ptr); });
+
+      return buff;
     }
 
     static std::string ToStr(float v, const int &PRECISION)

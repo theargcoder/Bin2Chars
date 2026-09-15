@@ -369,8 +369,13 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   static std::string ToStr(const T &input, const int PRECISION)
   {
-    char buff[2048]; // massive on purpose
-    const unsigned len = Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLen<BEHAVE, T>(&buff[0], input, PRECISION);
-    return std::string{ &buff[0], len };
+    const auto size = static_cast<size_t>(PRECISION) + 340;
+
+    std::string buff;
+
+    buff.resize_and_overwrite(size, [&input, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept
+                              { return ToStrWriteBuffReturnLen<RoundingBehavior::ROUND, T>(ptr, input, PRECISION); });
+
+    return buff;
   }
 } // namespace Bin2Chars::Numeric::Floating::DigitsPrecision
