@@ -21,17 +21,18 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   static unsigned ToStrCharArray(char *__restrict__ buff, const T &input, int PRECISION = Algos::Compute::DecimalExpansion::Traits<T>::MAX_DIGITS10)
   {
-    using base_t = uint64_t;    // std::conditional_t<std::is_same_v<float, T>, uint32_t, uint64_t>;
-    using wide_t = __uint128_t; //  std::conditional_t<std::is_same_v<float, T>, uint64_t, __uint128_t>;
+    using base_t = uint64_t;
+    using wide_t = __uint128_t;
 
-    constexpr auto SHIFT_T = 64U; // std::is_same_v<float, T> ? 32U : 64U;
+    constexpr auto SHIFT_T = 64U;
 
-    const constexpr unsigned DEC8 = 100'000'000U;
+    constexpr unsigned DEC8 = 100'000'000U;
 
     unsigned len = 0;
+    uint8_t sign;
     base_t mantissa;
     int exp;
-    if(Helpers::Math::IEEE754::GetMantissaExponent<T, base_t>(input, mantissa, exp)) [[unlikely]]
+    if(Helpers::Math::IEEE754::GetMantissaExponent<T, base_t>(input, sign, mantissa, exp)) [[unlikely]]
     {
       if(mantissa == 0)
       {
@@ -74,7 +75,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     Helpers::Assembly::prefetch_elements<39>(&Bin2Chars::Tables::PositiveExponent::TABLE[pos_idx_beg]);
 
     unsigned start_idx = 0;
-    if(input < static_cast<T>(0.0))
+    if(sign != 0)
     {
       buff[len++] = '-';
       start_idx = 1;
@@ -171,8 +172,8 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
       precision_missing = 0; // CRITICAL: Prevent double-adding length at the end!
     }
 
+    const size_t MAX = len;
     len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
-    const size_t MAX = len + static_cast<unsigned>(std::abs(precision_missing));
 
     bool round_up = false;
     if(MAX > len)
@@ -195,21 +196,9 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
           }
         }
 
-        if(trailing_zeros && frac != 0)
+        if(trailing_zeros && (frac != 0 || it >= it_beg))
         {
           trailing_zeros = false;
-        }
-
-        if(trailing_zeros && it >= it_beg)
-        {
-          for(const auto *rem_it = it; rem_it >= it_beg; rem_it--)
-          {
-            if(*rem_it != 0)
-            {
-              trailing_zeros = false;
-              break;
-            }
-          }
         }
 
         if(trailing_zeros) // bankers round

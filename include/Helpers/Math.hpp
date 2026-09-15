@@ -740,10 +740,10 @@ namespace Bin2Chars::Helpers::Math::IEEE754
 {
   template <typename Float_t, typename Mantissa_t>
     requires std::is_floating_point_v<Float_t> && std::numeric_limits<Float_t>::is_iec559
-  static bool GetMantissaExponent(const Float_t &input, Mantissa_t &mantissa, int &exponent) noexcept;
+  static bool GetMantissaExponent(const Float_t &input, uint8_t &sign, Mantissa_t &mantissa, int &exponent) noexcept;
 
   template <>
-  bool GetMantissaExponent<float, uint64_t>(const float &input, uint64_t &mantissa, int &exponent) noexcept
+  bool GetMantissaExponent<float, uint64_t>(const float &input, uint8_t &sign, uint64_t &mantissa, int &exponent) noexcept
   {
     using underlying = uint32_t;
 
@@ -763,8 +763,8 @@ namespace Bin2Chars::Helpers::Math::IEEE754
     const auto ALL_MANTISSA = MANTISSA_MSB - 1;
     const auto ALL_EXPONENT = ALL_NON_SIGN_BITS ^ ALL_MANTISSA;
 
+    sign = static_cast<uint8_t>((bits & ALL_SIGN) >> 31U);
     const underlying man = bits & ALL_MANTISSA;
-
     const auto exp = static_cast<int32_t>((bits & ALL_EXPONENT) >> EXPONENT_ST);
 
     if(exp == EXPONENT_ALL_BITS_ON) [[unlikely]]
@@ -797,7 +797,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
   }
 
   template <>
-  bool GetMantissaExponent<double, uint64_t>(const double &input, uint64_t &mantissa, int &exponent) noexcept
+  bool GetMantissaExponent<double, uint64_t>(const double &input, uint8_t &sign, uint64_t &mantissa, int &exponent) noexcept
   {
     using underlying = uint64_t;
 
@@ -811,19 +811,19 @@ namespace Bin2Chars::Helpers::Math::IEEE754
 
     const auto bits = std::bit_cast<underlying>(input);
 
-    const auto ALL_BITS = 1ULL << 63U;
-    const auto ALL_NON_SIGN_BITS = ALL_BITS - 1U;
+    const auto ALL_SIGN = 1ULL << 63U;
+    const auto ALL_NON_SIGN_BITS = ALL_SIGN - 1U;
     const auto MANTISSA_MSB = 1ULL << EXPONENT_ST;
     const auto ALL_MANTISSA = MANTISSA_MSB - 1;
     const auto ALL_EXPONENT = ALL_NON_SIGN_BITS ^ ALL_MANTISSA;
 
+    sign = static_cast<uint8_t>((bits & ALL_SIGN) >> 63U);
     const underlying man = bits & ALL_MANTISSA;
-
     const auto exp = static_cast<int32_t>((bits & ALL_EXPONENT) >> EXPONENT_ST);
 
     if(exp == EXPONENT_ALL_BITS_ON) [[unlikely]]
     {
-      const underlying SIGN = bits & (ALL_BITS);
+      const underlying SIGN = bits & (ALL_SIGN);
       mantissa = (man == 0) ? ((SIGN) ? 2 : 1) : 0;
       return true;
     }

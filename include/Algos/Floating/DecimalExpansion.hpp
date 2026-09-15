@@ -53,31 +53,28 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       const constexpr unsigned DEC8 = 100'000'000U;
 
       unsigned len = 0;
+      uint8_t sign;
       base_t mantissa;
       int exp;
-      if(Helpers::Math::IEEE754::GetMantissaExponent<T, base_t>(input, mantissa, exp)) [[unlikely]]
+      if(Helpers::Math::IEEE754::GetMantissaExponent<T, base_t>(input, sign, mantissa, exp)) [[unlikely]]
       {
         if(mantissa == 0)
         {
-          len = 3;
-          std::memcpy(&buff[0], "nan", 3);
+          std::memcpy(&buff[0], "nan", len = 3);
         }
         else if(mantissa == 1)
         {
           len = 3;
-          std::memcpy(&buff[0], "inf", 3);
+          std::memcpy(&buff[0], "inf", len = 3);
         }
         else if(mantissa == 2)
         {
-          len = 4;
-          std::memcpy(&buff[0], "-inf", 4);
+          std::memcpy(&buff[0], "-inf", len = 4);
         }
         else
         {
-          len = 2;
-          std::memcpy(&buff[0], "0.", len);
-          std::memset(&buff[len], '0', static_cast<size_t>(PRECISION));
-          len += static_cast<unsigned>(PRECISION);
+          std::memcpy(&buff[0], "0.", len = 2);
+          std::memset(&buff[len], '0', static_cast<size_t>(PRECISION)), len += static_cast<unsigned>(PRECISION);
         }
 
         return len;
@@ -102,10 +99,10 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       Helpers::Assembly::prefetch_elements<39>(&Bin2Chars::Tables::PositiveExponent::TABLE[pos_idx_beg]);
 
       unsigned start_idx = 0;
-      if(input < static_cast<T>(0.0))
+      if(sign != 0)
       {
         buff[len++] = '-';
-        start_idx = 1;
+        start_idx++;
       }
 
       const int expected_digits = static_cast<int>(Helpers::Simd::calculate_len(*(it)));
@@ -123,25 +120,98 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       int precision_missing;
       unsigned rem, len_written, int_len;
 
-      if(exp_base_10 < 0)
+      if(exp_base_10 >= 0)
       {
-        int_len = 1;
-        precision_missing = 1 + PRECISION;
-        const auto exp_base_10_ABS = static_cast<unsigned>(std::abs(exp_base_10));
-        std::memset(&buff[len], '0', exp_base_10_ABS);
-        precision_missing -= static_cast<int>(exp_base_10_ABS);
-        len += exp_base_10_ABS;
+        int_len = static_cast<unsigned>(exp_base_10) + 1;
+
+        int int_missing = static_cast<int>(int_len);
+        precision_missing = static_cast<int>(int_len) + PRECISION;
+
+        len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+        precision_missing -= static_cast<int>(len_written);
+        int_missing -= static_cast<int>(len_written);
+        len += len_written;
+        it--;
+
+        for(; it >= it_beg && int_missing > 0; it--)
+        {
+          const wide_t prod = static_cast<wide_t>(*it) * mantissa;
+          const wide_t total = static_cast<wide_t>(frac) * DEC8 + prod;
+
+          digs = static_cast<unsigned>(total >> SHIFT_T);
+          frac = static_cast<base_t>(total);
+
+          Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
+
+          if(digs != 0)
+          {
+            int i = static_cast<int>(len) - 1;
+            const int ST = static_cast<int>(start_idx);
+            for(; i >= ST; i--)
+            {
+              if(buff[i] == '9')
+              {
+                buff[i] = '0';
+              }
+              else
+              {
+                buff[i]++;
+                break;
+              }
+            }
+
+            if(i < ST) // rippled all the way to hell
+            {
+              std::memmove(&buff[ST + 1], &buff[ST], len - start_idx); // move the full expansion down 1 slot
+              buff[start_idx] = '1';                                   // add the leading zero
+              len++;
+              exp_base_10++;
+              int_len++;
+            }
+          }
+
+          len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
+          len += len_written;
+          precision_missing -= static_cast<int>(len_written);
+          int_missing -= static_cast<int>(len_written);
+        }
+
+        if(PRECISION > 0)
+        {
+          std::memmove(&buff[start_idx + int_len + 1], &buff[start_idx + int_len], static_cast<size_t>(std::abs(int_missing)));
+
+          buff[start_idx + int_len] = '.';
+          len++;
+        }
       }
       else
       {
-        int_len = static_cast<unsigned>(exp_base_10) + 1;
-        precision_missing = static_cast<int>(int_len) + PRECISION;
-      }
+        int_len = 1;
+        buff[len++] = '.';
 
-      len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
-      precision_missing -= static_cast<int>(len_written);
-      len += len_written;
-      it--;
+        precision_missing = 1 + PRECISION;
+
+        const auto exp_base_10_ABS = static_cast<unsigned>(std::abs(exp_base_10));
+
+        if(exp_base_10_ABS > static_cast<unsigned>(precision_missing + 3))
+        {
+          std::memset(&buff[len], '0', static_cast<size_t>(precision_missing));
+
+          std::swap(buff[start_idx], buff[start_idx + 1]);
+          return len + static_cast<unsigned>(precision_missing);
+        }
+
+        std::memset(&buff[len], '0', exp_base_10_ABS);
+        precision_missing -= static_cast<int>(exp_base_10_ABS);
+        len += exp_base_10_ABS;
+
+        len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+        precision_missing -= static_cast<int>(len_written);
+        len += len_written;
+        it--;
+
+        std::swap(buff[start_idx], buff[start_idx + 1]);
+      }
 
       for(; it >= it_beg && precision_missing >= -8; it--) // 8 extra chars (1 chungk) should suffice for rounding purposes ... right??
       {
@@ -203,18 +273,8 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         precision_missing = 0; // CRITICAL: Prevent double-adding length at the end!
       }
 
-      if(PRECISION > 0)
-      {
-        const unsigned dot_idx = start_idx + int_len;
-
-        std::memmove(&buff[dot_idx + 1], &buff[dot_idx], len - dot_idx);
-
-        buff[dot_idx] = '.';
-        len++;
-      }
-
+      const size_t MAX = len;
       len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
-      const size_t MAX = len + static_cast<unsigned>(std::abs(precision_missing));
 
       bool round_up = false;
       if(MAX > len)
@@ -237,21 +297,9 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
             }
           }
 
-          if(trailing_zeros && frac != 0)
+          if(trailing_zeros && (frac != 0 || it >= it_beg))
           {
             trailing_zeros = false;
-          }
-
-          if(trailing_zeros && it >= it_beg)
-          {
-            for(const auto *rem_it = it; rem_it >= it_beg; rem_it--)
-            {
-              if(*rem_it != 0)
-              {
-                trailing_zeros = false;
-                break;
-              }
-            }
           }
 
           if(trailing_zeros) // bankers round
