@@ -132,17 +132,14 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       if(exp_base_10 >= 0)
       {
         int_len = static_cast<unsigned>(exp_base_10) + 1;
-
-        int int_missing = static_cast<int>(int_len);
         precision_missing = static_cast<int>(int_len) + PRECISION;
 
         len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
         precision_missing -= static_cast<int>(len_written);
-        int_missing -= static_cast<int>(len_written);
         len += len_written;
         it--;
 
-        for(; it >= it_beg && int_missing > 0; it--)
+        for(; it >= it_beg && precision_missing > PRECISION; it--)
         {
           const wide_t prod = static_cast<wide_t>(*it) * mantissa;
           const wide_t total = static_cast<wide_t>(frac) * DEC8 + prod;
@@ -179,15 +176,14 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
             }
           }
 
-          len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
-          len += len_written;
-          precision_missing -= static_cast<int>(len_written);
-          int_missing -= static_cast<int>(len_written);
+          Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
+          len += 8;
+          precision_missing -= 8;
         }
 
         if(PRECISION > 0)
         {
-          std::memmove(&buff[start_idx + int_len + 1], &buff[start_idx + int_len], static_cast<size_t>(std::abs(int_missing)));
+          std::memmove(&buff[start_idx + int_len + 1], &buff[start_idx + int_len], 8);
 
           buff[start_idx + int_len] = '.';
           len++;

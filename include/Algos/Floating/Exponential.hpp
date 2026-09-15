@@ -163,9 +163,9 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
         }
       }
 
-      len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
-      len += len_written;
-      precision_missing -= static_cast<int>(len_written);
+      Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
+      len += 8;
+      precision_missing -= 8;
     }
 
     while(precision_missing >= 0 && frac != 0) // write all digits and change since they are needed for rounding
@@ -174,9 +174,9 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
       digs = static_cast<unsigned>(step_total >> SHIFT_T);
       frac = static_cast<base_t>(step_total);
 
-      len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], digs);
-      len += len_written;
-      precision_missing -= static_cast<int>(len_written);
+      Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], digs);
+      len += 8;
+      precision_missing -= 8;
     }
 
     if(precision_missing > 0)
