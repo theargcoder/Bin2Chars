@@ -114,17 +114,16 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         start_idx++;
       }
 
-      const int expected_digits = static_cast<int>(Helpers::Simd::calculate_len(*(it)));
       const int n_limbs = static_cast<int>(it_end - it_beg - 1);
 
-      int exp_base_10 = expected_digits - 1 + (n_limbs << 3U) - (exp < 0 ? abs_exp : 0);
+      int exp_base_10 = (n_limbs << 3U) - (exp < 0 ? abs_exp : 0) - 1;
 
       const wide_t prod = static_cast<wide_t>(*it) * mantissa;
       unsigned digs = static_cast<unsigned>(prod >> SHIFT_T);
       base_t frac = static_cast<base_t>(prod);
 
-      const int actual_digits = (digs == 0) ? 1 : static_cast<int>(Helpers::Simd::calculate_len(digs));
-      exp_base_10 -= (expected_digits - actual_digits);
+      const int actual_digits = static_cast<int>(Helpers::Simd::calculate_len(digs));
+      exp_base_10 += actual_digits;
 
       int precision_missing;
       unsigned rem, len_written, int_len;
@@ -134,9 +133,18 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         int_len = static_cast<unsigned>(exp_base_10) + 1;
         precision_missing = static_cast<int>(int_len) + PRECISION;
 
-        len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
-        precision_missing -= static_cast<int>(len_written);
-        len += len_written;
+        if(int_len == 1 || digs != 0)
+        {
+          len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+          precision_missing -= static_cast<int>(len_written);
+          len += len_written;
+        }
+        else
+        {
+          int_len--;
+          precision_missing--;
+        }
+
         it--;
 
         for(; it >= it_beg && precision_missing > PRECISION; it--)
@@ -351,15 +359,6 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
           buff[start_idx] = '1';
           len++;
         }
-      }
-
-      if(unsigned i; exp_base_10 > 0 && buff[start_idx] == '0') // CANT HAVE LEADING ZEROS
-      {
-        for(i = start_idx; i < len && buff[i] == '0'; i++)
-        {
-        }
-        std::memmove(&buff[start_idx], &buff[i], len - i);
-        len -= i - start_idx;
       }
 
       return len;

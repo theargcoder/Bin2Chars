@@ -97,33 +97,25 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
       start_idx++;
     }
 
-    const int expected_digits = static_cast<int>(Helpers::Simd::calculate_len(*(it)));
     const int n_limbs = static_cast<int>(it_end - it_beg - 1);
 
-    int exp_base_10 = expected_digits - 1 + (n_limbs << 3U) - (exp < 0 ? abs_exp : 0);
+    int exp_base_10 = (n_limbs << 3U) - (exp < 0 ? abs_exp : 0) - 1;
 
     const wide_t prod = static_cast<wide_t>(*it) * mantissa;
     auto digs = static_cast<unsigned>(prod >> SHIFT_T);
     auto frac = static_cast<base_t>(prod);
 
-    const int actual_digits = (digs == 0) ? 1 : static_cast<int>(Helpers::Simd::calculate_len(digs));
-    exp_base_10 -= (expected_digits - actual_digits);
-
     int precision_missing = 1 + PRECISION; // always leading digit in exponential formatting
     unsigned rem, len_written;
 
-    if(digs == 0) // no leading zero; always non zero number . xxx; adjust exponent to correct
-    {
-      len_written = 0;
-      exp_base_10--;
-    }
-    else
+    if(digs != 0) // no leading zero; always non zero number . xxx; adjust exponent to correct
     {
       len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+      precision_missing -= static_cast<int>(len_written);
+      len += len_written;
+      exp_base_10 += static_cast<int>(len_written);
     }
 
-    precision_missing -= static_cast<int>(len_written);
-    len += len_written;
     it--;
 
     for(; it >= it_beg && precision_missing >= -8; it--) // 8 extra chars (1 chungk) should suffice for rounding purposes ... right??
