@@ -38,7 +38,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
     {
       if(exp % 2 == 1)
       {
-        res *= base;
+        res = static_cast<BaseType>(res * base);
       }
 
       exp /= 2;
@@ -46,7 +46,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
       // FIX: Prevent squaring base on the final step to avoid constexpr overflow!
       if(exp > 0)
       {
-        base *= base;
+        base = static_cast<BaseType>(base * base);
       }
     }
     return res;
@@ -228,75 +228,47 @@ namespace Bin2Chars::Helpers::Math::Constexpr
 namespace Bin2Chars::Helpers::Math::Magic::Division
 {
   template <uint32_t N>
-  static auto div_by_10_pow_n(const uint16_t &n)
-  {
-    static_assert(N != 0, "why divide by 1");
-    static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
-
-    // clang-format off
-    if constexpr(N == 1)      { return static_cast<uint16_t>((uint32_t(n) * 0xCCCDU) >> 19); }
-    else if constexpr(N == 2) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x47AFU) >> 16); return (((n - t) >> 1) + t) >> 6;  }
-    else if constexpr(N == 3) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x625U) >> 16); return (((n - t) >> 1) + t) >> 9;   }
-    else if constexpr(N == 4) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0xA36FU) >> 16); return (((n - t) >> 1) + t) >> 13; }
-    // clang-format on
-  }
-
-  template <uint32_t N>
-  static auto div_by_10_pow_n_void(uint16_t &n)
-  {
-    static_assert(N != 0, "why divide by 1");
-    static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
-
-    // clang-format off
-    if constexpr(N == 1)      { n = static_cast<uint16_t>((static_cast<uint32_t>(n) * 0xCCCDU) >> 19U); }
-    else if constexpr(N == 2) { const auto t = static_cast<uint16_t>((uint32_t(n) * 0x47AFU) >> 16U); n = static_cast<uint16_t>((static_cast<uint16_t>(n - t) >> 1U) + t) >> 6U;  }
-    else if constexpr(N == 3) { const auto t = static_cast<uint16_t>((uint32_t(n) * 0x625U) >> 16U); n = static_cast<uint16_t>((static_cast<uint16_t>(n - t) >> 1U) + t) >> 9U;   }
-    else if constexpr(N == 4) { const auto t = static_cast<uint16_t>((uint32_t(n) * 0xA36FU) >> 16U); n = static_cast<uint16_t>((static_cast<uint16_t>(n - t) >> 1U) + t) >> 13U; }
-    // clang-format on
-  }
-
-  template <uint32_t N>
-  static auto div_by_10_pow_n(const uint32_t &n)
+  static inline uint32_t __attribute((__always_inline__)) div_by_10_pow_n(const uint32_t &n)
   {
     static_assert(N != 0, "why divide by 1");
     static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
 
     // clang-format off
     // --- 32-bit divide by 10^p ---
-    if constexpr(N == 1) {      return Helpers::Assembly::umulh32(n, 0xCCCCCCCDULL) >> 3U; }
-    else if constexpr(N == 2) { return Helpers::Assembly::umulh32(n, 0x51EB851FULL) >> 5U; }
-    else if constexpr(N == 3) { return Helpers::Assembly::umulh32(n, 0x10624DD3ULL) >> 6U; }
-    else if constexpr(N == 4) { return Helpers::Assembly::umulh32(n, 0xD1B71759ULL) >> 13U; }
-    else if constexpr(N == 5) { const uint32_t t = Helpers::Assembly::umulh32(n, 0x4F8B588FULL); return (((n - t) >> 1) + t) >> 16U; }
-    else if constexpr(N == 6) { return Helpers::Assembly::umulh32(n, 0x431BDE83ULL) >> 18; }
-    else if constexpr(N == 7) { return Helpers::Assembly::umulh32(n, 0x6B5FCA6BULL) >> 22; }
-    else if constexpr(N == 8) { return Helpers::Assembly::umulh32(n, 0x55E63B89ULL) >> 25; }
-    else if constexpr(N == 9) { const uint32_t t = Helpers::Assembly::umulh32(n, 0x12E0BE83ULL); return (((n - t) >> 1) + t) >> 29U; }
+    if constexpr(N == 1) {      return static_cast<uint32_t>((static_cast<uint64_t>(n) * 0xCCCCCCCDULL) >> 35U); }
+    else if constexpr(N == 2) { return static_cast<uint32_t>((static_cast<uint64_t>(n) * 0x51EB851FULL) >> 37U); }
+    else if constexpr(N == 3) { return static_cast<uint32_t>((static_cast<uint64_t>(n) * 0x10624DD3ULL) >> 38U); }
+    else if constexpr(N == 4) { return static_cast<uint32_t>((static_cast<uint64_t>(n) * 0xD1B71759ULL) >> 45U); }
+    else if constexpr(N == 5) { const  uint32_t t = Helpers::Assembly::umulh32(n, 0x4F8B588FULL); return (((n - t) >> 1) + t) >> 16U; }
+    else if constexpr(N == 6) { return static_cast<uint32_t>((static_cast<uint64_t>(n)* 0x431BDE83ULL) >> 50U); }
+    else if constexpr(N == 7) { return static_cast<uint32_t>((static_cast<uint64_t>(n)* 0x6B5FCA6BULL) >> 54U); }
+    else if constexpr(N == 8) { return static_cast<uint32_t>((static_cast<uint64_t>(n)* 0x55E63B89ULL) >> 57U); }
+    else if constexpr(N == 9) { const  uint32_t t = Helpers::Assembly::umulh32(n, 0x12E0BE83ULL); return (((n - t) >> 1) + t) >> 29U; }
 
     // clang-format on
   }
 
   template <uint32_t N>
-  static inline void div_by_10_pow_n_void(uint32_t &n)
+  static inline void __attribute((__always_inline__)) div_by_10_pow_n_void(uint32_t &n)
   {
     static_assert(N != 0, "why divide by 1");
     static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
 
     // clang-format off
-    if constexpr(N == 1) { n = Helpers::Assembly::umulh32(n, 0xCCCCCCCDULL) >> 3U; }
-    else if constexpr(N == 2) { n = Helpers::Assembly::umulh32(n, 0x51EB851FULL) >> 5U; }
-    else if constexpr(N == 3) { n = Helpers::Assembly::umulh32(n, 0x10624DD3ULL) >> 6U; }
-    else if constexpr(N == 4) { n = Helpers::Assembly::umulh32(n, 0xD1B71759ULL) >> 13U; }
+    if constexpr(N == 1) {      n = static_cast<uint32_t>((static_cast<uint64_t>(n) * 0xCCCCCCCDULL) >> 35U); }
+    else if constexpr(N == 2) { n = static_cast<uint32_t>((static_cast<uint64_t>(n) * 0x51EB851FULL) >> 37U); }
+    else if constexpr(N == 3) { n = static_cast<uint32_t>((static_cast<uint64_t>(n) * 0x10624DD3ULL) >> 38U); }
+    else if constexpr(N == 4) { n = static_cast<uint32_t>((static_cast<uint64_t>(n) * 0xD1B71759ULL) >> 45U); }
     else if constexpr(N == 5) { const uint32_t t = Helpers::Assembly::umulh32(n, 0x4F8B588FULL); n = (((n - t) >> 1) + t) >> 16U; }
-    else if constexpr(N == 6) { n = Helpers::Assembly::umulh32(n, 0x431BDE83ULL) >> 18; }
-    else if constexpr(N == 7) { n = Helpers::Assembly::umulh32(n, 0x6B5FCA6BULL) >> 22; }
-    else if constexpr(N == 8) { n = Helpers::Assembly::umulh32(n, 0x55E63B89ULL) >> 25; }
+    else if constexpr(N == 6) { n = static_cast<uint32_t>((static_cast<uint64_t>(n)* 0x431BDE83ULL) >> 50U); }
+    else if constexpr(N == 7) { n = static_cast<uint32_t>((static_cast<uint64_t>(n)* 0x6B5FCA6BULL) >> 54U); }
+    else if constexpr(N == 8) { n = static_cast<uint32_t>((static_cast<uint64_t>(n)* 0x55E63B89ULL) >> 57U); }
     else if constexpr(N == 9) { const uint32_t t = Helpers::Assembly::umulh32(n, 0x12E0BE83ULL); n = (((n - t) >> 1) + t) >> 29U; }
     // clang-format on
   }
 
   template <uint32_t DIV>
-  static inline auto div_by_10_template(const uint32_t &numerator)
+  static inline uint32_t __attribute((__always_inline__)) div_by_10_template(const uint32_t &numerator)
   {
     static_assert(Helpers::Math::Constexpr::is_pow10(DIV), "only powers of 10 supported");
     static_assert(DIV != 0, "cant divide by 0");
@@ -317,7 +289,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
 
   template <typename Type>
     requires std::is_same_v<uint32_t, Type>
-  static auto div_by_10_denominator(const Type &numerator, const Type &denominator)
+  static inline uint32_t __attribute((__always_inline__)) div_by_10_denominator(const Type &numerator, const Type &denominator)
   {
     // clang-format off
     if(denominator <= 10) { return div_by_10_pow_n<1>(numerator); }
@@ -458,35 +430,6 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
 
 namespace Bin2Chars::Helpers::Math::Magic::Modulo
 {
-  template <uint32_t N>
-  static inline auto mod_by_10_pow_n(const uint16_t &n)
-  {
-    static_assert(N != 0, "why modide by 1");
-    static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
-
-    // clang-format off
-    if constexpr(N == 1) { return static_cast<uint16_t>(n - ((uint32_t(n) * 0xCCCDU) >> 19) * 10U); }
-    else if constexpr(N == 2) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x47AFU) >> 16); const uint16_t q = (((n - t) >> 1) + t) >> 6; return static_cast<uint16_t>(n - (q * 100U)); }
-    else if constexpr(N == 3) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0x625U) >> 16); const uint16_t q = (((n - t) >> 1) + t) >> 9; return static_cast<uint16_t>(n - (q * 1000U)); }
-    else if constexpr(N == 4) { const uint16_t t = static_cast<uint16_t>((uint32_t(n) * 0xA36FU) >> 16); const uint16_t q = (((n - t) >> 1) + t) >> 13; return static_cast<uint16_t>(n - (q * 10000U)); }
-    // clang-format on
-  }
-
-  template <uint32_t N>
-  static inline auto mod_by_10_pow_n_void(uint16_t &quotient, uint16_t &remainder)
-  {
-    static_assert(N != 0, "why modide by 1");
-    static_assert(N <= std::numeric_limits<uint16_t>::digits10, "10 ^exp is greater that num of digits");
-
-    const uint16_t A = quotient;
-    // clang-format off
-    if constexpr(N == 1) { Helpers::Math::Magic::Division::div_by_10_pow_n_void<1>(quotient); remainder = A - (quotient * 10U); }
-    else if constexpr(N == 2) { Helpers::Math::Magic::Division::div_by_10_pow_n_void<2>(quotient); remainder = A - (quotient * 100U); }
-    else if constexpr(N == 3) { Helpers::Math::Magic::Division::div_by_10_pow_n_void<3>(quotient); remainder = A - (quotient * 1000U); }
-    else if constexpr(N == 4) { Helpers::Math::Magic::Division::div_by_10_pow_n_void<4>(quotient); remainder = A - (quotient * 10000U); }
-    // clang-format on
-  }
-
   template <uint32_t N>
   static inline auto mod_by_10_pow_n(const uint32_t &n)
   {

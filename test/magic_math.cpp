@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE MagicMathTests
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
+#include <boost/test/unit_test_suite.hpp>
 
 #include <chrono>
 #include <cstddef>
@@ -21,8 +22,7 @@ namespace
 {
 
   template <uint64_t N, typename Type>
-  auto looper_magic_division(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles)
-      -> void
+  void looper_magic_division(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles)
   {
     const constexpr auto WISHED_RANGE = 100'000;
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
@@ -31,14 +31,15 @@ namespace
 
     Type divisor = Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
 
-    for(Type i = DELIM, lim = 0, max_iter = 0; ((PLUS) ? i < DELIM + RANGE : i > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE; (PLUS) ? i += JUMP : i -= JUMP, max_iter++)
+    for(Type value = DELIM, lim = 0, max_iter = 0; ((PLUS) ? value < DELIM + RANGE : value > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
+        (PLUS) ? value = static_cast<Type>(value + JUMP) : value = static_cast<Type>(value - JUMP), max_iter++)
     {
       const auto st_log = Bin2Chars::Helpers::Assembly::timer_start();
-      const auto our_div_10 = Bin2Chars::Helpers::Math::Magic::Division::div_by_10_pow_n<N>(i);
+      const Type our_div_10 = Bin2Chars::Helpers::Math::Magic::Division::div_by_10_pow_n<N>(value);
       const auto en_log = Bin2Chars::Helpers::Assembly::timer_end();
 
       const auto st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
-      const auto regular_div_10 = i / divisor;
+      const Type regular_div_10 = static_cast<Type>(value / divisor);
       const auto en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
 
       bin2chars_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
@@ -58,8 +59,7 @@ namespace
   };
 
   template <uint64_t N, typename Type>
-  auto looper_magic_modulus(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles)
-      -> void
+  void looper_magic_modulus(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles)
   {
     const constexpr auto WISHED_RANGE = 100'000;
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
@@ -68,14 +68,15 @@ namespace
 
     Type divisor = Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
 
-    for(Type i = DELIM, lim = 0, max_iter = 0; ((PLUS) ? i < DELIM + RANGE : i > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE; (PLUS) ? i += JUMP : i -= JUMP, max_iter++)
+    for(Type value = DELIM, lim = 0, max_iter = 0; ((PLUS) ? value < DELIM + RANGE : value > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
+        (PLUS) ? value = static_cast<Type>(value + JUMP) : value = static_cast<Type>(value - JUMP), max_iter++)
     {
       const uint64_t st_log = Bin2Chars::Helpers::Assembly::timer_start();
-      const auto our_div_10 = Bin2Chars::Helpers::Math::Magic::Modulo::mod_by_10_pow_n<N>(i);
+      const Type our_div_10 = Bin2Chars::Helpers::Math::Magic::Modulo::mod_by_10_pow_n<N>(value);
       const uint64_t en_log = Bin2Chars::Helpers::Assembly::timer_end();
 
       const uint64_t st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
-      const auto regular_div_10 = i % divisor;
+      const Type regular_div_10 = static_cast<Type>(value % divisor);
       const uint64_t en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
 
       bin2chars_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
@@ -107,36 +108,36 @@ namespace
     const constexpr T UNIT = T{ 1 };
 
     // ---- Extremes and Zero Region ----
-    looper_magic_division<N>(true, MIN, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_division<N>(false, MAX, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_division<N>(true, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_division<N>(false, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_division<N, T>(true, MIN, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_division<N, T>(false, MAX, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_division<N, T>(true, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_division<N, T>(false, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
 
     // ---- Around powers of two (Bit boundaries) ----
     for(int e = 1; e < std::numeric_limits<T>::digits; ++e)
     {
-      const T val = UNIT << e;
-      looper_magic_division<N>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_division<N>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      const T val = static_cast<T>(UNIT << e);
+      looper_magic_division<N, T>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_division<N, T>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
     }
 
     // ---- Around powers of ten (String length boundaries) ----
-    for(T val = 10; val > 0 && val < MAX / 10; val *= 10)
+    for(T val = 10; val > 0 && val < static_cast<T>(MAX / 10); val = static_cast<T>(val * 10))
     {
-      looper_magic_division<N>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_division<N>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_division<N, T>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_division<N, T>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
     }
 
     // ---- Large magnitude sweeps (Sparse) ----
     if constexpr(sizeof(T) >= 4)
     {
-      looper_magic_division<N>(true, MIN / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_division<N>(false, MAX / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_division<N, T>(true, MIN / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_division<N, T>(false, MAX / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
     }
 
     // ---- Randomish coverage ----
-    looper_magic_division<N>(true, T{ MAX / T{ 10 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_division<N>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_division<N, T>(true, T{ MAX / T{ 10 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_division<N, T>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
 
     return std::make_tuple(helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
   }
@@ -154,36 +155,36 @@ namespace
     const constexpr T UNIT = T{ 1 };
 
     // ---- Extremes and Zero Region ----
-    looper_magic_modulus<N>(true, MIN, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_modulus<N>(false, MAX, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_modulus<N>(true, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_modulus<N>(false, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_modulus<N, T>(true, MIN, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_modulus<N, T>(false, MAX, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_modulus<N, T>(true, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_modulus<N, T>(false, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
 
     // ---- Around powers of two (Bit boundaries) ----
     for(int e = 1; e < std::numeric_limits<T>::digits; ++e)
     {
-      const T val = UNIT << e;
-      looper_magic_modulus<N>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_modulus<N>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      const T val = static_cast<T>(UNIT << e);
+      looper_magic_modulus<N, T>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_modulus<N, T>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
     }
 
     // ---- Around powers of ten (String length boundaries) ----
-    for(T val = 10; val > 0 && val < MAX / 10; val *= 10)
+    for(T val = 10; val > 0 && val < static_cast<T>(MAX / 10); val = static_cast<T>(val * 10))
     {
-      looper_magic_modulus<N>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_modulus<N>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_modulus<N, T>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_modulus<N, T>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
     }
 
     // ---- Large magnitude sweeps (Sparse) ----
     if constexpr(sizeof(T) >= 4)
     {
-      looper_magic_modulus<N>(true, MIN / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_modulus<N>(false, MAX / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_modulus<N, T>(true, MIN / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_modulus<N, T>(false, MAX / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
     }
 
     // ---- Randomish coverage ----
-    looper_magic_modulus<N>(true, T{ MAX / T{ 10 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_modulus<N>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_modulus<N, T>(true, T{ MAX / T{ 10 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_modulus<N, T>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
 
     return std::make_tuple(helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
   };
