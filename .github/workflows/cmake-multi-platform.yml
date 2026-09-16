@@ -53,6 +53,19 @@ jobs:
             cpp_compiler: cl
             build_type: Release
 
+            # Apple Silicon (ARM64)
+          - os: macos-latest
+            compiler: AppleClang
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Release
+
+          - os: macos-latest
+            compiler: AppleClang
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Debug
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,6 +82,11 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           vcpkg install boost-test:x64-windows
+
+      - name: Install Boost.Test - macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew install boost
 
       - name: Configure CMake
         run: >
@@ -93,3 +111,14 @@ jobs:
           --test-dir build
           --build-config ${{ matrix.build_type }}
           --output-on-failure
+
+      - name: Update CI status badge
+        if: ${{ always() && github.ref == 'refs/heads/main' }}
+        uses: schneegans/dynamic-badges-action@v1.7.0
+        with:
+          auth: ${{ secrets.GIST_SECRET }}
+          gistID: 10321f35631b9bc6f87ea49be103fbd3
+          filename: bin2chars-${{ matrix.os }}-${{ matrix.compiler }}-${{ matrix.build_type }}.json
+          label: CI
+          message: ${{ job.status }}
+          color: ${{ job.status == 'success' && 'brightgreen' || 'red' }}

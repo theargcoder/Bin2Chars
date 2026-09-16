@@ -44,14 +44,20 @@ namespace
     while(cycles < SAMPLES && errors < MAX_ERRORS)
     {
       cycles += RANGE;
-      using LoopType = std::intmax_t;
+      using LoopType = std::conditional_t<std::is_signed_v<Type>, std::intmax_t, std::uintmax_t>;
 
       const auto delim = static_cast<LoopType>(DELIM);
       const auto jump = static_cast<LoopType>(JUMP);
       const auto range = static_cast<LoopType>(RANGE);
 
-      for(LoopType i = delim, lim = 0, max_iter = 0; (PLUS ? i < delim + range : i > delim - range) && lim < static_cast<LoopType>(MAX_ERRORS) && max_iter < range;
-          (PLUS ? i += jump : i -= jump), ++max_iter)
+      constexpr auto LOOP_MAX = std::numeric_limits<LoopType>::max();
+      constexpr auto LOOP_MIN = std::numeric_limits<LoopType>::lowest();
+
+      const auto plus_end = delim > LOOP_MAX - range ? LOOP_MAX : delim + range;
+      const auto minus_end = delim < LOOP_MIN + range ? LOOP_MIN : delim - range;
+
+      for(LoopType i = delim, lim = 0, max_iter = 0; (PLUS ? i < plus_end : i > minus_end) && lim < static_cast<LoopType>(MAX_ERRORS) && max_iter < range;
+          (PLUS ? (i > LOOP_MAX - jump ? i = LOOP_MAX : i += jump) : (i < LOOP_MIN + jump ? i = LOOP_MIN : i -= jump)), ++max_iter)
       {
         const auto st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
         std_log = Bin2Chars::Numeric::Std::to_string<false, Type>(static_cast<Type>(i), 123);
