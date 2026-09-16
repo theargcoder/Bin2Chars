@@ -337,9 +337,12 @@ int main(int /*unused*/, char ** /*unused*/)
 
   return 0;
 }
-#endif
+
+#elif
 
 int main()
 {
   return 0;
 }
+
+#endif

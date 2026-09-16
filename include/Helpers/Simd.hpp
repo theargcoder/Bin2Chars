@@ -16,9 +16,9 @@
 
 namespace Bin2Chars::Helpers::Simd
 {
+#if (defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)) && (defined(__AVX512BW__) || defined(__AVX512VL__) || defined(__AVX2__))
   namespace Debug
   {
-#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
     /**
      * @brief Maps a bit-width to the appropriate unsigned integer type.
      * Special case: 8-bit lanes are mapped to uint16_t to prevent debugger ASCII rendering.
@@ -96,8 +96,8 @@ namespace Bin2Chars::Helpers::Simd
 
       return result;
     }
-#endif
   } // namespace Debug
+#endif
 
   using uint128_t = __uint128_t;
 

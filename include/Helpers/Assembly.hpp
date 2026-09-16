@@ -1,15 +1,17 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <iostream>
 #include <sched.h>
-#include <utility>
-#if defined(__x86_64__)
-#include <chrono>
 #include <thread>
-#include <x86intrin.h>
+#include <utility>
+#if defined(_MSC_VER)
+#include <intrin.h> // Windows / MSVC
+#else
+#include <x86intrin.h> // Linux & macOS / GCC & Clang
 #endif
 
 namespace Bin2Chars::Helpers::Assembly

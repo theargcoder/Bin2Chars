@@ -29,6 +29,7 @@ string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SYSTEM_ARCH)
 # ============================================================
 # Boost
 # ============================================================
+
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 # ============================================================
@@ -44,10 +45,54 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 # ============================================================
+# Compiler flag support detection
+#
+# Every warning is tested against the actual compiler before it is added to the
+# project's warning list.
+# ============================================================
+
+include(CheckCCompilerFlag)
+include(CheckCXXCompilerFlag)
+
+function(filter_supported_flags INPUT_LIST OUTPUT_LIST LANGUAGE)
+
+  set(SUPPORTED_FLAGS "")
+  set(CMAKE_REQUIRED_QUIET TRUE)
+
+  foreach(FLAG IN LISTS ${INPUT_LIST})
+
+    string(MD5 FLAG_HASH "${FLAG}")
+    set(CHECK_VAR "HAS_${LANGUAGE}_FLAG_${FLAG_HASH}")
+
+    if(LANGUAGE STREQUAL "C")
+      check_c_compiler_flag("${FLAG}" ${CHECK_VAR})
+    elseif(LANGUAGE STREQUAL "CXX")
+      check_cxx_compiler_flag("${FLAG}" ${CHECK_VAR})
+    else()
+      message(
+        FATAL_ERROR
+          "filter_supported_flags(): unsupported language '${LANGUAGE}'")
+    endif()
+
+    if(${CHECK_VAR})
+      list(APPEND SUPPORTED_FLAGS "${FLAG}")
+    else()
+      message(STATUS "Skipping unsupported ${LANGUAGE} compiler flag: ${FLAG}")
+    endif()
+
+  endforeach()
+
+  set(${OUTPUT_LIST}
+      "${SUPPORTED_FLAGS}"
+      PARENT_SCOPE)
+
+endfunction()
+
+# ============================================================
 # C warnings
 #
-# These are warnings intended for YOUR C code. They are NOT applied to external
-# dependencies.
+# These warnings are intended for YOUR C code. They are applied only to C
+# sources.
 # ============================================================
 
 set(C_WARNINGS
@@ -169,47 +214,23 @@ if(IS_GCC)
       -Wvector-operation-performance)
 
   list(APPEND C_WARNINGS ${GCC_ONLY_WARNINGS})
-
   list(APPEND CXX_WARNINGS ${GCC_ONLY_WARNINGS})
 
 endif()
 
 # ============================================================
-# Clang compatibility
+# Filter unsupported warnings
+#
+# At this point every warning has been defined. Each language is checked
+# independently.
 # ============================================================
 
-if(IS_CLANG)
+filter_supported_flags(C_WARNINGS C_WARNINGS_SUPPORTED C)
 
-  # GCC-only warning flags that Clang does not support.
-  set(GCC_ONLY_WARNING_FLAGS
-      -Wduplicated-cond
-      -Wduplicated-branches
-      -Wmaybe-uninitialized
-      -Wuse-after-free
-      -Warray-bounds=2
-      -Warray-parameter=2
-      -Wzero-length-bounds
-      -Wcast-align=strict
-      -Wrestrict
-      -Wshift-overflow=2
-      -Wformat-overflow=2
-      -Wformat-truncation=2
-      -Walloc-zero
-      -Wmultistatement-macros
-      -Wstringop-overflow
-      -Wstringop-overread
-      -Wstringop-truncation
-      -Wplacement-new=2
-      -Wsized-deallocation
-      -Wmissing-attributes
-      -Warith-conversion
-      -Wstrict-aliasing=3
-  )
+filter_supported_flags(CXX_WARNINGS CXX_WARNINGS_SUPPORTED CXX)
 
-  list(REMOVE_ITEM C_WARNINGS ${GCC_ONLY_WARNING_FLAGS})
-  list(REMOVE_ITEM CXX_WARNINGS ${GCC_ONLY_WARNING_FLAGS})
-
-endif()
+set(C_WARNINGS "${C_WARNINGS_SUPPORTED}")
+set(CXX_WARNINGS "${CXX_WARNINGS_SUPPORTED}")
 
 # ============================================================
 # Architecture
@@ -255,6 +276,10 @@ target_include_directories(Bin2Chars INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(Bin2Chars INTERFACE Boost::headers ryu::ryu)
 
+# ============================================================
+# GCC / Clang
+# ============================================================
+
 if(IS_GCC OR IS_CLANG)
 
   # ==========================================================
@@ -262,9 +287,7 @@ if(IS_GCC OR IS_CLANG)
   #
   # Goal: - Excellent CodeLLDB experience - Maximum diagnostics - Runtime UB
   # detection - Memory corruption detection
-  #
   # ==========================================================
-
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
@@ -276,8 +299,7 @@ if(IS_GCC OR IS_CLANG)
       -fno-optimize-sibling-calls
       -fno-sanitize-recover=all
       "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
-      "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>"
-    )
+      "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
 
     # Compiler-specific Debug flags.
     if(IS_GCC)
@@ -303,15 +325,10 @@ if(IS_GCC OR IS_CLANG)
         -fsanitize=builtin
         -ftrivial-auto-var-init=pattern
         -fstack-protector-strong
-        -fstack-clash-protection
-      )
+        -fstack-clash-protection)
 
-      add_link_options(
-        -fsanitize=address
-        -fsanitize=undefined
-        -fsanitize=leak
-        -fno-sanitize-recover=all
-      )
+      add_link_options(-fsanitize=address -fsanitize=undefined -fsanitize=leak
+                       -fno-sanitize-recover=all)
 
     elseif(IS_CLANG)
 
@@ -324,27 +341,21 @@ if(IS_GCC OR IS_CLANG)
         -fsanitize=float-divide-by-zero
         -fsanitize=vptr
         -ftrivial-auto-var-init=pattern
-        -fstack-protector-strong
-      )
+        -fstack-protector-strong)
 
-      add_link_options(
-        -fsanitize=address
-        -fsanitize=undefined
-        -fno-sanitize-recover=all
-      )
+      add_link_options(-fsanitize=address -fsanitize=undefined
+                       -fno-sanitize-recover=all)
 
     endif()
+
+    # ==========================================================
+    # Release
+    # ==========================================================
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 
     add_compile_options(
-      -O3
-      -DNDEBUG
-      -fno-omit-frame-pointer
-      ${NATIVE_ARCH_FLAGS}
-      # ------------------------------------------------------
-      # Language-specific warnings
-      # ------------------------------------------------------
+      -O3 -DNDEBUG -fno-omit-frame-pointer ${NATIVE_ARCH_FLAGS}
       "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
       "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
 
@@ -368,19 +379,16 @@ if(IS_GCC OR IS_CLANG)
       -DNDEBUG
       -fno-omit-frame-pointer
       ${NATIVE_ARCH_FLAGS}
-      # ------------------------------------------------------
-      # Language-specific warnings
-      # ------------------------------------------------------
       "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
       "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
 
   endif()
 
-elseif(IS_MSVC)
-
   # ==========================================================
   # MSVC
   # ==========================================================
+
+elseif(IS_MSVC)
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
