@@ -1,2 +1,5 @@
-add_bin2chars_test(test_exponential_notation exponential_notation.cpp)
-add_bin2chars_test(test_decimal_expansion decimal_expansion.cpp)
+add_bin2chars_executable(test_exponential_notation exponential_notation.cpp)
+add_bin2chars_executable(test_decimal_expansion decimal_expansion.cpp)
+
+add_bin2chars_test(test_exponential_notation)
+add_bin2chars_test(test_decimal_expansion)

@@ -1,26 +1,25 @@
-# ------------------------------------------------------------
-# Helper function
-# ------------------------------------------------------------
-function(add_bin2chars_test name src)
-
+function(add_bin2chars_executable name src)
   add_executable(${name} ${src})
-
   target_link_libraries(${name} PRIVATE Bin2Chars Boost::unit_test_framework)
 
   # Required on Linux when dynamically linking against system Boost binaries
   target_compile_definitions(${name} PRIVATE BOOST_TEST_DYN_LINK)
+endfunction()
 
+function(add_bin2chars_test name)
   add_test(NAME ${name} COMMAND ${name})
-
 endfunction()
 
 # ------------------------------------------------------------
-# Tests
+# Targets & Tests Setup
 # ------------------------------------------------------------
 
-add_bin2chars_test(test_magic_math magic_math.cpp)
-add_bin2chars_test(test_asm asm_cycles_test.cpp)
-add_bin2chars_test(test_compute_exponent_decimal_expansion
-                   compute_exponent_decimal_expansion.cpp)
+add_bin2chars_executable(test_magic_math magic_math.cpp)
+add_bin2chars_executable(test_compute_exponent_decimal_expansion
+                         compute_exponent_decimal_expansion.cpp)
+add_bin2chars_executable(test_asm asm_cycles_test.cpp)
+
+add_bin2chars_test(test_magic_math)
+add_bin2chars_test(test_compute_exponent_decimal_expansion)
 
 add_subdirectory(numeric)

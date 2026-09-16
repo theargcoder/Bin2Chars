@@ -26,9 +26,17 @@ using namespace Bin2Chars::Tests;
 
 namespace
 {
-  const auto fuzzer_format_exponential = []<typename Type>(const Type &, const int &PRECISION, const size_t SAMPLES, auto &bin2chars_took, auto &bin2chars_cycles,
-                                                           auto &std_fmt_took, auto &std_cycles, auto &ryu_took, auto &ryu_cycles) -> void
+  template <typename Type>
+  void fuzzer_format_exponential(const Type & /*unused*/, const int &PRECISION, auto &bin2chars_took, auto &bin2chars_cycles, auto &std_fmt_took, auto &std_cycles, auto &ryu_took,
+                                 auto &ryu_cycles)
   {
+#ifdef NDEBUG
+    const constexpr auto SAMPLES = 200'000;
+#else
+    // for debug tests take WAY too long so make em speedy
+    const constexpr auto SAMPLES = 50'000;
+#endif
+
     using UIntType = std::conditional_t<sizeof(Type) == 4, uint32_t, uint64_t>;
 
     // Fixed seed so test failures are 100% reproducible
@@ -84,13 +92,20 @@ namespace
     }
   };
 
-  const auto lopper_format_exponential = []<typename Type>(const int &PRECISION, const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_took,
-                                                           auto &bin2chars_cycles, auto &std_fmt_took, auto &std_cycles, auto &ryu_took, auto &ryu_cycles) -> void
+  template <typename Type>
+  void lopper_format_exponential(const int &PRECISION, const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_took, auto &bin2chars_cycles, auto &std_fmt_took,
+                                 auto &std_cycles, auto &ryu_took, auto &ryu_cycles)
   {
-    const constexpr auto WISHED_RANGE = 100'000;
-    const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
-    const constexpr Type RANGE = WISHED_RANGE < MAX_NUM ? WISHED_RANGE : MAX_NUM;
-    const constexpr Type MAX_ERRORS = 10;
+#ifdef NDEBUG
+    const constexpr auto SAMPLES = 100'000;
+#else
+    // for debug tests take WAY too long so make em speedy
+    const constexpr auto SAMPLES = 25'000;
+#endif
+
+    constexpr Type MAX_NUM = std::numeric_limits<Type>::max();
+    constexpr Type RANGE = SAMPLES < MAX_NUM ? SAMPLES : MAX_NUM;
+    constexpr Type MAX_ERRORS = 10;
 
     for(Type val = DELIM, lim = 0, max_iter = 0; ((PLUS) ? val < DELIM + RANGE : val > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
         (PLUS) ? val += JUMP : val -= JUMP, max_iter++)
@@ -198,9 +213,8 @@ namespace
                               ryu_cycles);
 
     // ---- MASSIVE CHAOS FUZZER ----
-    // 1 million purely random bit-patterns per precision level
-    fuzzer_format_exponential(bannana, PRECISION, 1'000'000, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    fuzzer_format_exponential(bannana, PRECISION, 100'000, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    // purely random bit-patterns per precision level
+    fuzzer_format_exponential(bannana, PRECISION, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
 
     return std::make_tuple(bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
   };
@@ -222,15 +236,44 @@ BOOST_AUTO_TEST_CASE(test_all_floating_point_v)
   Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(1);
 
   // floats // all good
-  for(int i = 0; i <= 200; i++)
+  for(int i = 0; i <= 20; i++)
   {
-    // test_and_benchmark_float(static_cast<float>(0), i);
+    test_and_benchmark_float(static_cast<float>(0), i);
   }
+  test_and_benchmark_float(static_cast<double>(0), 50);
+  test_and_benchmark_float(static_cast<double>(0), 60);
+  test_and_benchmark_float(static_cast<double>(0), 70);
+  test_and_benchmark_float(static_cast<double>(0), 80);
+  test_and_benchmark_float(static_cast<double>(0), 90);
+  test_and_benchmark_float(static_cast<double>(0), 100);
+  test_and_benchmark_float(static_cast<double>(0), 110);
+  test_and_benchmark_float(static_cast<double>(0), 120);
+  test_and_benchmark_float(static_cast<double>(0), 130);
+  test_and_benchmark_float(static_cast<double>(0), 140);
+  test_and_benchmark_float(static_cast<double>(0), 150);
+  test_and_benchmark_float(static_cast<double>(0), 160);
+  test_and_benchmark_float(static_cast<double>(0), 170);
+  test_and_benchmark_float(static_cast<double>(0), 180);
 
   // doubles // all good
-  for(int i = 0; i <= 800; i++)
+  for(int i = 0; i <= 50; i++)
   {
     test_and_benchmark_float(static_cast<double>(0), i);
   }
+  test_and_benchmark_float(static_cast<double>(0), 100);
+  test_and_benchmark_float(static_cast<double>(0), 150);
+  test_and_benchmark_float(static_cast<double>(0), 200);
+  test_and_benchmark_float(static_cast<double>(0), 250);
+  test_and_benchmark_float(static_cast<double>(0), 300);
+  test_and_benchmark_float(static_cast<double>(0), 350);
+  test_and_benchmark_float(static_cast<double>(0), 400);
+  test_and_benchmark_float(static_cast<double>(0), 450);
+  test_and_benchmark_float(static_cast<double>(0), 500);
+  test_and_benchmark_float(static_cast<double>(0), 550);
+  test_and_benchmark_float(static_cast<double>(0), 600);
+  test_and_benchmark_float(static_cast<double>(0), 650);
+  test_and_benchmark_float(static_cast<double>(0), 700);
+  test_and_benchmark_float(static_cast<double>(0), 750);
+  test_and_benchmark_float(static_cast<double>(0), 800);
 }
 ///

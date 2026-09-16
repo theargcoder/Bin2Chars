@@ -56,6 +56,8 @@ include(CheckCXXCompilerFlag)
 
 function(filter_supported_flags INPUT_LIST OUTPUT_LIST LANGUAGE)
 
+  message(
+    "-- Checking supported compile time flags ... this may take ~30 seconds")
   set(SUPPORTED_FLAGS "")
   set(CMAKE_REQUIRED_QUIET TRUE)
 
@@ -293,6 +295,7 @@ if(IS_GCC OR IS_CLANG)
 
     # Common Debug flags supported by GCC and Clang.
     add_compile_options(
+      ${NATIVE_ARCH_FLAGS}
       -O0
       -g3
       -fno-omit-frame-pointer

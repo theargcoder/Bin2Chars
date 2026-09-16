@@ -14,7 +14,7 @@
 #include "include/Helpers/Assembly.hpp"
 
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
-#include <emmintrin.h>
+
 #include <immintrin.h>
 
 template <size_t BitWidth>

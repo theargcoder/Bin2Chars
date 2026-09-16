@@ -25,9 +25,15 @@ namespace
   void looper_ints(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &std_lib_time, auto &std_lib_cpu_cycles, auto &std_lib_to_str_time, auto &std_lib_to_str_cycles,
                    auto &bin2chars_time, auto &bin2chars_cycles)
   {
-    const constexpr auto WISHED_RANGE = 100'000;
+#ifdef NDEBUG
+    const constexpr auto SAMPLES = 100'000;
+#else
+    // for debug tests take WAY too long so make em speedy
+    const constexpr auto SAMPLES = 50'000;
+#endif
+
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
-    const constexpr Type RANGE = WISHED_RANGE < MAX_NUM ? static_cast<Type>(WISHED_RANGE) : MAX_NUM;
+    const constexpr Type RANGE = SAMPLES < MAX_NUM ? static_cast<Type>(SAMPLES) : MAX_NUM;
     const constexpr Type MAX_ERRORS = 10;
 
     uint32_t errors = 0;
@@ -35,7 +41,7 @@ namespace
 
     std::string std_log, std_lib_to_str_log, bin2chars_log;
 
-    while(cycles < WISHED_RANGE && errors < MAX_ERRORS)
+    while(cycles < SAMPLES && errors < MAX_ERRORS)
     {
       cycles += RANGE;
       using LoopType = std::intmax_t;
@@ -98,7 +104,6 @@ namespace
     // ---- Extremes and Zero Region ----
     looper_ints<N>(true, MIN, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
     looper_ints<N>(false, MAX, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
-    ;
     looper_ints<N>(true, T{ 0 }, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
     looper_ints<N>(false, T{ 0 }, UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
 
@@ -113,7 +118,6 @@ namespace
     for(std::intmax_t val = 10; val > 0 && val < static_cast<std::intmax_t>(MAX) / 10; val *= 10)
     {
       looper_ints<N>(true, static_cast<T>(val), UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
-
       looper_ints<N>(false, static_cast<T>(val), UNIT, std_to_chars_took, std_lib_cpu_cycles, std_lib_to_str_time, std_lib_to_str_cycles, bin2chars_time, bin2chars_cycles);
     }
     // ---- Large magnitude sweeps (Sparse) ----

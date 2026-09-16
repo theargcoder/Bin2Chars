@@ -412,8 +412,7 @@ namespace Algos::Compute::DecimalExpansion
   void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent);
   void NegativeExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent);
 
-#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
-#if defined(__AVX512BW__) && defined(__AVX512VL__)
+#if (defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)) && (defined(__AVX512BW__) && defined(__AVX512VL__))
   void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent)
   {
     const auto &POW_2_E = Exponent::Positive::POW_2_E;
@@ -769,7 +768,8 @@ namespace Algos::Compute::DecimalExpansion
     }
     //
   }
-#elif defined(__AVX2__)
+
+#elif (defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)) && defined(__AVX2__)
   void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent)
   {
     const auto &POW_2_E = Exponent::Positive::POW_2_E;
@@ -1493,9 +1493,6 @@ namespace Algos::Compute::DecimalExpansion
   }
 
 #else
-#error "this algorithm is not supported for this architecture; this architecture is too old (pre __AVX2__)"
-#endif
-#elif defined(__ARM_NEON) || defined(__aarch64__)
   void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent)
   {
     const auto &POW_2_E = Exponent::Positive::POW_2_E;
@@ -1608,8 +1605,6 @@ namespace Algos::Compute::DecimalExpansion
       std::memset(SIMD_ARRAY.data() + count, 0, first * sizeof(uint32_t));
     }
   }
-#else
-#error "unknown architecture; this algorithm is not supported for this architecture (its neither x86_64 nor __arch64__"
 #endif
 
 } // namespace Algos::Compute::DecimalExpansion
