@@ -59,6 +59,17 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Boost.Test - Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libboost-test-dev
+
+      - name: Install Boost.Test - Windows
+        if: runner.os == 'Windows'
+        run: |
+          vcpkg install boost-test:x64-windows
+
       - name: Configure CMake
         run: >
           cmake
