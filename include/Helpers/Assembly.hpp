@@ -8,10 +8,12 @@
 #include <sched.h>
 #include <thread>
 #include <utility>
+#if defined(__x86_64__) || defined(_M_X64) || defined(__i386__) || defined(_M_IX86)
 #if defined(_MSC_VER)
 #include <intrin.h> // Windows / MSVC
-#else
+#elif defined(__GNUC__) || defined(__GNUG__)
 #include <x86intrin.h> // Linux & macOS / GCC & Clang
+#endif
 #endif
 
 namespace Bin2Chars::Helpers::Assembly

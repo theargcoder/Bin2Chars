@@ -338,7 +338,7 @@ int main(int /*unused*/, char ** /*unused*/)
   return 0;
 }
 
-#elif
+#else
 
 int main()
 {

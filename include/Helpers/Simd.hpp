@@ -231,8 +231,8 @@ namespace Bin2Chars::Helpers::Simd
       const uint64_t mid_chars = mid_digits + ASCII_ZERO;
       const unsigned bot_chars = static_cast<unsigned>(bot_digits + ASCII_ZERO);
 
-      const uint64_t output_top = top_chars >> (lead_z_top << 3U);
-      const uint64_t output_mid = mid_chars >> (lead_z_mid << 3U);
+      const uint64_t output_top = (lead_z_top >= 8) ? 0ULL : top_chars >> (lead_z_top << 3U);
+      const uint64_t output_mid = (lead_z_mid >= 8) ? 0ULL : mid_chars >> (lead_z_mid << 3U);
       const unsigned output_bot = bot_chars >> (lead_z_bot << 3U);
 
       std::memcpy(buff, &output_top, sizeof(output_top));
@@ -279,7 +279,7 @@ namespace Bin2Chars::Helpers::Simd
       const uint64_t top_chars = top_digits + ASCII_ZERO;
       const unsigned bot_chars = static_cast<unsigned>(bot_digits + ASCII_ZERO);
 
-      const uint64_t output_top = top_chars >> (lead_z_top << 3U);
+      const uint64_t output_top = (lead_z_top >= 8) ? 0ULL : top_chars >> (lead_z_top << 3U);
       const unsigned output_bot = bot_chars >> (lead_z_bot << 3U);
 
       std::memcpy(buff, &output_top, sizeof(output_top));
