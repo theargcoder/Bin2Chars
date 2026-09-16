@@ -1,11 +1,17 @@
 #pragma once
 
+#include <cstddef>
+#include <cstring>
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#elif defined(__GNUC__)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif
 
 #include <array>
 #include <cstdint>
-#include <immintrin.h>
 #include <limits>
 #include <type_traits>
 
@@ -403,6 +409,7 @@ namespace Algos::Compute::DecimalExpansion
   void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent);
   void NegativeExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent);
 
+#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
   void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent)
   {
@@ -1485,8 +1492,128 @@ namespace Algos::Compute::DecimalExpansion
 #else
 #error "this algorithm is not supported for this architecture; this architecture is too old (pre __AVX2__)"
 #endif
+#elif defined(__ARM_NEON) || defined(__aarch64__)
+  void PositiveExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent)
+  {
+    const auto &POW_2_E = Exponent::Positive::POW_2_E;
+    const auto &POW_2_CACHE = Exponent::Positive::POW_2_CACHE;
+
+    const unsigned K_DIV_64 = static_cast<unsigned>(exponent) >> 6U;
+    const unsigned BASE_IDX = K_DIV_64 * 40;
+    const unsigned E_0 = POW_2_E[K_DIV_64];
+
+    constexpr size_t N_WRDS = 40;
+    constexpr uint64_t MAGIC_10E8 = 1441151881ULL;
+    constexpr int SHIFT_10E8 = 57;
+
+    for(size_t idx_shft = 0; idx_shft < N_WRDS; idx_shft++)
+    {
+      SIMD_ARRAY[idx_shft] = POW_2_CACHE[BASE_IDX + idx_shft];
+    }
+
+    uint32_t carry;
+    int i = E_0;
+    for(; i + 5 < exponent; i += 5)
+    {
+      carry = 0;
+      for(size_t idx_shft = 0; idx_shft < N_WRDS; idx_shft++)
+      {
+        uint64_t pp = (static_cast<uint64_t>(SIMD_ARRAY[idx_shft]) << 5U) + carry;
+        carry = static_cast<uint32_t>((pp * MAGIC_10E8) >> SHIFT_10E8);
+        SIMD_ARRAY[idx_shft] = static_cast<uint32_t>(pp - static_cast<uint64_t>(carry * 100'000'000U));
+      }
+    }
+
+    const int miss = exponent - i;
+    carry = 0;
+    for(size_t idx_shft = 0; idx_shft < N_WRDS; idx_shft++)
+    {
+      uint64_t pp = (static_cast<uint64_t>(SIMD_ARRAY[idx_shft]) << miss) + carry;
+      carry = static_cast<uint32_t>((pp * MAGIC_10E8) >> SHIFT_10E8);
+      SIMD_ARRAY[idx_shft] = static_cast<uint32_t>(pp - static_cast<uint64_t>(carry * 100'000'000U));
+    }
+
+    size_t first = 0;
+
+    while(first < SIMD_ARRAY.size() && SIMD_ARRAY.at(first) == 0)
+    {
+      ++first;
+    }
+
+    if(first != 0 && first != SIMD_ARRAY.size())
+    {
+      const size_t count = SIMD_ARRAY.size() - first;
+
+      std::memmove(SIMD_ARRAY.data(), SIMD_ARRAY.data() + first, count * sizeof(uint32_t));
+
+      std::memset(SIMD_ARRAY.data() + count, 0, first * sizeof(uint32_t));
+    }
+  }
+
+  void NegativeExponent(std::array<unsigned, MAX_ARRAY_SIZE> &SIMD_ARRAY, const int &exponent)
+  {
+    const auto &POW_5_E = Exponent::Negative::POW_5_E;
+    const auto &POW_5_CACHE = Exponent::Negative::POW_5_CACHE;
+
+    const unsigned K_DIV_64 = static_cast<unsigned>(exponent) >> 6U;
+    const unsigned BASE_IDX = K_DIV_64 * 96;
+    const unsigned E_0 = POW_5_E[K_DIV_64];
+
+    constexpr uint64_t MAGIC_10E8 = 1441151881ULL;
+    constexpr int SHIFT_10E8 = 57;
+
+    for(unsigned &nibble : SIMD_ARRAY)
+    {
+      nibble = POW_5_CACHE[BASE_IDX + (&nibble - &SIMD_ARRAY[0])];
+    }
+
+    for(int e = E_0 + 2; e <= exponent; e += 2) // each iteration has ~74 cycle latency --- since 32 iterations is worst case then 2368 cycle latency just in this loop ...
+    {
+      uint32_t carry = 0;
+      for(unsigned &nibble : SIMD_ARRAY)
+      {
+        uint64_t prod = static_cast<uint64_t>(nibble) * 25U + carry;
+        carry = static_cast<uint32_t>((prod * MAGIC_10E8) >> SHIFT_10E8);
+        nibble = static_cast<uint32_t>(prod - static_cast<uint64_t>(carry * 100'000'000U));
+      }
+    }
+
+    if((exponent & 0b01) != 0)
+    {
+      uint32_t carry = 0;
+      for(unsigned &nibble : SIMD_ARRAY)
+      {
+        uint64_t prod = static_cast<uint64_t>(nibble) * 5U + carry;
+        carry = static_cast<uint32_t>((prod * MAGIC_10E8) >> SHIFT_10E8);
+        nibble = static_cast<uint32_t>(prod - static_cast<uint64_t>(carry * 100'000'000U));
+      }
+    }
+
+    size_t first = 0;
+
+    while(first < SIMD_ARRAY.size() && SIMD_ARRAY[first] == 0)
+    {
+      ++first;
+    }
+
+    if(first != 0 && first != SIMD_ARRAY.size())
+    {
+      const size_t count = SIMD_ARRAY.size() - first;
+
+      std::memmove(SIMD_ARRAY.data(), SIMD_ARRAY.data() + first, count * sizeof(uint32_t));
+
+      std::memset(SIMD_ARRAY.data() + count, 0, first * sizeof(uint32_t));
+    }
+  }
+#else
+#error "unknown architecture; this algorithm is not supported for this architecture (its neither x86_64 nor __arch64__"
+#endif
 
 } // namespace Algos::Compute::DecimalExpansion
 
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#elif defined(__GNUC__)
 #pragma GCC diagnostic pop
+#endif
 //

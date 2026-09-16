@@ -133,9 +133,9 @@ namespace Bin2Chars::Helpers::Assembly
     return static_cast<uint64_t>(static_cast<__uint128_t>(ticks) * 1'000'000'000ULL / freq);
   }
 
+#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
   inline void pin_thread_to_cpu(const unsigned &cpu_id)
   {
-#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
     cpu_set_t allowed;
     CPU_ZERO(&allowed); // initialize
 
@@ -160,9 +160,14 @@ namespace Bin2Chars::Helpers::Assembly
       perror("sched_setaffinity");
       std::terminate();
     }
-#elif defined(__ARM_NEON) || defined(__aarch64__)
-#endif
   }
+#endif
+#if defined(__ARM_NEON) || defined(__aarch64__)
+  inline void pin_thread_to_cpu(const unsigned &cpu_id)
+  {
+    asm volatile("" : : "m"(cpu_id), "r"(cpu_id) : "memory");
+  }
+#endif
 
   template <std::size_t N, typename T>
   void prefetch_elements(const T *ptr)

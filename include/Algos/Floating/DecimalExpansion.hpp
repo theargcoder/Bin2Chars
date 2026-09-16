@@ -135,7 +135,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
         if(int_len == 1 || digs != 0)
         {
-          len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+          len_written = Bin2Chars::Numeric::Integral::ToStrBufferedReturnLen<unsigned>(&buff[len], digs);
           precision_missing -= static_cast<int>(len_written);
           len += len_written;
         }
@@ -184,7 +184,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
             }
           }
 
-          Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
+          Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], rem);
           len += 8;
           precision_missing -= 8;
         }
@@ -223,7 +223,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         precision_missing -= static_cast<int>(exp_base_10_ABS);
         len += exp_base_10_ABS;
 
-        len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+        len_written = Bin2Chars::Numeric::Integral::ToStrBufferedReturnLen<unsigned>(&buff[len], digs);
         precision_missing -= static_cast<int>(len_written);
         len += len_written;
         it--;
@@ -268,9 +268,9 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
           }
         }
 
-        len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
-        len += len_written;
-        precision_missing -= static_cast<int>(len_written);
+        Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], rem);
+        len += 8;
+        precision_missing -= 8;
       }
 
       while(precision_missing >= 0 && frac != 0) // write all digits and change since they are needed for rounding
@@ -279,9 +279,9 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         digs = static_cast<unsigned>(step_total >> SHIFT_T);
         frac = static_cast<base_t>(step_total);
 
-        len_written = Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], digs);
-        len += len_written;
-        precision_missing -= static_cast<int>(len_written);
+        Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], digs);
+        len += 8;
+        precision_missing -= 8;
       }
 
       if(precision_missing > 0)

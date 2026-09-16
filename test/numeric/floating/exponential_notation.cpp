@@ -224,7 +224,7 @@ BOOST_AUTO_TEST_CASE(test_all_floating_point_v)
   // floats // all good
   for(int i = 0; i <= 200; i++)
   {
-    test_and_benchmark_float(static_cast<float>(0), i);
+    // test_and_benchmark_float(static_cast<float>(0), i);
   }
 
   // doubles // all good

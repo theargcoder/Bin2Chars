@@ -166,30 +166,34 @@ namespace Bin2Chars::Helpers::Simd
       requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
     static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const auto &input) noexcept;
 
+    template <typename T>
+      requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
+    static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const auto &input) noexcept;
+
     template <>
     uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
     {
       const constexpr uint64_t ASCII_ZERO = 0x30303030'30303030;
 
-      const uint64_t dig_1 = ((uint128_t)input * 0x760F253EDB4AB0D3ULL) >> 126U;
-      const uint64_t div_2_tmp = ((uint128_t)input * 0x2725DD1D243ABA0FULL) >> 64U, div_2 = (((input - div_2_tmp) >> 1) + div_2_tmp) >> 59;
-      const uint64_t div_3_tmp = ((uint128_t)input * 0x70EF54646D496893ULL) >> 64U, div_3 = (((input - div_3_tmp) >> 1) + div_3_tmp) >> 56;
-      const uint64_t div_4 = ((uint128_t)input * 0x39A5652FB1137857ULL) >> 115U;
-      const uint64_t div_5_tmp = ((uint128_t)input * 0x203AF9EE756159B3ULL) >> 64U, div_5 = (((input - div_5_tmp) >> 1) + div_5_tmp) >> 49;
-      const uint64_t div_6 = ((uint128_t)input * 0xB424DC35095CD81ULL) >> 106U;
-      const uint64_t div_7 = ((uint128_t)input * 0x384B84D092ED0385ULL) >> 105U;
-      const uint64_t div_8 = ((uint128_t)input * 0x232F33025BD42233ULL) >> 101U;
-      const uint64_t div_9 = ((uint128_t)input * 0xAFEBFF0BCB24AAFFULL) >> 100U;
-      const uint64_t div_10 = ((uint128_t)input * 0xDBE6FECEBDEDD5BFULL) >> 97U;
-      const uint64_t div_11_tmp = ((uint128_t)input * 0x12E0BE826D694B2FULL) >> 64U, div_11 = (((input - div_11_tmp) >> 1) + div_11_tmp) >> 29;
-      const uint64_t div_12 = ((uint128_t)input * 0xABCC77118461CEFDULL) >> 90U;
-      const uint64_t div_13 = ((uint128_t)input * 0xD6BF94D5E57A42BDULL) >> 87U;
-      const uint64_t div_14 = ((uint128_t)input * 0x431BDE82D7B634DBULL) >> 82U;
-      const uint64_t div_15_tmp = ((uint128_t)input * 0x4F8B588E368F0847ULL) >> 64U, div_15 = (((input - div_15_tmp) >> 1) + div_15_tmp) >> 16;
-      const uint64_t div_16 = ((uint128_t)input * 0x346DC5D63886594BULL) >> 75;
-      const uint64_t div_17_tmp = ((uint128_t)input * 0x624DD2F1A9FBE77ULL) >> 64U, div_17 = (((input - div_17_tmp) >> 1) + div_17_tmp) >> 9;
-      const uint64_t div_18_tmp = ((uint128_t)input * 0x47AE147AE147AE15ULL) >> 64U, div_18 = (((input - div_18_tmp) >> 1) + div_18_tmp) >> 6;
-      const uint64_t div_19 = ((uint128_t)input * 0xCCCCCCCCCCCCCCCDULL) >> 67;
+      const uint64_t dig_1 = (static_cast<uint128_t>(input) * 0x760F253EDB4AB0D3ULL) >> 126U;
+      const uint64_t div_2_tmp = (static_cast<uint128_t>(input) * 0x2725DD1D243ABA0FULL) >> 64U, div_2 = (((input - div_2_tmp) >> 1) + div_2_tmp) >> 59;
+      const uint64_t div_3_tmp = (static_cast<uint128_t>(input) * 0x70EF54646D496893ULL) >> 64U, div_3 = (((input - div_3_tmp) >> 1) + div_3_tmp) >> 56;
+      const uint64_t div_4 = (static_cast<uint128_t>(input) * 0x39A5652FB1137857ULL) >> 115U;
+      const uint64_t div_5_tmp = (static_cast<uint128_t>(input) * 0x203AF9EE756159B3ULL) >> 64U, div_5 = (((input - div_5_tmp) >> 1) + div_5_tmp) >> 49;
+      const uint64_t div_6 = (static_cast<uint128_t>(input) * 0xB424DC35095CD81ULL) >> 106U;
+      const uint64_t div_7 = (static_cast<uint128_t>(input) * 0x384B84D092ED0385ULL) >> 105U;
+      const uint64_t div_8 = (static_cast<uint128_t>(input) * 0x232F33025BD42233ULL) >> 101U;
+      const uint64_t div_9 = (static_cast<uint128_t>(input) * 0xAFEBFF0BCB24AAFFULL) >> 100U;
+      const uint64_t div_10 = (static_cast<uint128_t>(input) * 0xDBE6FECEBDEDD5BFULL) >> 97U;
+      const uint64_t div_11_tmp = (static_cast<uint128_t>(input) * 0x12E0BE826D694B2FULL) >> 64U, div_11 = (((input - div_11_tmp) >> 1) + div_11_tmp) >> 29;
+      const uint64_t div_12 = (static_cast<uint128_t>(input) * 0xABCC77118461CEFDULL) >> 90U;
+      const uint64_t div_13 = (static_cast<uint128_t>(input) * 0xD6BF94D5E57A42BDULL) >> 87U;
+      const uint64_t div_14 = (static_cast<uint128_t>(input) * 0x431BDE82D7B634DBULL) >> 82U;
+      const uint64_t div_15_tmp = (static_cast<uint128_t>(input) * 0x4F8B588E368F0847ULL) >> 64U, div_15 = (((input - div_15_tmp) >> 1) + div_15_tmp) >> 16;
+      const uint64_t div_16 = (static_cast<uint128_t>(input) * 0x346DC5D63886594BULL) >> 75;
+      const uint64_t div_17_tmp = (static_cast<uint128_t>(input) * 0x624DD2F1A9FBE77ULL) >> 64U, div_17 = (((input - div_17_tmp) >> 1) + div_17_tmp) >> 9;
+      const uint64_t div_18_tmp = (static_cast<uint128_t>(input) * 0x47AE147AE147AE15ULL) >> 64U, div_18 = (((input - div_18_tmp) >> 1) + div_18_tmp) >> 6;
+      const uint64_t div_19 = (static_cast<uint128_t>(input) * 0xCCCCCCCCCCCCCCCDULL) >> 67;
 
       const unsigned len = calculate_len(input);
 
@@ -221,19 +225,19 @@ namespace Bin2Chars::Helpers::Simd
 
       const uint64_t top_digits = dig_1 | dig_2 << 8U | dig_3 << 16U | dig_4 << 24U | dig_5 << 32U | dig_6 << 40U | dig_7 << 48U | dig_8 << 56U;
       const uint64_t mid_digits = dig_9 | dig_10 << 8U | dig_11 << 16U | dig_12 << 24U | dig_13 << 32U | dig_14 << 40U | dig_15 << 48U | dig_16 << 56U;
-      const unsigned bot_digits = dig_17 | dig_18 << 8U | dig_19 << 16U | dig_20 << 24U;
+      const unsigned bot_digits = static_cast<unsigned>(dig_17 | dig_18 << 8U | dig_19 << 16U | dig_20 << 24U);
 
       const uint64_t top_chars = top_digits + ASCII_ZERO;
       const uint64_t mid_chars = mid_digits + ASCII_ZERO;
-      const unsigned bot_chars = bot_digits + ASCII_ZERO;
+      const unsigned bot_chars = static_cast<unsigned>(bot_digits + ASCII_ZERO);
 
       const uint64_t output_top = top_chars >> (lead_z_top << 3U);
       const uint64_t output_mid = mid_chars >> (lead_z_mid << 3U);
       const unsigned output_bot = bot_chars >> (lead_z_bot << 3U);
 
-      *reinterpret_cast<uint64_t *>(buff) = output_top;
-      *reinterpret_cast<uint64_t *>(buff + mid_offset) = output_mid;
-      *reinterpret_cast<uint32_t *>(buff + bot_offset) = output_bot;
+      std::memcpy(buff, &output_top, sizeof(output_top));
+      std::memcpy(buff + mid_offset, &output_mid, sizeof(output_mid));
+      std::memcpy(buff + bot_offset, &output_bot, sizeof(output_bot));
 
       return len;
     }
@@ -243,15 +247,15 @@ namespace Bin2Chars::Helpers::Simd
     {
       const constexpr uint64_t ASCII_ZERO = 0x30303030'30303030;
 
-      const unsigned tmp_div_1 = ((uint64_t)input * 0x12E0BE83ULL) >> 32U, dig_1 = (((input - tmp_div_1) >> 1) + tmp_div_1) >> 29U;
-      const unsigned div_2 = ((uint64_t)input * 0x55E63B89U) >> 57;
-      const unsigned div_3 = ((uint64_t)input * 0x6B5FCA6BU) >> 54;
-      const unsigned div_4 = ((uint64_t)input * 0x431BDE83U) >> 50;
-      const unsigned tmp_div_5 = ((uint64_t)input * 0x4F8B588FULL) >> 32U, div_5 = (((input - tmp_div_5) >> 1) + tmp_div_5) >> 16U;
-      const unsigned div_6 = ((uint64_t)input * 0xD1B71759ULL) >> 45U;
-      const unsigned div_7 = ((uint64_t)input * 0x10624DD3ULL) >> 38U;
-      const unsigned div_8 = ((uint64_t)input * 0x51EB851FULL) >> 37U;
-      const unsigned div_9 = ((uint64_t)input * 0xCCCCCCCDULL) >> 35U;
+      const unsigned tmp_div_1 = (static_cast<uint64_t>(input) * 0x12E0BE83ULL) >> 32U, dig_1 = (((input - tmp_div_1) >> 1) + tmp_div_1) >> 29U;
+      const unsigned div_2 = (static_cast<uint64_t>(input) * 0x55E63B89U) >> 57;
+      const unsigned div_3 = (static_cast<uint64_t>(input) * 0x6B5FCA6BU) >> 54;
+      const unsigned div_4 = (static_cast<uint64_t>(input) * 0x431BDE83U) >> 50;
+      const unsigned tmp_div_5 = (static_cast<uint64_t>(input) * 0x4F8B588FULL) >> 32U, div_5 = (((input - tmp_div_5) >> 1) + tmp_div_5) >> 16U;
+      const unsigned div_6 = (static_cast<uint64_t>(input) * 0xD1B71759ULL) >> 45U;
+      const unsigned div_7 = (static_cast<uint64_t>(input) * 0x10624DD3ULL) >> 38U;
+      const unsigned div_8 = (static_cast<uint64_t>(input) * 0x51EB851FULL) >> 37U;
+      const unsigned div_9 = (static_cast<uint64_t>(input) * 0xCCCCCCCDULL) >> 35U;
 
       const unsigned len = calculate_len(input);
 
@@ -270,16 +274,16 @@ namespace Bin2Chars::Helpers::Simd
       const uint64_t dig_10 = input - ((div_9 << 1) + (div_9 << 3));
 
       const uint64_t top_digits = dig_1 | dig_2 << 8U | dig_3 << 16U | dig_4 << 24U | dig_5 << 32U | dig_6 << 40U | dig_7 << 48U | dig_8 << 56U;
-      const unsigned bot_digits = dig_9 | dig_10 << 8U;
+      const unsigned bot_digits = static_cast<unsigned>(dig_9 | dig_10 << 8U);
 
       const uint64_t top_chars = top_digits + ASCII_ZERO;
-      const unsigned bot_chars = bot_digits + ASCII_ZERO;
+      const unsigned bot_chars = static_cast<unsigned>(bot_digits + ASCII_ZERO);
 
       const uint64_t output_top = top_chars >> (lead_z_top << 3U);
       const unsigned output_bot = bot_chars >> (lead_z_bot << 3U);
 
-      *reinterpret_cast<uint64_t *>(buff) = output_top;
-      *reinterpret_cast<uint16_t *>(buff + bot_offset) = static_cast<uint16_t>(output_bot);
+      std::memcpy(buff, &output_top, sizeof(output_top));
+      std::memcpy(buff + bot_offset, &output_bot, sizeof(output_bot));
 
       return len;
     }
@@ -289,10 +293,10 @@ namespace Bin2Chars::Helpers::Simd
     {
       const uint64_t u8_acii_zero = 0x3030'3030'3030'3030ULL;
 
-      const uint64_t dig_1 = (uint64_t)input * 0xD1B71759U >> 45U;
-      const unsigned prod_2 = (uint64_t)input * 0x10624DD3U >> 38U;
-      const unsigned prod_3 = (uint64_t)input * 0x51EB851FU >> 37U;
-      const unsigned prod_4 = (uint64_t)input * 0xCCCCCCCDU >> 35U;
+      const uint64_t dig_1 = static_cast<uint64_t>(input) * 0xD1B71759U >> 45U;
+      const unsigned prod_2 = static_cast<uint64_t>(input) * 0x10624DD3U >> 38U;
+      const unsigned prod_3 = static_cast<uint64_t>(input) * 0x51EB851FU >> 37U;
+      const unsigned prod_4 = static_cast<uint64_t>(input) * 0xCCCCCCCDU >> 35U;
 
       const unsigned len = calculate_len(input);
       const unsigned lead_z = (5U - len) << 3U;
@@ -307,8 +311,7 @@ namespace Bin2Chars::Helpers::Simd
       const uint64_t u8_res_shf = u8_res >> lead_z;
       const uint64_t u8_chars = u8_res_shf + u8_acii_zero;
 
-      // Final Store (8 bytes)
-      *reinterpret_cast<uint64_t *>(buff) = u8_chars;
+      std::memcpy(buff, &u8_chars, sizeof(u8_chars));
 
       return len;
     }
@@ -318,8 +321,8 @@ namespace Bin2Chars::Helpers::Simd
     {
       const unsigned u8_acii_zero = 0x3030'3030U;
 
-      const unsigned dig_1 = (unsigned)input * 0x0290U >> 16U;
-      const unsigned prod_2 = (unsigned)input * 0x199A >> 16U;
+      const unsigned dig_1 = static_cast<unsigned>(input) * 0x0290U >> 16U;
+      const unsigned prod_2 = static_cast<unsigned>(input) * 0x199A >> 16U;
 
       const unsigned len = (input < 10) ? 1U : (input < 100) ? 2U : 3U;
       const unsigned lead_z = (3U - len) << 3U;
@@ -332,10 +335,92 @@ namespace Bin2Chars::Helpers::Simd
       const unsigned u8_res_shf = u8_packed >> lead_z;
       const unsigned u8_chars = u8_res_shf + u8_acii_zero;
 
-      *reinterpret_cast<unsigned *>(buff) = u8_chars;
+      std::memcpy(buff, &u8_chars, sizeof(u8_chars));
 
       return len;
     }
+
+    template <size_t Num>
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint32_t &input) noexcept
+    {
+      static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
+      constexpr unsigned MIN_LEN = Num;
+
+      constexpr uint64_t ASCII_ZERO = 0x30303030'30303030;
+
+      const unsigned tmp_div_1 = (static_cast<uint64_t>(input) * 0x12E0BE83ULL) >> 32U, dig_1 = (((input - tmp_div_1) >> 1) + tmp_div_1) >> 29U;
+      const unsigned div_2 = (static_cast<uint64_t>(input) * 0x55E63B89U) >> 57;
+      const unsigned div_3 = (static_cast<uint64_t>(input) * 0x6B5FCA6BU) >> 54;
+      const unsigned div_4 = (static_cast<uint64_t>(input) * 0x431BDE83U) >> 50;
+      const unsigned tmp_div_5 = (static_cast<uint64_t>(input) * 0x4F8B588FULL) >> 32U, div_5 = (((input - tmp_div_5) >> 1) + tmp_div_5) >> 16U;
+      const unsigned div_6 = (static_cast<uint64_t>(input) * 0xD1B71759ULL) >> 45U;
+      const unsigned div_7 = (static_cast<uint64_t>(input) * 0x10624DD3ULL) >> 38U;
+      const unsigned div_8 = (static_cast<uint64_t>(input) * 0x51EB851FULL) >> 37U;
+      const unsigned div_9 = (static_cast<uint64_t>(input) * 0xCCCCCCCDULL) >> 35U;
+
+      const unsigned len = std::max(MIN_LEN, calculate_len(input));
+      const unsigned lead_z_top = 10U - len;
+
+      const unsigned lead_z_bot = (len >= 2U) ? 0U : 2U - len;
+      const unsigned bot_offset = (len < 2U) ? 0U : 8U - lead_z_top;
+
+      const uint64_t dig_2 = div_2 - ((dig_1 << 1) + (dig_1 << 3));
+      const uint64_t dig_3 = div_3 - ((div_2 << 1) + (div_2 << 3));
+      const uint64_t dig_4 = div_4 - ((div_3 << 1) + (div_3 << 3));
+      const uint64_t dig_5 = div_5 - ((div_4 << 1) + (div_4 << 3));
+      const uint64_t dig_6 = div_6 - ((div_5 << 1) + (div_5 << 3));
+      const uint64_t dig_7 = div_7 - ((div_6 << 1) + (div_6 << 3));
+      const uint64_t dig_8 = div_8 - ((div_7 << 1) + (div_7 << 3));
+      const uint64_t dig_9 = div_9 - ((div_8 << 1) + (div_8 << 3));
+      const uint64_t dig_10 = input - ((div_9 << 1) + (div_9 << 3));
+
+      const uint64_t top_digits = dig_1 | dig_2 << 8U | dig_3 << 16U | dig_4 << 24U | dig_5 << 32U | dig_6 << 40U | dig_7 << 48U | dig_8 << 56U;
+      const unsigned bot_digits = static_cast<unsigned>(dig_9 | dig_10 << 8U);
+
+      const uint64_t top_chars = top_digits + ASCII_ZERO;
+      const unsigned bot_chars = static_cast<unsigned>(bot_digits + ASCII_ZERO);
+
+      const uint64_t output_top = top_chars >> (lead_z_top << 3U);
+      const unsigned output_bot = bot_chars >> (lead_z_bot << 3U);
+
+      std::memcpy(buff, &output_top, sizeof(output_top));
+      std::memcpy(buff + bot_offset, &output_bot, sizeof(output_bot));
+
+      return len;
+    }
+
+    template <size_t Num>
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint16_t &input) noexcept
+    {
+      static_assert(Num <= 5, "uint16_t has AT MOST 5 digits");
+      constexpr unsigned MIN_LEN = Num;
+      constexpr unsigned MIN_LEAD_Z = (5 - Num) << 3U;
+
+      const uint64_t u8_acii_zero = 0x3030'3030'3030'3030ULL;
+
+      const uint64_t dig_1 = static_cast<uint64_t>(input) * 0xD1B71759U >> 45U;
+      const unsigned prod_2 = static_cast<uint64_t>(input) * 0x10624DD3U >> 38U;
+      const unsigned prod_3 = static_cast<uint64_t>(input) * 0x51EB851FU >> 37U;
+      const unsigned prod_4 = static_cast<uint64_t>(input) * 0xCCCCCCCDU >> 35U;
+
+      const unsigned len = calculate_len(input);
+      const unsigned lead_z = std::min((5U - len) << 3U, MIN_LEAD_Z);
+
+      const uint64_t dig_2 = prod_2 - ((dig_1 << 3U) + (dig_1 << 1U));
+      const uint64_t dig_3 = prod_3 - ((prod_2 << 3U) + (prod_2 << 1U));
+      const uint64_t dig_4 = prod_4 - ((prod_3 << 3U) + (prod_3 << 1U));
+      const uint64_t dig_5 = input - ((prod_4 << 3U) + (prod_4 << 1U));
+
+      const uint64_t u8_res = dig_1 | dig_2 << 8U | dig_3 << 16U | dig_4 << 24U | dig_5 << 32U;
+
+      const uint64_t u8_res_shf = u8_res >> lead_z;
+      const uint64_t u8_chars = u8_res_shf + u8_acii_zero;
+
+      std::memcpy(buff, &u8_chars, sizeof(u8_chars));
+
+      return std::max(MIN_LEN, len);
+    }
+
   } // namespace ARM64
 #endif
 
@@ -343,17 +428,6 @@ namespace Bin2Chars::Helpers::Simd
 
   namespace x86_64
   {
-    template <typename T>
-      requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
-    static unsigned Multiply(const auto &, const uint32_t *, uint32_t &, uint32_t &, uint32_t &) noexcept;
-
-    template <typename T>
-      requires std::is_floating_point_v<T> && std::numeric_limits<T>::is_iec559
-    static unsigned Multiply(const auto &, const uint32_t *, uint32_t &, uint32_t &, uint32_t &) noexcept
-    {
-      return 0U;
-    }
-
     template <typename T>
       requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
     static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept;

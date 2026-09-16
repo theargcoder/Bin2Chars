@@ -180,27 +180,34 @@ endif()
 
 if(IS_CLANG)
 
-  list(
-    REMOVE_ITEM
-    C_WARNINGS
-    -Wduplicated-cond
-    -Wduplicated-branches
-    -Wstrict-aliasing=3
-    -Warith-conversion
-    -Wstringop-overflow
-    -Wstringop-overread
-    -Wstringop-truncation)
+  # GCC-only warning flags that Clang does not support.
+  set(GCC_ONLY_WARNING_FLAGS
+      -Wduplicated-cond
+      -Wduplicated-branches
+      -Wmaybe-uninitialized
+      -Wuse-after-free
+      -Warray-bounds=2
+      -Warray-parameter=2
+      -Wzero-length-bounds
+      -Wcast-align=strict
+      -Wrestrict
+      -Wshift-overflow=2
+      -Wformat-overflow=2
+      -Wformat-truncation=2
+      -Walloc-zero
+      -Wmultistatement-macros
+      -Wstringop-overflow
+      -Wstringop-overread
+      -Wstringop-truncation
+      -Wplacement-new=2
+      -Wsized-deallocation
+      -Wmissing-attributes
+      -Warith-conversion
+      -Wstrict-aliasing=3
+  )
 
-  list(
-    REMOVE_ITEM
-    CXX_WARNINGS
-    -Wduplicated-cond
-    -Wduplicated-branches
-    -Wstrict-aliasing=3
-    -Warith-conversion
-    -Wstringop-overflow
-    -Wstringop-overread
-    -Wstringop-truncation)
+  list(REMOVE_ITEM C_WARNINGS ${GCC_ONLY_WARNING_FLAGS})
+  list(REMOVE_ITEM CXX_WARNINGS ${GCC_ONLY_WARNING_FLAGS})
 
 endif()
 
@@ -258,59 +265,75 @@ if(IS_GCC OR IS_CLANG)
   #
   # ==========================================================
 
+
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
+    # Common Debug flags supported by GCC and Clang.
     add_compile_options(
-      ${NATIVE_ARCH_FLAGS}
-      # GDB/LLDB stuff
       -O0
       -g3
-      # For debugging
-      -fno-ipa-sra
       -fno-omit-frame-pointer
       -fno-optimize-sibling-calls
-      -fno-inline
-      -fno-inline-functions
-      -fno-inline-small-functions
-      -fno-default-inline
-      # Address / UB / leak sanitizers
-      -fsanitize=address
-      -fsanitize=undefined
-      -fsanitize=leak
-      # Additional sanitizer coverage
-      -fsanitize=bounds-strict
-      -fsanitize=alignment
-      -fsanitize=object-size
-      -fsanitize=pointer-overflow
-      -fsanitize=float-cast-overflow
-      -fsanitize=float-divide-by-zero
-      -fsanitize=bool
-      -fsanitize=enum
-      -fsanitize=vptr
-      -fsanitize=builtin
-      # Variable tracking -fvar-tracking -fvar-tracking-assignments Make
-      # uninitialized automatic variables obvious
-      -ftrivial-auto-var-init=pattern
-      # Stack protection
-      -fstack-protector-strong
-      -fstack-clash-protection
-      # Stop immediately on sanitizer failure
       -fno-sanitize-recover=all
-      # Language-specific warnings
       "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
-      "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
+      "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>"
+    )
 
-    # --------------------------------------------------------
-    # Sanitizer runtime
-    # --------------------------------------------------------
-    add_link_options(-fsanitize=address -fsanitize=undefined -fsanitize=leak
-                     -fno-sanitize-recover=all)
+    # Compiler-specific Debug flags.
+    if(IS_GCC)
 
-    # ==========================================================
-    # Release
-    #
-    # Goal: Actual performance. Sanitizers deliberately OFF.
-    # ==========================================================
+      add_compile_options(
+        -fno-ipa-sra
+        -fno-inline
+        -fno-inline-functions
+        -fno-inline-small-functions
+        -fno-default-inline
+        -fsanitize=address
+        -fsanitize=undefined
+        -fsanitize=leak
+        -fsanitize=bounds-strict
+        -fsanitize=alignment
+        -fsanitize=object-size
+        -fsanitize=pointer-overflow
+        -fsanitize=float-cast-overflow
+        -fsanitize=float-divide-by-zero
+        -fsanitize=bool
+        -fsanitize=enum
+        -fsanitize=vptr
+        -fsanitize=builtin
+        -ftrivial-auto-var-init=pattern
+        -fstack-protector-strong
+        -fstack-clash-protection
+      )
+
+      add_link_options(
+        -fsanitize=address
+        -fsanitize=undefined
+        -fsanitize=leak
+        -fno-sanitize-recover=all
+      )
+
+    elseif(IS_CLANG)
+
+      add_compile_options(
+        -fsanitize=address
+        -fsanitize=undefined
+        -fsanitize=alignment
+        -fsanitize=pointer-overflow
+        -fsanitize=float-cast-overflow
+        -fsanitize=float-divide-by-zero
+        -fsanitize=vptr
+        -ftrivial-auto-var-init=pattern
+        -fstack-protector-strong
+      )
+
+      add_link_options(
+        -fsanitize=address
+        -fsanitize=undefined
+        -fno-sanitize-recover=all
+      )
+
+    endif()
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 

@@ -46,7 +46,7 @@ namespace Bin2Chars::Numeric::Std
       constexpr size_t size = (sizeof(Type) == 1) ? 5 : (sizeof(Type) == 2) ? 8 : (sizeof(Type) <= 4) ? 11 : 20;
 
       buff.resize_and_overwrite(size,
-                                [&value, PRECISION](char *__restrict__ ptr, const size_t in_size)
+                                [&value](char *__restrict__ ptr, const size_t in_size)
                                 {
                                   const auto [res_ptr, ec] = std::to_chars(ptr, ptr + in_size, value);
                                   return res_ptr - ptr;

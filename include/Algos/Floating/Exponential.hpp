@@ -11,6 +11,7 @@
 
 #include "include/Algos/Compute/ExponentDecimalExpansion.hpp"
 #include "include/Algos/Floating/DecimalExpansion.hpp"
+#include "include/Algos/Integer.hpp"
 #include "include/Helpers/Assembly.hpp"
 #include "include/Helpers/Math.hpp"
 #include "include/Helpers/Simd.hpp"
@@ -110,7 +111,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     if(digs != 0) // no leading zero; always non zero number . xxx; adjust exponent to correct
     {
-      len_written = Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<unsigned>(&buff[len], digs);
+      len_written = Bin2Chars::Numeric::Integral::ToStrBufferedReturnLen<unsigned>(&buff[len], digs);
       precision_missing -= static_cast<int>(len_written);
       len += len_written;
       exp_base_10 += static_cast<int>(len_written);
@@ -155,7 +156,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
         }
       }
 
-      Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], rem);
+      Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], rem);
       len += 8;
       precision_missing -= 8;
     }
@@ -166,7 +167,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
       digs = static_cast<unsigned>(step_total >> SHIFT_T);
       frac = static_cast<base_t>(step_total);
 
-      Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<8>(&buff[len], digs);
+      Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], digs);
       len += 8;
       precision_missing -= 8;
     }
@@ -257,7 +258,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     buff[len++] = (exp_base_10 < 0) ? '-' : '+';
 
     // minimum of 2 digits for exp; if there is 3 then 3 digits
-    len += Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<2>(&buff[len], static_cast<uint16_t>(std::abs(exp_base_10)));
+    len += Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<2>(&buff[len], static_cast<uint16_t>(std::abs(exp_base_10)));
 
     buff[len] = '\0';
 

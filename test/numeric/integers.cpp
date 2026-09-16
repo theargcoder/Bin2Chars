@@ -22,8 +22,8 @@ using namespace Bin2Chars::Tests;
 namespace
 {
   template <uint64_t N, typename Type>
-  auto looper_ints(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &std_lib_time, auto &std_lib_cpu_cycles, auto &std_lib_to_str_time, auto &std_lib_to_str_cycles,
-                   auto &bin2chars_time, auto &bin2chars_cycles) -> void
+  void looper_ints(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &std_lib_time, auto &std_lib_cpu_cycles, auto &std_lib_to_str_time, auto &std_lib_to_str_cycles,
+                   auto &bin2chars_time, auto &bin2chars_cycles)
   {
     const constexpr auto WISHED_RANGE = 100'000;
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
@@ -82,7 +82,7 @@ namespace
   }
 
   template <uint64_t N, typename T>
-  auto tester_ints(const T & /*unused*/) -> auto
+  auto tester_ints(const T & /*unused*/)
   {
     std::chrono::nanoseconds std_to_chars_took{ 0 };
     std::chrono::nanoseconds std_lib_to_str_time{ 0 };
@@ -132,7 +132,7 @@ namespace
 
   template <typename T, size_t... I>
     requires std::is_integral_v<T>
-  auto test_and_benchmark_int_impl(std::index_sequence<I...> /*unused*/)
+  void test_and_benchmark_int_impl(std::index_sequence<I...> /*unused*/)
   {
     auto res = tester_ints<1>(T{ 0 });
     ((res = tester_ints<I + 1>(T{ 0 }),
@@ -143,7 +143,7 @@ namespace
 
   template <typename T>
     requires std::is_integral_v<T>
-  const auto test_and_benchmark_ints(T)
+  void test_and_benchmark_ints(T)
   {
     test_and_benchmark_int_impl<T>(std::make_index_sequence<2>{});
   }

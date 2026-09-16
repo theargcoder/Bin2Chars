@@ -21,12 +21,23 @@ namespace Bin2Chars::Numeric::Integral
 {
   template <typename T>
     requires(std::is_integral_v<T> && std::is_unsigned_v<T>) || std::is_same_v<T, __uint128_t>
-  static uint32_t ToStrFowardWriteSIMDReturnLen(char *__restrict__ buff, const T &input)
+  static uint32_t ToStrBufferedReturnLen(char *__restrict__ buff, const T &input)
   {
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
     return Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<T>(buff, input);
 #elif defined(__ARM_NEON) || defined(__aarch64__)
     return Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<T>(buff, input);
+#endif
+  }
+
+  template <size_t Num, typename T>
+    requires(std::is_integral_v<T> && std::is_unsigned_v<T>) || std::is_same_v<T, __uint128_t>
+  static uint32_t ToStrBufferedNumChars(char *__restrict__ buff, const T &input)
+  {
+#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
+    return Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<Num>(buff, input);
+#elif defined(__ARM_NEON) || defined(__aarch64__)
+    return Helpers::Simd::ARM64::WriteNumCharsToPtrFowardReturnLength<Num>(buff, input);
 #endif
   }
 

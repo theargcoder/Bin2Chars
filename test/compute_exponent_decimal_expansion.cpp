@@ -163,7 +163,7 @@ BOOST_AUTO_TEST_CASE(test_all_2_pow_range_up_to_double)
     {
       BOOST_CHECK(SIMD == REGULAR);
       BOOST_CHECK(TABLE == REGULAR);
-      // exponent--; // loopback
+      exponent--; // loopback
     }
   }
 }

@@ -3,8 +3,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <emmintrin.h>
-#include <immintrin.h>
 #include <iostream>
 #include <limits>
 #include <random>
@@ -14,6 +12,10 @@
 #include <boost/range/numeric.hpp>
 
 #include "include/Helpers/Assembly.hpp"
+
+#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
+#include <emmintrin.h>
+#include <immintrin.h>
 
 template <size_t BitWidth>
 struct LaneType
@@ -333,5 +335,11 @@ int main(int /*unused*/, char ** /*unused*/)
   printf("TO_STRING | Min: %4lu | Median: %4lu | Mean: %.3f | 95th Percentile: %4lu\n", std_times[0], std_times[TRIALS / 2],
          static_cast<double>(std_accum) / static_cast<double>(std_times.size()), std_times[TRIALS * 95 / 100]);
 
+  return 0;
+}
+#endif
+
+int main()
+{
   return 0;
 }

@@ -191,7 +191,7 @@ namespace
 
   template <typename T, size_t... I>
     requires std::is_integral_v<T>
-  const auto test_and_benchmark_div_magic_impl(std::index_sequence<I...>)
+  void test_and_benchmark_div_magic_impl(std::index_sequence<I...>)
   {
     auto res = tester_magic_division<1>(T{ 0 });
     ((res = tester_magic_division<I + 1>(T{ 0 }), log_time_tables(T{ 0 }, "DIVISION", I + 1, BenchResult("div_by_10_denom", std::get<0>(res), std::get<1>(res)),
@@ -201,14 +201,14 @@ namespace
 
   template <typename T>
     requires std::is_integral_v<T>
-  const auto test_and_benchmark_div_magic(T)
+  void test_and_benchmark_div_magic(T)
   {
     test_and_benchmark_div_magic_impl<T>(std::make_index_sequence<std::numeric_limits<T>::digits10>{});
   };
 
   template <typename T, size_t... I>
     requires std::is_integral_v<T>
-  const auto test_and_benchmark_mod_magic_impl(std::index_sequence<I...>)
+  void test_and_benchmark_mod_magic_impl(std::index_sequence<I...>)
   {
     auto res = tester_magic_modulus<1>(T{ 0 });
     ((res = tester_magic_modulus<I + 1>(T{ 0 }), log_time_tables<T>(T{ 0 }, "MODULO", I + 1, BenchResult("mod_by_10_denom", std::get<0>(res), std::get<1>(res)),
@@ -218,7 +218,7 @@ namespace
 
   template <typename T>
     requires std::is_integral_v<T>
-  const auto test_and_benchmark_mod_magic(T)
+  void test_and_benchmark_mod_magic(T)
   {
     test_and_benchmark_mod_magic_impl<T>(std::make_index_sequence<std::numeric_limits<T>::digits10>{});
   };
