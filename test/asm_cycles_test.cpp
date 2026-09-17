@@ -143,9 +143,17 @@ struct LenTable<uint16_t>
   static constexpr uint32_t TABLE[] = { 65536, 65536, 65536, 131062, 131072, 131072, 196508, 196608, 196608, 261144, 262144, 262144, 262144, 317680, 327680, 327680 };
 };
 
+#if defined(_MSC_VER)
+#define BIN2CHARS_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#define BIN2CHARS_ALWAYS_INLINE inline __attribute__((always_inline))
+#else
+#define BIN2CHARS_ALWAYS_INLINE inline
+#endif
+
 template <typename T>
   requires std::is_integral_v<T> && std::is_unsigned_v<T>
-inline __attribute__((always_inline)) static unsigned calculate_len(const T &input)
+static BIN2CHARS_ALWAYS_INLINE unsigned calculate_len(const T &input)
 {
   using LEN_TABLE = LenTable<T>;
   if constexpr(std::is_same_v<T, uint64_t>)
@@ -370,3 +378,5 @@ int main()
 }
 
 #endif
+
+#undef BIN2CHARS_ALWAYS_INLINE

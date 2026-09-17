@@ -38,13 +38,13 @@
 
 namespace Bin2Chars::Helpers::Assembly
 {
-  BIN2CHARS_ALWAYS_INLINE uint32_t umulh32(const uint64_t &a, const uint32_t &b) noexcept
+  static BIN2CHARS_ALWAYS_INLINE uint32_t umulh32(const uint64_t &a, const uint32_t &b) noexcept
   {
     // Preserves the original operation: multiply modulo 2^64, then take bits 32..63.
     return static_cast<uint32_t>((a * b) >> 32U);
   }
 
-  BIN2CHARS_ALWAYS_INLINE uint64_t umulh64(const uint64_t &a, const uint64_t &b) noexcept
+  static BIN2CHARS_ALWAYS_INLINE uint64_t umulh64(const uint64_t &a, const uint64_t &b) noexcept
   {
 #if defined(_MSC_VER) && defined(_M_X64)
     uint64_t hi;
@@ -80,7 +80,7 @@ namespace Bin2Chars::Helpers::Assembly
 #endif
   }
 
-  BIN2CHARS_ALWAYS_INLINE void umul128(const uint64_t a, const uint64_t b, uint64_t &low, uint64_t &hi) noexcept
+  static BIN2CHARS_ALWAYS_INLINE void umul128(const uint64_t a, const uint64_t b, uint64_t &low, uint64_t &hi) noexcept
   {
 #if defined(_MSC_VER) && defined(_M_X64)
 
@@ -117,7 +117,7 @@ namespace Bin2Chars::Helpers::Assembly
 #endif
   }
 
-  BIN2CHARS_ALWAYS_INLINE void umul96(const uint64_t a, const uint64_t b, uint64_t &low, uint32_t &hi) noexcept
+  static BIN2CHARS_ALWAYS_INLINE void umul96(const uint64_t a, const uint64_t b, uint64_t &low, uint32_t &hi) noexcept
   {
 #if defined(_MSC_VER) && defined(_M_X64)
 
@@ -161,7 +161,7 @@ namespace Bin2Chars::Helpers::Assembly
 #endif
   }
 
-  BIN2CHARS_ALWAYS_INLINE void umul64x32_96(const uint64_t a, const uint32_t b, uint64_t &low, uint32_t &hi) noexcept
+  static BIN2CHARS_ALWAYS_INLINE void umul64x32_96(const uint64_t a, const uint32_t b, uint64_t &low, uint32_t &hi) noexcept
   {
 #if defined(_MSC_VER) && defined(_M_X64)
 
@@ -200,7 +200,7 @@ namespace Bin2Chars::Helpers::Assembly
 
 #if defined(_M_X64) || defined(__x86_64__)
 
-  BIN2CHARS_ALWAYS_INLINE uint64_t timer_start() noexcept
+  static BIN2CHARS_ALWAYS_INLINE uint64_t timer_start() noexcept
   {
     BIN2CHARS_COMPILER_BARRIER();
 
@@ -212,7 +212,7 @@ namespace Bin2Chars::Helpers::Assembly
     return t;
   }
 
-  BIN2CHARS_ALWAYS_INLINE uint64_t timer_end() noexcept
+  static BIN2CHARS_ALWAYS_INLINE uint64_t timer_end() noexcept
   {
     unsigned int unused = 0;
     const uint64_t t = __rdtscp(&unused);
@@ -225,14 +225,14 @@ namespace Bin2Chars::Helpers::Assembly
 #elif defined(_M_ARM64)
 
   // Windows ARM64: use the OS performance counter.
-  BIN2CHARS_ALWAYS_INLINE uint64_t timer_start() noexcept
+  static BIN2CHARS_ALWAYS_INLINE uint64_t timer_start() noexcept
   {
     LARGE_INTEGER value{};
     QueryPerformanceCounter(&value);
     return static_cast<uint64_t>(value.QuadPart);
   }
 
-  BIN2CHARS_ALWAYS_INLINE uint64_t timer_end() noexcept
+  static BIN2CHARS_ALWAYS_INLINE uint64_t timer_end() noexcept
   {
     LARGE_INTEGER value{};
     QueryPerformanceCounter(&value);
@@ -241,7 +241,7 @@ namespace Bin2Chars::Helpers::Assembly
 
 #elif defined(__aarch64__)
 
-  BIN2CHARS_ALWAYS_INLINE uint64_t timer_start() noexcept
+  static BIN2CHARS_ALWAYS_INLINE uint64_t timer_start() noexcept
   {
     asm volatile("isb" ::: "memory");
 
@@ -250,7 +250,7 @@ namespace Bin2Chars::Helpers::Assembly
     return t;
   }
 
-  BIN2CHARS_ALWAYS_INLINE uint64_t timer_end() noexcept
+  static BIN2CHARS_ALWAYS_INLINE uint64_t timer_end() noexcept
   {
     asm volatile("isb" ::: "memory");
 

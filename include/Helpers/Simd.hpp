@@ -98,13 +98,21 @@ namespace Bin2Chars::Helpers::Simd
   } // namespace Debug
 #endif
 
-  struct uint128_t
+#if defined(_MSC_VER)
+#define BIN2CHARS_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#define BIN2CHARS_ALWAYS_INLINE inline __attribute__((always_inline))
+#else
+#define BIN2CHARS_ALWAYS_INLINE inline
+#endif
+
+  struct struct_uint128_t
   {
     uint64_t hi;
     uint64_t lo;
   };
 
-  static constexpr uint128_t ENTRY(uint64_t digits, uint64_t offset) noexcept
+  static constexpr struct_uint128_t ENTRY(uint64_t digits, uint64_t offset) noexcept
   {
     if(offset == 0)
       return { .hi = digits, .lo = 0 };
@@ -120,7 +128,7 @@ namespace Bin2Chars::Helpers::Simd
   struct LenTable<uint64_t>
   {
     // clang-format off
-  static constexpr uint128_t TABLE[] = { ENTRY(1, 0), ENTRY(1, 0), ENTRY(1, 0), ENTRY(2, 10), ENTRY(2, 10), ENTRY(2, 10), ENTRY(3, 100), ENTRY(3, 100), ENTRY(3, 100), 
+  static constexpr struct_uint128_t TABLE[] = { ENTRY(1, 0), ENTRY(1, 0), ENTRY(1, 0), ENTRY(2, 10), ENTRY(2, 10), ENTRY(2, 10), ENTRY(3, 100), ENTRY(3, 100), ENTRY(3, 100), 
                                          ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(5, 10000), ENTRY(5, 10000), ENTRY(5, 10000), 
                                          ENTRY(6, 100000), ENTRY(6, 100000), ENTRY(6, 100000), ENTRY(7, 1000000), ENTRY(7, 1000000), ENTRY(7, 1000000), 
                                          ENTRY(7, 1000000), ENTRY(8, 10000000), ENTRY(8, 10000000), ENTRY(8, 10000000), ENTRY(9, 100000000), ENTRY(9, 100000000), 
@@ -153,13 +161,13 @@ namespace Bin2Chars::Helpers::Simd
 
   template <typename T>
     requires std::is_integral_v<T> && std::is_unsigned_v<T>
-  inline __attribute__((always_inline)) static unsigned calculate_len(const T &input)
+  static BIN2CHARS_ALWAYS_INLINE unsigned calculate_len(const T &input)
   {
     using LEN_TABLE = LenTable<T>;
     if constexpr(std::is_same_v<T, uint64_t>)
     {
       const unsigned comp = 63U - static_cast<unsigned>(std::countl_zero(input | uint64_t{ 1 }));
-      const uint128_t entry = LEN_TABLE::TABLE[comp];
+      const struct_uint128_t entry = LEN_TABLE::TABLE[comp];
       const uint64_t lo = input + entry.lo;
       const auto carry = static_cast<uint64_t>(lo < input);
 
@@ -454,6 +462,8 @@ namespace Bin2Chars::Helpers::Simd
 
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
 
+    using uint128_t = __uint128_t;
+
     static BIN2CHARS_ALWAYS_INLINE __m512i umul_hi_32x16(const __m512i a, const __m512i b) noexcept
     {
       const __m512i even_prod = _mm512_mul_epu32(a, b);
@@ -650,7 +660,10 @@ namespace Bin2Chars::Helpers::Simd
       return std::max(len, MIN_LEN);
     }
 
-#elif false && defined(__AVX2__)
+#elif defined(__AVX2__)
+
+    using uint128_t = __uint128_t;
+
     template <>
     uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *buff, const uint64_t &input) noexcept
     {
