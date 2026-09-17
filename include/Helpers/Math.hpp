@@ -17,7 +17,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
   }
 
   template <typename BaseType, typename ExpType>
-    requires std::is_integral_v<ExpType> || std::is_same_v<BaseType, __uint128_t>
+    requires std::is_integral_v<ExpType>
   static constexpr BaseType ipow(BaseType base, ExpType exp)
   {
     if(exp < 0)
@@ -155,7 +155,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
   }
 
   template <typename T>
-    requires(std::is_integral_v<T> || std::is_same_v<T, __uint128_t>)
+    requires std::is_integral_v<T>
   static consteval int log10(T val)
   {
     constexpr T BASE = 10;
@@ -210,7 +210,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
   }
 
   template <typename T>
-    requires(std::is_unsigned_v<T> && std::is_integral_v<T>) || std::is_same_v<__uint128_t, T>
+    requires(std::is_unsigned_v<T> && std::is_integral_v<T>)
   static constexpr bool is_pow10(T n)
   {
     constexpr T BASE = 10;
