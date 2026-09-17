@@ -79,7 +79,11 @@ namespace
         if(bin2chars.contains("nan") && std_format.contains("nan"))
           continue;
 
+#ifdef BIN2CHARS_CIBUILD
+        BOOST_REQUIRE(bin2chars == std_format);
+#else
         BOOST_CHECK_EQUAL(bin2chars, std_format);
+#endif
         log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
         bin2chars = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
@@ -107,7 +111,7 @@ namespace
     constexpr Type RANGE = SAMPLES < MAX_NUM ? SAMPLES : MAX_NUM;
     constexpr Type MAX_ERRORS = 10;
 
-    for(Type val = DELIM, lim = 0, max_iter = 0; ((PLUS) ? val < DELIM + RANGE : val > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
+    for(Type val = DELIM, errors = 0, max_iter = 0; ((PLUS) ? val < DELIM + RANGE : val > DELIM - RANGE) && errors < MAX_ERRORS && max_iter < RANGE;
         (PLUS) ? val += JUMP : val -= JUMP, max_iter++)
     {
       std::string bin2chars, std_format, ryu;
@@ -139,13 +143,18 @@ namespace
         if(bin2chars.contains("nan") && std_format.contains("nan"))
           continue;
 
+#ifdef BIN2CHARS_CIBUILD
+        BOOST_REQUIRE(bin2chars == std_format);
+#else
         BOOST_CHECK_EQUAL(bin2chars, std_format);
+#endif
         log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
         bin2chars = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
 
         char buffer[1024];
         d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
+        errors++;
       }
     }
   };

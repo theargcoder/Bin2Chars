@@ -66,6 +66,12 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 # ============================================================
+# Explode in CI builds on failure
+# ============================================================
+
+option(BIN2CHARS_CIBUILD "Enable CI-specific test behavior" OFF)
+
+# ============================================================
 # Compiler flag support detection
 #
 # Every warning is tested against the actual compiler before it is added to the

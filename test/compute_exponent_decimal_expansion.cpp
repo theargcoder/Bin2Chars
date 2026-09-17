@@ -161,9 +161,14 @@ BOOST_AUTO_TEST_CASE(test_all_2_pow_range_up_to_double)
 
     if(SIMD != REGULAR || REGULAR != TABLE)
     {
+#ifdef BIN2CHARS_CIBUILD
+      BOOST_REQUIRE(SIMD == REGULAR);
+      BOOST_REQUIRE(TABLE == REGULAR);
+#else
       BOOST_CHECK(SIMD == REGULAR);
       BOOST_CHECK(TABLE == REGULAR);
-      exponent--; // loopback
+#endif
+      // exponent--; // loopback
     }
   }
 }

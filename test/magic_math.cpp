@@ -31,7 +31,7 @@ namespace
 
     Type divisor = Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
 
-    for(Type value = DELIM, lim = 0, max_iter = 0; ((PLUS) ? value < DELIM + RANGE : value > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
+    for(Type value = DELIM, errors = 0, max_iter = 0; ((PLUS) ? value < DELIM + RANGE : value > DELIM - RANGE) && errors < MAX_ERRORS && max_iter < RANGE;
         (PLUS) ? value = static_cast<Type>(value + JUMP) : value = static_cast<Type>(value - JUMP), max_iter++)
     {
       const auto st_log = Bin2Chars::Helpers::Assembly::timer_start();
@@ -53,7 +53,7 @@ namespace
         log_str_and_into_hex(LogHexStr("Bin2Chars::Helpers::Math::Magic::div_by_10_denominator", std::to_string(our_div_10)),
                              LogHexStr("regular IDIV got", std::to_string(regular_div_10)));
 
-        lim++;
+        errors++;
       }
     }
   };
@@ -68,7 +68,7 @@ namespace
 
     Type divisor = Bin2Chars::Helpers::Math::Constexpr::ipow(Type{ 10 }, N);
 
-    for(Type value = DELIM, lim = 0, max_iter = 0; ((PLUS) ? value < DELIM + RANGE : value > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
+    for(Type value = DELIM, errors = 0, max_iter = 0; ((PLUS) ? value < DELIM + RANGE : value > DELIM - RANGE) && errors < MAX_ERRORS && max_iter < RANGE;
         (PLUS) ? value = static_cast<Type>(value + JUMP) : value = static_cast<Type>(value - JUMP), max_iter++)
     {
       const uint64_t st_log = Bin2Chars::Helpers::Assembly::timer_start();
@@ -90,7 +90,7 @@ namespace
         log_str_and_into_hex(LogHexStr("Bin2Chars::Helpers::Math::Magic::div_by_10_denominator", std::to_string(our_div_10)),
                              LogHexStr("regular IDIV got", std::to_string(regular_div_10)));
 
-        lim++;
+        errors++;
       }
     }
   };

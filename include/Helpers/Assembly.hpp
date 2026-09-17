@@ -134,10 +134,12 @@ namespace Bin2Chars::Helpers::Assembly
 #elif defined(__aarch64__) && !defined(_MSC_VER)
 
     uint64_t full_hi;
+
     asm("mul   %0, %2, %3\n\t"
         "umulh %1, %2, %3"
-        : "=r"(low), "=r"(full_hi)
+        : "=&r"(low), "=&r"(full_hi)
         : "r"(a), "r"(b));
+
     hi = static_cast<uint32_t>(full_hi);
 
 #else
@@ -179,12 +181,13 @@ namespace Bin2Chars::Helpers::Assembly
 
     uint64_t full_hi;
     const uint64_t b64 = b;
+
     asm("mul   %0, %2, %3\n\t"
         "umulh %1, %2, %3"
-        : "=r"(low), "=r"(full_hi)
+        : "=&r"(low), "=&r"(full_hi)
         : "r"(a), "r"(b64));
-    hi = static_cast<uint32_t>(full_hi);
 
+    hi = static_cast<uint32_t>(full_hi);
 #else
 
     // Portable 64x32 -> 96-bit: Only 2 multiplies instead of 4!

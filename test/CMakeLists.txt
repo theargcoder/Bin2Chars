@@ -6,6 +6,11 @@ function(add_bin2chars_executable name src)
   if(NOT WIN32)
     target_compile_definitions(${name} PRIVATE BOOST_TEST_DYN_LINK)
   endif()
+
+  if(BIN2CHARS_CIBUILD)
+    target_compile_definitions(${name} PRIVATE BIN2CHARS_CIBUILD)
+  endif()
+
 endfunction()
 
 function(add_bin2chars_test name)
