@@ -1,3 +1,5 @@
+
+#if (defined(__GNUG__) || defined(__GNUC__)) && defined(__x86_64__)
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -12,8 +14,6 @@
 #include <boost/range/numeric.hpp>
 
 #include "include/Helpers/Assembly.hpp"
-
-#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
 
 #include <immintrin.h>
 
@@ -146,7 +146,7 @@ inline __attribute__((always_inline)) static unsigned calculate_len(const T &inp
 }
 
 template <typename T>
-[[gnu::noinline, gnu::used]] unsigned WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept
+[[gnu::noinline, gnu::used]] unsigned WriteCharsToPtrFowardReturnLength(char *buff, const T &input) noexcept
 {
   asm volatile("# LLVM-MCA-BEGIN SIMD_WriteChars");
 
@@ -234,7 +234,7 @@ constexpr char digits[201] = "0001020304050607080910111213141516171819"
                              "6061626364656667686970717273747576777879"
                              "8081828384858687888990919293949596979899";
 template <typename T>
-[[gnu::noinline, gnu::used]] unsigned StdLibOptimized(char *__restrict__ buff, const T &input) noexcept
+[[gnu::noinline, gnu::used]] unsigned StdLibOptimized(char *buff, const T &input) noexcept
 {
   const unsigned len = calculate_len(input);
   unsigned pos = len - 1;

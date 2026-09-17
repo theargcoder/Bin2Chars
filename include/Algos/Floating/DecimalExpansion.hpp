@@ -34,7 +34,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
   template <Numeric::Floating::DigitsPrecision::RoundingBehavior BEHAVE, typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  static unsigned ToStrWriteBuffReturnLen(char *__restrict__ ptr, const T &input, int PRECISION)
+  static unsigned ToStrWriteBuffReturnLen(char *ptr, const T &input, int PRECISION)
   {
     return Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLenImpl<BEHAVE, T>::ToStr(ptr, input, PRECISION);
   }
@@ -43,7 +43,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, T>
   {
-    static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION)
+    static unsigned ToStr(char *buff, const T &input, int PRECISION)
     {
       if(PRECISION < 0) // UB if negative precision
       {
@@ -373,8 +373,8 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
     std::string buff;
 
-    buff.resize_and_overwrite(size, [&input, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept
-                              { return ToStrWriteBuffReturnLen<RoundingBehavior::ROUND, T>(ptr, input, PRECISION); });
+    buff.resize_and_overwrite(size,
+                              [&input, &PRECISION](char *ptr, size_t /*unused*/) noexcept { return ToStrWriteBuffReturnLen<RoundingBehavior::ROUND, T>(ptr, input, PRECISION); });
 
     return buff;
   }

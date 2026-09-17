@@ -21,7 +21,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 {
   template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  static unsigned ToStrCharArray(char *__restrict__ buff, const T &input, int PRECISION = Algos::Compute::DecimalExpansion::Traits<T>::MAX_DIGITS10)
+  static unsigned ToStrCharArray(char *buff, const T &input, int PRECISION = Algos::Compute::DecimalExpansion::Traits<T>::MAX_DIGITS10)
   {
     if(PRECISION < 0) // UB if negative precision
     {
@@ -273,7 +273,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     std::string buff;
 
-    buff.resize_and_overwrite(size, [&input, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept { return ToStrCharArray<T>(ptr, input, PRECISION); });
+    buff.resize_and_overwrite(size, [&input, &PRECISION](char *ptr, size_t /*unused*/) noexcept { return ToStrCharArray<T>(ptr, input, PRECISION); });
 
     return buff;
   }

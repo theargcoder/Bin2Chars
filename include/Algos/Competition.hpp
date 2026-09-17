@@ -22,7 +22,7 @@ namespace Bin2Chars::Numeric::Std
       {
         const auto size = static_cast<size_t>(PRECISION) + 30;
         buff.resize_and_overwrite(size,
-                                  [&value, PRECISION](char *__restrict__ ptr, size_t in_size)
+                                  [&value, PRECISION](char *ptr, size_t in_size) noexcept
                                   {
                                     const auto [res_ptr, ec] = std::to_chars(ptr, ptr + in_size, value, std::chars_format::scientific, PRECISION);
                                     return res_ptr - ptr;
@@ -33,7 +33,7 @@ namespace Bin2Chars::Numeric::Std
       {
         const auto size = static_cast<size_t>(PRECISION) + 340;
         buff.resize_and_overwrite(size,
-                                  [&value, PRECISION](char *__restrict__ ptr, const size_t in_size)
+                                  [&value, PRECISION](char *ptr, const size_t in_size) noexcept
                                   {
                                     const auto [res_ptr, ec] = std::to_chars(ptr, ptr + in_size, value, std::chars_format::fixed, PRECISION);
                                     return res_ptr - ptr;
@@ -46,7 +46,7 @@ namespace Bin2Chars::Numeric::Std
       constexpr size_t size = (sizeof(Type) == 1) ? 5 : (sizeof(Type) == 2) ? 8 : (sizeof(Type) <= 4) ? 11 : 20;
 
       buff.resize_and_overwrite(size,
-                                [&value](char *__restrict__ ptr, const size_t in_size)
+                                [&value](char *ptr, const size_t in_size) noexcept
                                 {
                                   const auto [res_ptr, ec] = std::to_chars(ptr, ptr + in_size, value);
                                   return res_ptr - ptr;
@@ -124,7 +124,7 @@ namespace Bin2Chars::Numeric::Ryu
 
       std::string buff;
 
-      buff.resize_and_overwrite(size, [&v, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept { return d2exp_buffered_n(v, static_cast<unsigned>(PRECISION), ptr); });
+      buff.resize_and_overwrite(size, [&v, &PRECISION](char *ptr, size_t /*unused*/) noexcept { return d2exp_buffered_n(v, static_cast<unsigned>(PRECISION), ptr); });
 
       return buff;
     }
@@ -143,8 +143,7 @@ namespace Bin2Chars::Numeric::Ryu
 
       std::string buff;
 
-      buff.resize_and_overwrite(size,
-                                [&v, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept { return d2fixed_buffered_n(v, static_cast<unsigned>(PRECISION), ptr); });
+      buff.resize_and_overwrite(size, [&v, &PRECISION](char *ptr, size_t /*unused*/) noexcept { return d2fixed_buffered_n(v, static_cast<unsigned>(PRECISION), ptr); });
 
       return buff;
     }

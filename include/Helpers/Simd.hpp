@@ -99,7 +99,19 @@ namespace Bin2Chars::Helpers::Simd
   } // namespace Debug
 #endif
 
+#if defined(_MSC_VER)
+  using uint128_t = unsigned __int128_t;
+#else
   using uint128_t = __uint128_t;
+#endif
+
+#if defined(_MSC_VER)
+#define BIN2CHARS_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#define BIN2CHARS_ALWAYS_INLINE inline __attribute__((always_inline))
+#else
+#define BIN2CHARS_ALWAYS_INLINE inline
+#endif
 
   static constexpr uint128_t ENTRY(uint64_t digits, uint64_t offset) noexcept
   {
@@ -135,7 +147,7 @@ namespace Bin2Chars::Helpers::Simd
 
   template <typename T>
     requires std::is_integral_v<T> && std::is_unsigned_v<T>
-  inline __attribute__((always_inline)) static unsigned calculate_len(const T &input)
+  static BIN2CHARS_ALWAYS_INLINE unsigned calculate_len(const T &input)
   {
     using LEN_TABLE = LenTable<T>;
     if constexpr(std::is_same_v<T, uint64_t>)
@@ -164,14 +176,14 @@ namespace Bin2Chars::Helpers::Simd
 
     template <typename T>
       requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
-    static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const auto &input) noexcept;
+    static uint32_t WriteCharsToPtrFowardReturnLength(char *buff, const auto &input) noexcept;
 
     template <typename T>
       requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
-    static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const auto &input) noexcept;
+    static uint32_t WriteCharsToPtrFowardReturnLength(char *buff, const auto &input) noexcept;
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *buff, const uint64_t &input) noexcept
     {
       const constexpr uint64_t ASCII_ZERO = 0x30303030'30303030;
 
@@ -243,7 +255,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *buff, const uint32_t &input) noexcept
     {
       const constexpr uint64_t ASCII_ZERO = 0x30303030'30303030;
 
@@ -289,7 +301,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint16_t>(char *__restrict__ buff, const uint16_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint16_t>(char *buff, const uint16_t &input) noexcept
     {
       const uint64_t u8_acii_zero = 0x3030'3030'3030'3030ULL;
 
@@ -317,7 +329,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint8_t>(char *__restrict__ buff, const uint8_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint8_t>(char *buff, const uint8_t &input) noexcept
     {
       const unsigned u8_acii_zero = 0x3030'3030U;
 
@@ -341,7 +353,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint32_t &input) noexcept
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
     {
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -390,7 +402,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint16_t &input) noexcept
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint16_t &input) noexcept
     {
       static_assert(Num <= 5, "uint16_t has AT MOST 5 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -430,11 +442,11 @@ namespace Bin2Chars::Helpers::Simd
   {
     template <typename T>
       requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
-    static uint32_t WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept;
+    static uint32_t WriteCharsToPtrFowardReturnLength(char *buff, const T &input) noexcept;
 
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
 
-    __attribute__((always_inline)) static inline __m512i umul_hi_32x16(const __m512i a, const __m512i b) noexcept
+    static BINBIN2CHARS_ALWAYS_INLINE __m512i umul_hi_32x16(const __m512i a, const __m512i b) noexcept
     {
       const __m512i even_prod = _mm512_mul_epu32(a, b);
       const __m512i odd_prod = _mm512_mul_epu32(_mm512_srli_epi64(a, 32U), _mm512_srli_epi64(b, 32U));
@@ -442,7 +454,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *buff, const uint64_t &input) noexcept
     {
       const __m128i M_MAGICS_u16 = _mm_set1_epi64x(0x0000'199A'A3D8'8313);
       const __m128i M_SHIFTS_u16 = _mm_set1_epi64x(0x0000'0000'0006'0009);
@@ -528,7 +540,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *buff, const uint32_t &input) noexcept
     {
 
       const __m512i val = _mm512_set1_epi32(static_cast<int32_t>(input));
@@ -578,7 +590,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint32_t &input) noexcept
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
     {
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -632,7 +644,7 @@ namespace Bin2Chars::Helpers::Simd
 
 #elif false && defined(__AVX2__)
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *buff, const uint64_t &input) noexcept
     {
       const __m128i M_MAGICS_u16 = _mm_set_epi32(0x0000, 0x199A, 0xA3D8, 0x8313);
       const __m128i M_SHIFTS_u16 = _mm_set_epi32(0x0000, 0x0000, 0x0006, 0x0009);
@@ -727,7 +739,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *buff, const uint32_t &input) noexcept
     {
       constexpr uint32_t MAGIC_u32[] = { 0x55E63B89U, 0x431BDE83U, 0xD1B71759U, 0x51EB851FU };
       constexpr uint32_t SHIFTS_u32[] = { 57, 50, 45, 37 };
@@ -806,7 +818,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint32_t &input) noexcept
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
     {
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -894,7 +906,7 @@ namespace Bin2Chars::Helpers::Simd
                                  "6061626364656667686970717273747576777879"
                                  "8081828384858687888990919293949596979899";
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *__restrict__ buff, const uint64_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint64_t>(char *buff, const uint64_t &input) noexcept
     {
       const unsigned len = calculate_len(input);
       unsigned pos = len - 1;
@@ -923,7 +935,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *__restrict__ buff, const uint32_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint32_t>(char *buff, const uint32_t &input) noexcept
     {
       const unsigned len = calculate_len(input);
       unsigned pos = len - 1;
@@ -952,7 +964,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint32_t &input) noexcept
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
     {
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -987,7 +999,7 @@ namespace Bin2Chars::Helpers::Simd
 #endif
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint16_t>(char *__restrict__ buff, const uint16_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint16_t>(char *buff, const uint16_t &input) noexcept
     {
       const uint64_t u8_acii_zero = 0x3030'3030'3030'3030ULL;
 
@@ -1016,7 +1028,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <>
-    uint32_t WriteCharsToPtrFowardReturnLength<uint8_t>(char *__restrict__ buff, const uint8_t &input) noexcept
+    uint32_t WriteCharsToPtrFowardReturnLength<uint8_t>(char *buff, const uint8_t &input) noexcept
     {
       const unsigned u8_acii_zero = 0x3030'3030U;
 
@@ -1040,7 +1052,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *__restrict__ buff, const uint16_t &input) noexcept
+    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint16_t &input) noexcept
     {
       static_assert(Num <= 5, "uint16_t has AT MOST 5 digits");
       constexpr unsigned MIN_LEN = Num;
