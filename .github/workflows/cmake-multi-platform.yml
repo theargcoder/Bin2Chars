@@ -65,12 +65,6 @@ jobs:
             cpp_compiler: cl
             build_type: Release
 
-          - os: windows-latest
-            compiler: MSVC
-            c_compiler: cl
-            cpp_compiler: cl
-            build_type: Generic 
-
             # Apple Silicon (ARM64)
           - os: macos-latest
             compiler: AppleClang
