@@ -459,22 +459,21 @@ elseif(IS_MSVC)
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
-    add_compile_options(/Od /Zi /W4 /WX)
+    add_compile_options(/Od /Zi /W4 /WX /wd4505)
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 
-    add_compile_options(/O2 /DNDEBUG /W4 /WX)
+    add_compile_options(/O2 /DNDEBUG /W4 /WX /wd4505)
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 
-    add_compile_options(/O2 /Zi /DNDEBUG /W4 /WX)
+    add_compile_options(/O2 /Zi /DNDEBUG /W4 /WX /wd4505)
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "Generic")
 
-    add_compile_options(/O2 /DNDEBUG /W4 /WX)
+    add_compile_options(/O2 /DNDEBUG /W4 /WX /wd4505)
 
   endif()
-
 endif()
 
 # ============================================================
