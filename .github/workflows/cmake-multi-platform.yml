@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - develop
 
   pull_request:
     branches:
       - main
+      - develop
 
 jobs:
   build-and-test:
@@ -33,6 +33,12 @@ jobs:
             cpp_compiler: g++
             build_type: Debug
 
+          - os: ubuntu-latest
+            compiler: GCC
+            c_compiler: gcc
+            cpp_compiler: g++
+            build_type: Generic 
+
           # Clang
           - os: ubuntu-latest
             compiler: Clang
@@ -45,6 +51,12 @@ jobs:
             c_compiler: clang
             cpp_compiler: clang++
             build_type: Debug
+
+          - os: ubuntu-latest
+            compiler: Clang
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Generic
 
           # MSVC
           - os: windows-latest
@@ -66,6 +78,12 @@ jobs:
             cpp_compiler: clang++
             build_type: Debug
 
+          - os: macos-latest
+            compiler: AppleClang
+            c_compiler: clang
+            cpp_compiler: clang++
+            build_type: Generic 
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,25 +96,37 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libboost-test-dev
 
-      - name: Install Boost.Test - Windows
+      - name: Install Boost - Windows
         if: runner.os == 'Windows'
         run: |
-          vcpkg install boost-test:x64-windows
+          vcpkg install boost-test:x64-windows boost-type-index:x64-windows
 
       - name: Install Boost.Test - macOS
         if: runner.os == 'macOS'
         run: |
           brew install boost
 
-      - name: Configure CMake
+      - name: Configure CMake - Windows
+        if: runner.os == 'Windows'
         run: >
           cmake
           -S .
           -B build
+          -DBIN2CHARS_CIBUILD=ON
+          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
+          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
+          -DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake
+
+      - name: Configure CMake - Unix
+        if: runner.os != 'Windows'
+        run: >
+          cmake
+          -S .
+          -B build
+          -DBIN2CHARS_CIBUILD=ON
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
-          ${{ runner.os == 'Windows' && '-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake' || '' }}
 
       - name: Build
         run: >
@@ -104,6 +134,7 @@ jobs:
           --build build
           --config ${{ matrix.build_type }}
           --parallel
+          --verbose
 
       - name: Test
         run: >
@@ -111,6 +142,8 @@ jobs:
           --test-dir build
           --build-config ${{ matrix.build_type }}
           --output-on-failure
+          --stop-on-failure
+
 
       - name: Update CI status badge
         if: ${{ always() && github.ref == 'refs/heads/main' }}

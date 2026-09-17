@@ -37,15 +37,19 @@ Correctness is tested continuously through GitHub Actions across multiple compil
 
 The CI matrix includes:
 
-| Platform | Compiler | Configuration | CI Status |
-| -------- | -------- | ------------- | --------- |
-| Linux   | GCC        | Release | ![Linux GCC Release](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-GCC-Release.json) |
-| Linux   | GCC        | Debug   | ![Linux GCC Debug](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-GCC-Debug.json) |
-| Linux   | Clang      | Release | ![Linux Clang Release](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-Clang-Release.json) |
-| Linux   | Clang      | Debug   | ![Linux Clang Debug](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-Clang-Debug.json) |
-| MacOS   | AppleClang | Release | ![MacOS AppleClang Release](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-macos-latest-AppleClang-Release.json) |
-| MacOS   | AppleClang | Debug   | ![MacOS AppleClang Debug](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-macos-latest-AppleClang-Debug.json) |
-| Windows | MSVC       | Release | ![Windows MSVC Release](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-windows-latest-MSVC-Release.json) |
+| Platform | Compiler  | Configuration | CI Status |
+| -------- | --------- | ------------- | --------- |
+| Linux   | GCC        | Release       | ![Linux GCC Release](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-GCC-Release.json) |
+| Linux   | GCC        | Debug         | ![Linux GCC Debug](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-GCC-Debug.json) |
+| Linux   | GCC        | Generic       | ![Linux GCC Generic](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-GCC-Generic.json) |
+| Linux   | Clang      | Release       | ![Linux Clang Release](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-Clang-Release.json) |
+| Linux   | Clang      | Debug         | ![Linux Clang Debug](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-Clang-Debug.json) |
+| Linux   | Clang      | Generic       | ![Linux Clang Generic](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-ubuntu-latest-Clang-Generic.json) |
+| MacOS   | AppleClang | Release       | ![MacOS AppleClang Release](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-macos-latest-AppleClang-Release.json) |
+| MacOS   | AppleClang | Debug         | ![MacOS AppleClang Debug](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-macos-latest-AppleClang-Debug.json) |
+| MacOS   | AppleClang | Generic       | ![MacOS AppleClang Generic](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-macos-latest-AppleClang-Generic.json) |
+| Windows | MSVC       | Release       | ![Windows MSVC Release](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-windows-latest-MSVC-Release.json) |
+| Windows | MSVC       | Generic       | ![Windows MSVC Generic](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/theargcoder/10321f35631b9bc6f87ea49be103fbd3/raw/bin2chars-windows-latest-MSVC-Generic.json) |
 
 Debug configurations are used for aggressive diagnostics and sanitizer-enabled testing.
 
@@ -63,7 +67,8 @@ The test suite covers:
 * Boundary values and type limits
 * Cross-checking against reference implementations
 
-### Continuous validation
+### Testing and CI 
+
 
 The CI pipeline builds and executes the test suite on every relevant change.
 
@@ -73,9 +78,76 @@ The goal is simple:
 push to /main branch → build → test → sanitize → report
 ```
 
-A green CI result means the tested compiler/platform/configuration completed successfully without any errors.
+A green CI result means the tested platform+platform: configuration, compilation and testing completed successfully without any errors.
 
 ---
+
+### Performance and Benchmark results
+
+Performance comparisons are made against the standard library implementation available on the tested platform, including the relevant `libstdc++`, `libc++`, or MSVC STL implementation.
+
+* Benchmarks in `x86-64` machines are perform with `rdtsc()` using `__mm_fence()` for serialization BEFORE and AFTER, in theory, it should be a perfect `cycle accurate` benchmark (assuming the right conditions) 
+* Benchmarks in `aarch64` (ARM64) machines are perform with `MRS, <reg>, CNTVCT_EL0` using `ISB` for serialization BEFORE and AFTER; once measured the sum gets divided by `CNTFRQ_EL0` to get acurate human times this is the best microbenchmark in `user space` for `aarch64`
+
+More of the theory and detailed procedures for the benchmarks can be found in /benchmark dir. 
+
+> Compiling in Release :
+
+| Type                        | Bin2Chars    | Standard library | Relative performance |
+| --------------------------- | ------------ | ---------------- | -------------------- |
+| `int8_t`                    | CI benchmark | CI benchmark     | CI benchmark         |
+| `uint8_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
+| `int16_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
+| `uint16_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
+| `int32_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
+| `uint32_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
+| `int64_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
+| `uint64_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 0`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 1`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 2`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 5`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 8`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 10`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 20`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 50`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `float`   `precision 100`   | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 0`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 1`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 2`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 5`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 8`     | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 10`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 15`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 16`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 17`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 18`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 20`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 50`    | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 100`   | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 200`   | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 300`   | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 400`   | CI benchmark | CI benchmark     | CI benchmark         |
+| `double`  `precision 500`   | CI benchmark | CI benchmark     | CI benchmark         |
+
+---
+
+## Builds
+
+For architecture-specific performance measurements, the project can be built with aggressive native optimization.
+
+Typical GCC/Clang benchmark builds use optimizations such as:
+
+```text
+-O3
+-march=native
+-funroll-loops
+-fstrict-aliasing
+```
+
+These settings are intended for **benchmarking and machine-specific performance builds**.
+
+They should not be confused with a portable binary distribution: `-march=native` allows the compiler to emit instructions specific to the CPU performing the build.
 
 ## Debug Builds
 
@@ -133,79 +205,6 @@ Every warning is an error, with checks such as:
 Compiler warnings are ERRORS, this is to ensure no language specific / implementation bugs appear.
 
 The purpose of the Debug pipeline is not performance; It is to make undefined behavior, memory errors, alignment mistakes, invalid conversions, and other implementation bugs extremely difficult to hide.
-
----
-
-## Performance
-
-Bin2Chars is intended for workloads where numeric-to-text conversion is on the hot path.
-
-Performance comparisons are made against the standard library implementation available on the tested platform, including the relevant `libstdc++`, `libc++`, or MSVC STL implementation.
-
-### Benchmark results
-
-Benchmarks in `x86-64` machines are perform with `rdtsc()` using `__mm_fence()` for serialization, and in theory, a perfect `cycle accurate` benchmark (assuming the right conditions) 
-Benchmarks in `aarch64` (ARM64) machines are perform with `MRS, <reg>, CNTVCT_EL0` using `ISB` for serialization BEFORE and AFTER; once measured the sum gets divided by `CNTFRQ_EL0` to get acurate human times this is the best microbenchmark in `user space` for `aarch64`
-
-More of the theory and detailed procedures for the benchmarks can be found in /benchmark dir. 
-
-> Compiling in Release :
-
-| Type                        | Bin2Chars    | Standard library | Relative performance |
-| --------------------------- | ------------ | ---------------- | -------------------- |
-| `int8_t`                    | CI benchmark | CI benchmark     | CI benchmark         |
-| `uint8_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
-| `int16_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
-| `uint16_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
-| `int32_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
-| `uint32_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
-| `int64_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
-| `uint64_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 0`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 1`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 2`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 5`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 8`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 10`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 20`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 50`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 100`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 0`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 1`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 2`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 5`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 8`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 10`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 15`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 16`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 17`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 18`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 20`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 50`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 100`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 200`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 300`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 400`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 500`   | CI benchmark | CI benchmark     | CI benchmark         |
-
----
-
-## Native Performance Builds
-
-For architecture-specific performance measurements, the project can be built with aggressive native optimization.
-
-Typical GCC/Clang benchmark builds use optimizations such as:
-
-```text
--O3
--march=native
--funroll-loops
--fstrict-aliasing
-```
-
-These settings are intended for **benchmarking and machine-specific performance builds**.
-
-They should not be confused with a portable binary distribution: `-march=native` allows the compiler to emit instructions specific to the CPU performing the build.
 
 Debug builds also have `-march=native` flags to catch any UB, Sanatize and friends stuff happening within vectorizations.
 

@@ -16,12 +16,28 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-# Default build type
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE
-      Release
-      CACHE STRING "Build type: Debug, Release, RelWithDebInfo, MinSizeRel"
-            FORCE)
+# ============================================================
+# Build type
+# ============================================================
+
+set(BIN2CHARS_BUILD_TYPES Debug Release RelWithDebInfo Generic)
+
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${BIN2CHARS_BUILD_TYPES})
+
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE
+        Release
+        CACHE STRING "Build type" FORCE)
+  endif()
+else()
+  # Multi-config generators: Visual Studio, Xcode, Ninja Multi-Config.
+  list(APPEND CMAKE_CONFIGURATION_TYPES Generic)
+  list(REMOVE_DUPLICATES CMAKE_CONFIGURATION_TYPES)
+
+  set(CMAKE_CONFIGURATION_TYPES
+      "${CMAKE_CONFIGURATION_TYPES}"
+      CACHE STRING "Available build configurations" FORCE)
 endif()
 
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SYSTEM_ARCH)
@@ -31,6 +47,11 @@ string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SYSTEM_ARCH)
 # ============================================================
 
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
+
+get_target_property(BIN2CHARS_BOOST_HEADERS Boost::headers
+                    INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost::headers includes: ${BIN2CHARS_BOOST_HEADERS}")
 
 # ============================================================
 # Compiler detection
@@ -43,6 +64,12 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(IS_MSVC TRUE)
 endif()
+
+# ============================================================
+# Explode in CI builds on failure
+# ============================================================
+
+option(BIN2CHARS_CIBUILD "Enable CI-specific test behavior" OFF)
 
 # ============================================================
 # Compiler flag support detection
@@ -235,7 +262,7 @@ set(C_WARNINGS "${C_WARNINGS_SUPPORTED}")
 set(CXX_WARNINGS "${CXX_WARNINGS_SUPPORTED}")
 
 # ============================================================
-# Architecture
+# Architecture - best for performance
 # ============================================================
 
 set(NATIVE_ARCH_FLAGS)
@@ -250,6 +277,26 @@ elseif(SYSTEM_ARCH MATCHES "^(arm64|aarch64)$")
 
   if(IS_GCC OR IS_CLANG)
     list(APPEND NATIVE_ARCH_FLAGS -mcpu=native)
+  endif()
+
+endif()
+
+# ============================================================
+# Generic architecture - for ABIs and stuff
+# ============================================================
+
+set(GENERIC_ARCH_FLAGS)
+
+if(SYSTEM_ARCH MATCHES "^(x86_64|amd64|x64)$")
+
+  if(IS_GCC OR IS_CLANG)
+    list(APPEND GENERIC_ARCH_FLAGS -march=x86-64 -mtune=generic)
+  endif()
+
+elseif(SYSTEM_ARCH MATCHES "^(arm64|aarch64)$")
+
+  if(IS_GCC OR IS_CLANG)
+    list(APPEND GENERIC_ARCH_FLAGS -march=armv8-a)
   endif()
 
 endif()
@@ -349,6 +396,8 @@ if(IS_GCC OR IS_CLANG)
       add_link_options(-fsanitize=address -fsanitize=undefined
                        -fno-sanitize-recover=all)
 
+      add_compile_options(-Wno-invalid-feature-combination)
+
     endif()
 
     # ==========================================================
@@ -361,6 +410,10 @@ if(IS_GCC OR IS_CLANG)
       -O3 -DNDEBUG -fno-omit-frame-pointer ${NATIVE_ARCH_FLAGS}
       "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
       "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
+
+    if(IS_CLANG)
+      add_compile_options(-Wno-invalid-feature-combination)
+    endif()
 
     if(IS_GCC)
 
@@ -385,6 +438,23 @@ if(IS_GCC OR IS_CLANG)
       "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
       "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
 
+    if(IS_CLANG)
+      add_compile_options(-Wno-invalid-feature-combination)
+    endif()
+
+    # ==========================================================
+    # Generic
+    #
+    # Aggressively optimized, architecture-baseline distribution.
+    # ==========================================================
+
+  elseif(CMAKE_BUILD_TYPE STREQUAL "Generic")
+
+    add_compile_options(
+      -O3 -DNDEBUG ${GENERIC_ARCH_FLAGS}
+      "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
+      "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
+
   endif()
 
   # ==========================================================
@@ -395,18 +465,21 @@ elseif(IS_MSVC)
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
-    add_compile_options(/Od /Zi /W4 /WX)
+    add_compile_options(/Od /Zi /W4 /WX /wd4505)
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
 
-    add_compile_options(/O2 /DNDEBUG /W4 /WX)
+    add_compile_options(/O2 /DNDEBUG /W4 /WX /wd4505)
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 
-    add_compile_options(/O2 /Zi /DNDEBUG /W4 /WX)
+    add_compile_options(/O2 /Zi /DNDEBUG /W4 /WX /wd4505)
+
+  elseif(CMAKE_BUILD_TYPE STREQUAL "Generic")
+
+    add_compile_options(/O2 /DNDEBUG /W4 /WX /wd4505)
 
   endif()
-
 endif()
 
 # ============================================================

@@ -36,12 +36,12 @@ namespace
     const constexpr Type RANGE = SAMPLES < MAX_NUM ? static_cast<Type>(SAMPLES) : MAX_NUM;
     const constexpr Type MAX_ERRORS = 10;
 
-    uint32_t errors = 0;
+    uint32_t ext_err = 0;
     uint64_t cycles = 0;
 
     std::string std_log, std_lib_to_str_log, bin2chars_log;
 
-    while(cycles < SAMPLES && errors < MAX_ERRORS)
+    while(cycles < SAMPLES && ext_err < MAX_ERRORS)
     {
       cycles += RANGE;
       using LoopType = std::conditional_t<std::is_signed_v<Type>, std::intmax_t, std::uintmax_t>;
@@ -56,7 +56,7 @@ namespace
       const auto plus_end = delim > LOOP_MAX - range ? LOOP_MAX : delim + range;
       const auto minus_end = delim < LOOP_MIN + range ? LOOP_MIN : delim - range;
 
-      for(LoopType i = delim, lim = 0, max_iter = 0; (PLUS ? i < plus_end : i > minus_end) && lim < static_cast<LoopType>(MAX_ERRORS) && max_iter < range;
+      for(LoopType i = delim, int_err = 0, max_iter = 0; (PLUS ? i < plus_end : i > minus_end) && int_err < static_cast<LoopType>(MAX_ERRORS) && max_iter < range;
           (PLUS ? (i > LOOP_MAX - jump ? i = LOOP_MAX : i += jump) : (i < LOOP_MIN + jump ? i = LOOP_MIN : i -= jump)), ++max_iter)
       {
         const auto st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
@@ -83,11 +83,16 @@ namespace
 
         if(bin2chars_log != std_lib_to_str_log)
         {
+
+#ifdef BIN2CHARS_CIBUILD
+          BOOST_REQUIRE(bin2chars_log == std_log);
+#else
           BOOST_CHECK_EQUAL(bin2chars_log, std_log);
+#endif
           log_str_and_into_hex(LogHexStr("std::to_chars", std_log), LogHexStr("std::to_string", std_lib_to_str_log), LogHexStr("Bin2Chars::ToStr", bin2chars_log));
 
-          lim++;
-          errors++;
+          int_err++;
+          ext_err++;
         }
       }
     }

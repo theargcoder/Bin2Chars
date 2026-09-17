@@ -34,7 +34,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
   template <Numeric::Floating::DigitsPrecision::RoundingBehavior BEHAVE, typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  static unsigned ToStrWriteBuffReturnLen(char *__restrict__ ptr, const T &input, int PRECISION)
+  static unsigned ToStrWriteBuffReturnLen(char *ptr, const T &input, int PRECISION)
   {
     return Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLenImpl<BEHAVE, T>::ToStr(ptr, input, PRECISION);
   }
@@ -43,7 +43,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   struct ToStrWriteBuffReturnLenImpl<Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, T>
   {
-    static unsigned ToStr(char *__restrict__ buff, const T &input, int PRECISION)
+    static unsigned ToStr(char *buff, const T &input, int PRECISION)
     {
       if(PRECISION < 0) // UB if negative precision
       {
@@ -51,9 +51,6 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       }
 
       using base_t = uint64_t;
-      using wide_t = __uint128_t;
-
-      constexpr auto SHIFT_T = 64U;
 
       const constexpr unsigned DEC8 = 100'000'000U;
 
@@ -118,9 +115,9 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       int exp_base_10 = (n_limbs << 3U) - (exp < 0 ? abs_exp : 0) - 1;
 
-      const wide_t prod = static_cast<wide_t>(*it) * mantissa;
-      unsigned digs = static_cast<unsigned>(prod >> SHIFT_T);
-      base_t frac = static_cast<base_t>(prod);
+      uint32_t digs;
+      base_t frac;
+      Helpers::Assembly::umul96(static_cast<base_t>(*it), mantissa, frac, digs);
 
       const int actual_digits = static_cast<int>(Helpers::Simd::calculate_len(digs));
       exp_base_10 += actual_digits;
@@ -149,11 +146,19 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
         for(; it >= it_beg && precision_missing > PRECISION; it--)
         {
-          const wide_t prod = static_cast<wide_t>(*it) * mantissa;
-          const wide_t total = static_cast<wide_t>(frac) * DEC8 + prod;
+          base_t curr_prod_lo;
+          uint32_t curr_prod_hi;
+          Helpers::Assembly::umul96(static_cast<base_t>(*it), mantissa, curr_prod_lo, curr_prod_hi);
 
-          digs = static_cast<unsigned>(total >> SHIFT_T);
-          frac = static_cast<base_t>(total);
+          base_t dec_lo;
+          uint32_t dec_hi;
+          Helpers::Assembly::umul64x32_96(frac, DEC8, dec_lo, dec_hi);
+
+          const base_t total_lo = dec_lo + curr_prod_lo;
+          const base_t carry = total_lo < dec_lo ? 1U : 0U;
+
+          digs = dec_hi + curr_prod_hi + static_cast<uint32_t>(carry);
+          frac = total_lo;
 
           Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
 
@@ -233,11 +238,19 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       for(; it >= it_beg && precision_missing >= -8; it--) // 8 extra chars (1 chungk) should suffice for rounding purposes ... right??
       {
-        const wide_t prod = static_cast<wide_t>(*it) * mantissa;
-        const wide_t total = static_cast<wide_t>(frac) * DEC8 + prod;
+        base_t curr_prod_lo;
+        uint32_t curr_prod_hi;
+        Helpers::Assembly::umul96(static_cast<base_t>(*it), mantissa, curr_prod_lo, curr_prod_hi);
 
-        digs = static_cast<unsigned>(total >> SHIFT_T);
-        frac = static_cast<base_t>(total);
+        base_t dec_lo;
+        uint32_t dec_hi;
+        Helpers::Assembly::umul64x32_96(frac, DEC8, dec_lo, dec_hi);
+
+        const base_t total_lo = dec_lo + curr_prod_lo;
+        const base_t carry = total_lo < dec_lo ? 1U : 0U;
+
+        digs = dec_hi + curr_prod_hi + static_cast<uint32_t>(carry);
+        frac = total_lo;
 
         Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
 
@@ -275,9 +288,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       while(precision_missing >= 0 && frac != 0) // write all digits and change since they are needed for rounding
       {
-        const wide_t step_total = static_cast<wide_t>(frac) * DEC8;
-        digs = static_cast<unsigned>(step_total >> SHIFT_T);
-        frac = static_cast<base_t>(step_total);
+        Helpers::Assembly::umul64x32_96(frac, DEC8, frac, digs);
 
         Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], digs);
         len += 8;
@@ -373,8 +384,8 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
     std::string buff;
 
-    buff.resize_and_overwrite(size, [&input, &PRECISION](char *__restrict__ ptr, size_t /*unused*/) noexcept
-                              { return ToStrWriteBuffReturnLen<RoundingBehavior::ROUND, T>(ptr, input, PRECISION); });
+    buff.resize_and_overwrite(size,
+                              [&input, &PRECISION](char *ptr, size_t /*unused*/) noexcept { return ToStrWriteBuffReturnLen<RoundingBehavior::ROUND, T>(ptr, input, PRECISION); });
 
     return buff;
   }

@@ -1,9 +1,12 @@
+
+#if (defined(__GNUG__) || defined(__GNUC__)) && defined(__x86_64__) && (defined(__AVX2__) || defined(__AVX512F__))
+
 #include <algorithm>
 #include <array>
+#include <bit>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
-#include <iostream>
 #include <limits>
 #include <random>
 #include <type_traits>
@@ -12,8 +15,6 @@
 #include <boost/range/numeric.hpp>
 
 #include "include/Helpers/Assembly.hpp"
-
-#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
 
 #include <immintrin.h>
 
@@ -89,11 +90,18 @@ inline auto extract_lanes(const RegType &reg)
   return result;
 }
 
-using uint128_t = __uint128_t;
+struct uint128_t
+{
+  uint64_t hi;
+  uint64_t lo;
+};
 
 static constexpr uint128_t ENTRY(uint64_t digits, uint64_t offset) noexcept
 {
-  return (static_cast<uint128_t>(digits) << 64U) - offset;
+  if(offset == 0)
+    return { .hi = digits, .lo = 0 };
+
+  return { .hi = digits - 1U, .lo = uint64_t{ 0 } - offset };
 }
 
 template <typename T>
@@ -104,10 +112,22 @@ template <>
 struct LenTable<uint64_t>
 {
   // clang-format off
-    static constexpr uint128_t TABLE[] = { ENTRY(1, 0), ENTRY(1, 0), ENTRY(1, 0), ENTRY(2, 10), ENTRY(2, 10), ENTRY(2, 10), ENTRY(3, 100), ENTRY(3, 100), ENTRY(3, 100), ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(5, 10000), ENTRY(5, 10000), ENTRY(5, 10000), ENTRY(6, 100000), ENTRY(6, 100000), ENTRY(6, 100000), ENTRY(7, 1000000), ENTRY(7, 1000000), ENTRY(7, 1000000), ENTRY(7, 1000000), ENTRY(8, 10000000), ENTRY(8, 10000000), ENTRY(8, 10000000), ENTRY(9, 100000000), ENTRY(9, 100000000), ENTRY(9, 100000000), ENTRY(10, 1000000000), ENTRY(10, 1000000000), ENTRY(10, 1000000000), ENTRY(10, 1000000000), ENTRY(11, 10000000000ULL), ENTRY(11, 10000000000ULL), ENTRY(11, 10000000000ULL), ENTRY(12, 100000000000ULL), ENTRY(12, 100000000000ULL), ENTRY(12, 100000000000ULL), ENTRY(13, 1000000000000ULL), ENTRY(13, 1000000000000ULL), ENTRY(13, 1000000000000ULL), ENTRY(13, 1000000000000ULL), ENTRY(14, 10000000000000ULL), ENTRY(14, 10000000000000ULL), ENTRY(14, 10000000000000ULL), ENTRY(15, 100000000000000ULL), ENTRY(15, 100000000000000ULL), ENTRY(15, 100000000000000ULL), ENTRY(16, 1000000000000000ULL), ENTRY(16, 1000000000000000ULL), ENTRY(16, 1000000000000000ULL), ENTRY(16, 1000000000000000ULL), ENTRY(17, 10000000000000000ULL), ENTRY(17, 10000000000000000ULL), ENTRY(17, 10000000000000000ULL), ENTRY(18, 100000000000000000ULL), ENTRY(18, 100000000000000000ULL), ENTRY(18, 100000000000000000ULL), ENTRY(19, 1000000000000000000ULL), ENTRY(19, 1000000000000000000ULL), ENTRY(19, 1000000000000000000ULL), ENTRY(19, 1000000000000000000ULL), ENTRY(20, 10000000000000000000ULL) };
+  static constexpr uint128_t TABLE[] = { ENTRY(1, 0), ENTRY(1, 0), ENTRY(1, 0), ENTRY(2, 10), ENTRY(2, 10), ENTRY(2, 10), ENTRY(3, 100), ENTRY(3, 100), ENTRY(3, 100), 
+                                         ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(4, 1000), ENTRY(5, 10000), ENTRY(5, 10000), ENTRY(5, 10000), 
+                                         ENTRY(6, 100000), ENTRY(6, 100000), ENTRY(6, 100000), ENTRY(7, 1000000), ENTRY(7, 1000000), ENTRY(7, 1000000), 
+                                         ENTRY(7, 1000000), ENTRY(8, 10000000), ENTRY(8, 10000000), ENTRY(8, 10000000), ENTRY(9, 100000000), ENTRY(9, 100000000), 
+                                         ENTRY(9, 100000000), ENTRY(10, 1000000000), ENTRY(10, 1000000000), ENTRY(10, 1000000000), ENTRY(10, 1000000000), 
+                                         ENTRY(11, 10000000000ULL), ENTRY(11, 10000000000ULL), ENTRY(11, 10000000000ULL), ENTRY(12, 100000000000ULL), 
+                                         ENTRY(12, 100000000000ULL), ENTRY(12, 100000000000ULL), ENTRY(13, 1000000000000ULL), ENTRY(13, 1000000000000ULL),
+                                         ENTRY(13, 1000000000000ULL), ENTRY(13, 1000000000000ULL), ENTRY(14, 10000000000000ULL), ENTRY(14, 10000000000000ULL), 
+                                         ENTRY(14, 10000000000000ULL), ENTRY(15, 100000000000000ULL), ENTRY(15, 100000000000000ULL), ENTRY(15, 100000000000000ULL), 
+                                         ENTRY(16, 1000000000000000ULL), ENTRY(16, 1000000000000000ULL), ENTRY(16, 1000000000000000ULL), ENTRY(16, 1000000000000000ULL), 
+                                         ENTRY(17, 10000000000000000ULL), ENTRY(17, 10000000000000000ULL), ENTRY(17, 10000000000000000ULL), 
+                                         ENTRY(18, 100000000000000000ULL), ENTRY(18, 100000000000000000ULL), ENTRY(18, 100000000000000000ULL), 
+                                         ENTRY(19, 1000000000000000000ULL), ENTRY(19, 1000000000000000000ULL), ENTRY(19, 1000000000000000000ULL), 
+                                         ENTRY(19, 1000000000000000000ULL), ENTRY(20, 10000000000000000000ULL) };
   // clang-format on
 };
-
 template <>
 struct LenTable<uint32_t>
 {
@@ -123,30 +143,42 @@ struct LenTable<uint16_t>
   static constexpr uint32_t TABLE[] = { 65536, 65536, 65536, 131062, 131072, 131072, 196508, 196608, 196608, 261144, 262144, 262144, 262144, 317680, 327680, 327680 };
 };
 
+#if defined(_MSC_VER)
+#define BIN2CHARS_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#define BIN2CHARS_ALWAYS_INLINE inline __attribute__((always_inline))
+#else
+#define BIN2CHARS_ALWAYS_INLINE inline
+#endif
+
 template <typename T>
   requires std::is_integral_v<T> && std::is_unsigned_v<T>
-inline __attribute__((always_inline)) static unsigned calculate_len(const T &input)
+static BIN2CHARS_ALWAYS_INLINE unsigned calculate_len(const T &input)
 {
   using LEN_TABLE = LenTable<T>;
   if constexpr(std::is_same_v<T, uint64_t>)
   {
-    const unsigned comp = 63U - static_cast<unsigned>(__builtin_clzll(input | 1ULL));
-    return static_cast<unsigned>((static_cast<uint128_t>(input) + LEN_TABLE::TABLE[comp]) >> 64U);
+    const unsigned comp = 63U - static_cast<unsigned>(std::countl_zero(input | uint64_t{ 1 }));
+    const uint128_t entry = LEN_TABLE::TABLE[comp];
+    const uint64_t lo = input + entry.lo;
+    const auto carry = static_cast<uint64_t>(lo < input);
+
+    return static_cast<unsigned>(entry.hi + carry);
   }
   else if constexpr(std::is_same_v<T, uint32_t>)
   {
-    const unsigned comp = 31U - static_cast<unsigned>(__builtin_clz(input | 1U));
+    const unsigned comp = 31U - static_cast<unsigned>(std::countl_zero(input));
     return static_cast<unsigned>((input + LEN_TABLE::TABLE[comp]) >> 32U);
   }
   else if constexpr(std::is_same_v<T, uint16_t>)
   {
-    const unsigned comp = 31U - static_cast<unsigned>(__builtin_clz(input | 1U));
+    const unsigned comp = 31U - static_cast<unsigned>(std::countl_zero(input));
     return static_cast<unsigned>((input + LEN_TABLE::TABLE[comp]) >> 16U);
   }
 }
 
 template <typename T>
-[[gnu::noinline, gnu::used]] unsigned WriteCharsToPtrFowardReturnLength(char *__restrict__ buff, const T &input) noexcept
+[[gnu::noinline, gnu::used]] unsigned WriteCharsToPtrFowardReturnLength(char *buff, const T &input) noexcept
 {
   asm volatile("# LLVM-MCA-BEGIN SIMD_WriteChars");
 
@@ -234,7 +266,7 @@ constexpr char digits[201] = "0001020304050607080910111213141516171819"
                              "6061626364656667686970717273747576777879"
                              "8081828384858687888990919293949596979899";
 template <typename T>
-[[gnu::noinline, gnu::used]] unsigned StdLibOptimized(char *__restrict__ buff, const T &input) noexcept
+[[gnu::noinline, gnu::used]] unsigned StdLibOptimized(char *buff, const T &input) noexcept
 {
   const unsigned len = calculate_len(input);
   unsigned pos = len - 1;
@@ -346,3 +378,5 @@ int main()
 }
 
 #endif
+
+#undef BIN2CHARS_ALWAYS_INLINE

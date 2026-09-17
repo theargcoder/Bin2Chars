@@ -82,7 +82,12 @@ namespace
           continue;
         }
 
+#ifdef BIN2CHARS_CIBUILD
+        BOOST_REQUIRE(bin2chars == std_format);
+#else
         BOOST_CHECK_EQUAL(bin2chars, std_format);
+#endif
+
         log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
         bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
@@ -109,7 +114,7 @@ namespace
     const constexpr Type RANGE = SAMPLES < MAX_NUM ? SAMPLES : MAX_NUM;
     const constexpr Type MAX_ERRORS = 10;
 
-    for(Type val = DELIM, lim = 0, max_iter = 0; ((PLUS) ? val < DELIM + RANGE : val > DELIM - RANGE) && lim < MAX_ERRORS && max_iter < RANGE;
+    for(Type val = DELIM, errors = 0, max_iter = 0; ((PLUS) ? val < DELIM + RANGE : val > DELIM - RANGE) && errors < MAX_ERRORS && max_iter < RANGE;
         (PLUS) ? val += JUMP : val -= JUMP, max_iter++)
     {
       std::string bin2chars, std_format, ryu;
@@ -135,6 +140,12 @@ namespace
       ryu_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_ryu - st_ryu)));
       ryu_cycles += en_ryu - st_ryu;
 
+#ifdef BIN2CHARS_CIBUILD
+      BOOST_REQUIRE(bin2chars == std_format);
+#else
+      BOOST_CHECK_EQUAL(bin2chars, std_format);
+#endif
+
       if(bin2chars != std_format)
       {
         // for some reason std::to_chars likes to put a '-' before a nan; the IEEE754 standard doesnt define that so idk
@@ -143,7 +154,6 @@ namespace
           continue;
         }
 
-        BOOST_CHECK_EQUAL(bin2chars, std_format);
         log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
         bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
@@ -151,7 +161,7 @@ namespace
         char buffer[1024];
         d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
 
-        lim++;
+        errors++;
       }
     }
   };

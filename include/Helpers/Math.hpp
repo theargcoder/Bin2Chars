@@ -8,6 +8,14 @@
 
 #include "Assembly.hpp"
 
+#if defined(_MSC_VER)
+#define BIN2CHARS_ALWAYS_INLINE __forceinline
+#elif defined(__GNUC__) || defined(__clang__)
+#define BIN2CHARS_ALWAYS_INLINE inline __attribute__((always_inline))
+#else
+#define BIN2CHARS_ALWAYS_INLINE inline
+#endif
+
 namespace Bin2Chars::Helpers::Math::Constexpr
 {
   template <typename T>
@@ -17,7 +25,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
   }
 
   template <typename BaseType, typename ExpType>
-    requires std::is_integral_v<ExpType> || std::is_same_v<BaseType, __uint128_t>
+    requires std::is_integral_v<ExpType>
   static constexpr BaseType ipow(BaseType base, ExpType exp)
   {
     if(exp < 0)
@@ -155,7 +163,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
   }
 
   template <typename T>
-    requires(std::is_integral_v<T> || std::is_same_v<T, __uint128_t>)
+    requires std::is_integral_v<T>
   static consteval int log10(T val)
   {
     constexpr T BASE = 10;
@@ -210,7 +218,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
   }
 
   template <typename T>
-    requires(std::is_unsigned_v<T> && std::is_integral_v<T>) || std::is_same_v<__uint128_t, T>
+    requires(std::is_unsigned_v<T> && std::is_integral_v<T>)
   static constexpr bool is_pow10(T n)
   {
     constexpr T BASE = 10;
@@ -228,7 +236,7 @@ namespace Bin2Chars::Helpers::Math::Constexpr
 namespace Bin2Chars::Helpers::Math::Magic::Division
 {
   template <uint32_t N>
-  static inline uint32_t __attribute((__always_inline__)) div_by_10_pow_n(const uint32_t &n)
+  static uint32_t BIN2CHARS_ALWAYS_INLINE div_by_10_pow_n(const uint32_t &n)
   {
     static_assert(N != 0, "why divide by 1");
     static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
@@ -249,7 +257,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
   }
 
   template <uint32_t N>
-  static inline void __attribute((__always_inline__)) div_by_10_pow_n_void(uint32_t &n)
+  static void BIN2CHARS_ALWAYS_INLINE div_by_10_pow_n_void(uint32_t &n)
   {
     static_assert(N != 0, "why divide by 1");
     static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
@@ -268,7 +276,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
   }
 
   template <uint32_t DIV>
-  static inline uint32_t __attribute((__always_inline__)) div_by_10_template(const uint32_t &numerator)
+  static uint32_t BIN2CHARS_ALWAYS_INLINE div_by_10_template(const uint32_t &numerator)
   {
     static_assert(Helpers::Math::Constexpr::is_pow10(DIV), "only powers of 10 supported");
     static_assert(DIV != 0, "cant divide by 0");
@@ -289,7 +297,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
 
   template <typename Type>
     requires std::is_same_v<uint32_t, Type>
-  static inline uint32_t __attribute((__always_inline__)) div_by_10_denominator(const Type &numerator, const Type &denominator)
+  static uint32_t BIN2CHARS_ALWAYS_INLINE div_by_10_denominator(const Type &numerator, const Type &denominator)
   {
     // clang-format off
     if(denominator <= 10) { return div_by_10_pow_n<1>(numerator); }
@@ -335,7 +343,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
   }
 
   template <uint64_t N>
-  static inline void div_by_10_pow_n_void(uint64_t &n)
+  static BIN2CHARS_ALWAYS_INLINE void div_by_10_pow_n_void(uint64_t &n)
   {
     static_assert(N != 0, "why divide by 1");
     static_assert(N <= std::numeric_limits<uint64_t>::digits10, "10 ^exp is greater that num of digits");
@@ -363,7 +371,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
     // clang-format on
   }
   template <uint64_t DIV>
-  static inline auto div_by_10_pow_template(const uint64_t &n)
+  static BIN2CHARS_ALWAYS_INLINE auto div_by_10_pow_template(const uint64_t &n)
   {
     static_assert(Helpers::Math::Constexpr::is_pow10(DIV), "only powers of 10 supported");
     static_assert(DIV != 0, "cant divide by 0");
@@ -431,7 +439,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Division
 namespace Bin2Chars::Helpers::Math::Magic::Modulo
 {
   template <uint32_t N>
-  static inline auto mod_by_10_pow_n(const uint32_t &n)
+  static BIN2CHARS_ALWAYS_INLINE auto mod_by_10_pow_n(const uint32_t &n)
   {
     static_assert(N != 0, "why modide by 1");
     static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
@@ -451,7 +459,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Modulo
 
   template <uint32_t N, typename Type>
     requires std::is_unsigned_v<Type> && (sizeof(Type) >= sizeof(uint32_t))
-  static inline auto mod_by_10_pow_n_void(uint32_t &quotient, Type &remainder)
+  static BIN2CHARS_ALWAYS_INLINE auto mod_by_10_pow_n_void(uint32_t &quotient, Type &remainder)
   {
     static_assert(N != 0, "why modide by 1");
     static_assert(N <= std::numeric_limits<uint32_t>::digits10, "10 ^exp is greater that num of digits");
@@ -487,7 +495,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Modulo
   }
 
   template <uint32_t MOD>
-  static inline auto mod_by_10_template(const uint32_t &numerator)
+  static BIN2CHARS_ALWAYS_INLINE auto mod_by_10_template(const uint32_t &numerator)
   {
     static_assert(Helpers::Math::Constexpr::is_pow10(MOD), "only powers of 10 supported");
     static_assert(MOD != 0, "cant mod by 0");
@@ -507,7 +515,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Modulo
   }
 
   template <uint32_t N>
-  static inline auto mod_by_10_pow_n(const uint64_t &n)
+  static BIN2CHARS_ALWAYS_INLINE auto mod_by_10_pow_n(const uint64_t &n)
   {
     static_assert(N != 0, "why mod by 1");
     static_assert(N <= std::numeric_limits<uint64_t>::digits10, "10 ^exp is greater that num of digits");
@@ -537,7 +545,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Modulo
 
   template <uint32_t N, typename Type>
     requires std::is_unsigned_v<Type> && (sizeof(Type) >= sizeof(uint64_t))
-  static inline auto mod_by_10_pow_n_void(uint64_t &quotient, Type &remainder)
+  static BIN2CHARS_ALWAYS_INLINE auto mod_by_10_pow_n_void(uint64_t &quotient, Type &remainder)
   {
 
     static_assert(N != 0, "why mod by 1");
@@ -569,7 +577,7 @@ namespace Bin2Chars::Helpers::Math::Magic::Modulo
   }
 
   template <uint64_t MOD>
-  static inline auto mod_by_10_template(const uint64_t &numerator)
+  static BIN2CHARS_ALWAYS_INLINE auto mod_by_10_template(const uint64_t &numerator)
   {
     static_assert(Helpers::Math::Constexpr::is_pow10(MOD), "only powers of 10 supported");
     static_assert(MOD != 0, "cant mod by 0");
@@ -693,7 +701,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
     constexpr uint8_t EXPONENT_ST = 23;
     constexpr uint8_t MANTISSA_SHIFT = 8 + 32; // +32 since now we use uint64_t
     constexpr int8_t EXPONENT_LEFT_OFFSET = 8;
-    constexpr uint8_t EXPONENT_ALL_BITS_ON = 255; // as defined in IEEE-754
+    constexpr int16_t EXPONENT_ALL_BITS_ON = 255; // as defined in IEEE-754
 
     constexpr int8_t NORM_BIAS = 126;
     constexpr int8_t DENORM_BIAS = 125;
@@ -730,7 +738,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
         return true;
       }
 
-      const auto shift_internal = __builtin_clz(man) - EXPONENT_LEFT_OFFSET;
+      const auto shift_internal = std::countl_zero(man) - EXPONENT_LEFT_OFFSET;
 
       mantissa = static_cast<uint64_t>(man) << (shift_internal + MANTISSA_SHIFT);
       exponent = -shift_internal - DENORM_BIAS;
@@ -747,7 +755,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
     constexpr uint8_t EXPONENT_ST = 52;
     constexpr uint8_t MANTISSA_SHIFT = 11;
 
-    constexpr uint16_t EXPONENT_ALL_BITS_ON = 2047; // as defined in IEEE-754
+    constexpr int16_t EXPONENT_ALL_BITS_ON = 2047; // as defined in IEEE-754
 
     constexpr uint16_t NORM_BIAS = 1022;
     constexpr uint16_t DENORM_BIAS = 1021;
@@ -784,7 +792,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
         return true;
       }
 
-      const auto shift_internal = __builtin_clzl(man) - MANTISSA_SHIFT;
+      const auto shift_internal = std::countl_zero(man) - MANTISSA_SHIFT;
 
       mantissa = static_cast<uint64_t>(man) << (shift_internal + MANTISSA_SHIFT);
       exponent = -shift_internal - DENORM_BIAS;
@@ -795,4 +803,5 @@ namespace Bin2Chars::Helpers::Math::IEEE754
 
 } // namespace Bin2Chars::Helpers::Math::IEEE754
 
+#undef BIN2CHARS_ALWAYS_INLINE
 //
