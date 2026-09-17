@@ -80,6 +80,124 @@ namespace Bin2Chars::Helpers::Assembly
 #endif
   }
 
+  BIN2CHARS_ALWAYS_INLINE void umul128(const uint64_t a, const uint64_t b, uint64_t &low, uint64_t &hi) noexcept
+  {
+#if defined(_MSC_VER) && defined(_M_X64)
+
+    low = _umul128(a, b, &hi);
+
+#elif defined(__x86_64__)
+
+    asm("mul %[b]" : "=a"(low), "=d"(hi) : "a"(a), [b] "r"(b) : "cc");
+
+#elif defined(__aarch64__) && !defined(_MSC_VER)
+
+    asm("mul   %0, %1, %2" : "=r"(low) : "r"(a), "r"(b));
+    asm("umulh %0, %1, %2" : "=r"(hi) : "r"(a), "r"(b));
+
+#else
+
+    // Portable 64x64 -> 128 multiplication.
+    const uint64_t a_lo = static_cast<uint32_t>(a);
+    const uint64_t a_hi = a >> 32U;
+    const uint64_t b_lo = static_cast<uint32_t>(b);
+    const uint64_t b_hi = b >> 32U;
+
+    const uint64_t p00 = a_lo * b_lo;
+    const uint64_t p01 = a_lo * b_hi;
+    const uint64_t p10 = a_hi * b_lo;
+    const uint64_t p11 = a_hi * b_hi;
+
+    const uint64_t middle = (p00 >> 32U) + static_cast<uint32_t>(p01) + static_cast<uint32_t>(p10);
+
+    low = (p00 & UINT64_C(0xFFFFFFFF)) | (middle << 32U);
+
+    hi = p11 + (p01 >> 32U) + (p10 >> 32U) + (middle >> 32U);
+
+#endif
+  }
+
+  BIN2CHARS_ALWAYS_INLINE void umul96(const uint64_t a, const uint64_t b, uint64_t &low, uint32_t &hi) noexcept
+  {
+#if defined(_MSC_VER) && defined(_M_X64)
+
+    uint64_t full_hi;
+    low = _umul128(a, b, &full_hi);
+    hi = static_cast<uint32_t>(full_hi);
+
+#elif defined(__x86_64__)
+
+    uint64_t full_hi;
+    asm("mul %[b]" : "=a"(low), "=d"(full_hi) : "a"(a), [b] "r"(b) : "cc");
+    hi = static_cast<uint32_t>(full_hi);
+
+#elif defined(__aarch64__) && !defined(_MSC_VER)
+
+    uint64_t full_hi;
+    asm("mul   %0, %2, %3\n\t"
+        "umulh %1, %2, %3"
+        : "=r"(low), "=r"(full_hi)
+        : "r"(a), "r"(b));
+    hi = static_cast<uint32_t>(full_hi);
+
+#else
+
+    // Portable 64x64 -> 96-bit. Drops p11 high-half work entirely.
+    const uint64_t a_lo = static_cast<uint32_t>(a);
+    const uint64_t a_hi = a >> 32U;
+    const uint64_t b_lo = static_cast<uint32_t>(b);
+    const uint64_t b_hi = b >> 32U;
+
+    const uint64_t p00 = a_lo * b_lo;
+    const uint64_t p01 = a_lo * b_hi;
+    const uint64_t p10 = a_hi * b_lo;
+    const uint64_t p11_lo = static_cast<uint32_t>(a_hi * b_hi);
+
+    const uint64_t middle = (p00 >> 32U) + static_cast<uint32_t>(p01) + static_cast<uint32_t>(p10);
+
+    low = (p00 & UINT64_C(0xFFFFFFFF)) | (middle << 32U);
+    hi = static_cast<uint32_t>(p11_lo + (p01 >> 32U) + (p10 >> 32U) + (middle >> 32U));
+
+#endif
+  }
+
+  BIN2CHARS_ALWAYS_INLINE void umul64x32_96(const uint64_t a, const uint32_t b, uint64_t &low, uint32_t &hi) noexcept
+  {
+#if defined(_MSC_VER) && defined(_M_X64)
+
+    uint64_t full_hi;
+    low = _umul128(a, static_cast<uint64_t>(b), &full_hi);
+    hi = static_cast<uint32_t>(full_hi);
+
+#elif defined(__x86_64__)
+
+    uint64_t full_hi;
+    asm("mul %[b]" : "=a"(low), "=d"(full_hi) : "a"(a), [b] "r"(static_cast<uint64_t>(b)) : "cc");
+    hi = static_cast<uint32_t>(full_hi);
+
+#elif defined(__aarch64__) && !defined(_MSC_VER)
+
+    uint64_t full_hi;
+    const uint64_t b64 = b;
+    asm("mul   %0, %2, %3\n\t"
+        "umulh %1, %2, %3"
+        : "=r"(low), "=r"(full_hi)
+        : "r"(a), "r"(b64));
+    hi = static_cast<uint32_t>(full_hi);
+
+#else
+
+    // Portable 64x32 -> 96-bit: Only 2 multiplies instead of 4!
+    const uint64_t p0 = static_cast<uint32_t>(a) * static_cast<uint64_t>(b);
+    const uint64_t p1 = (a >> 32U) * static_cast<uint64_t>(b);
+    const uint64_t sum = (p0 >> 32U) + p1;
+
+    low = (p0 & UINT64_C(0xFFFFFFFF)) | (sum << 32U);
+    hi = static_cast<uint32_t>(sum >> 32U);
+
+#endif
+  }
+
 #if defined(_M_X64) || defined(__x86_64__)
 
   BIN2CHARS_ALWAYS_INLINE uint64_t timer_start() noexcept

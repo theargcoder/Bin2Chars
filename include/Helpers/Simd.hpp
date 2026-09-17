@@ -446,7 +446,7 @@ namespace Bin2Chars::Helpers::Simd
 
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
 
-    static BINBIN2CHARS_ALWAYS_INLINE __m512i umul_hi_32x16(const __m512i a, const __m512i b) noexcept
+    static BIN2CHARS_ALWAYS_INLINE __m512i umul_hi_32x16(const __m512i a, const __m512i b) noexcept
     {
       const __m512i even_prod = _mm512_mul_epu32(a, b);
       const __m512i odd_prod = _mm512_mul_epu32(_mm512_srli_epi64(a, 32U), _mm512_srli_epi64(b, 32U));

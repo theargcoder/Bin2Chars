@@ -29,9 +29,6 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     }
 
     using base_t = uint64_t;
-    using wide_t = __uint128_t;
-
-    constexpr auto SHIFT_T = 64U;
 
     constexpr unsigned DEC8 = 100'000'000U;
 
@@ -102,9 +99,9 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     int exp_base_10 = (n_limbs << 3U) - (exp < 0 ? abs_exp : 0) - 1;
 
-    const wide_t prod = static_cast<wide_t>(*it) * mantissa;
-    auto digs = static_cast<unsigned>(prod >> SHIFT_T);
-    auto frac = static_cast<base_t>(prod);
+    uint32_t digs;
+    base_t frac;
+    Helpers::Assembly::umul96(static_cast<base_t>(*it), mantissa, frac, digs);
 
     int precision_missing = 1 + PRECISION; // always leading digit in exponential formatting
     unsigned rem, len_written;
@@ -121,11 +118,19 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     for(; it >= it_beg && precision_missing >= -8; it--) // 8 extra chars (1 chungk) should suffice for rounding purposes ... right??
     {
-      const wide_t prod = static_cast<wide_t>(*it) * mantissa;
-      const wide_t total = static_cast<wide_t>(frac) * DEC8 + prod;
+      base_t curr_prod_lo;
+      uint32_t curr_prod_hi;
+      Helpers::Assembly::umul96(static_cast<base_t>(*it), mantissa, curr_prod_lo, curr_prod_hi);
 
-      digs = static_cast<unsigned>(total >> SHIFT_T);
-      frac = static_cast<base_t>(total);
+      base_t dec_lo;
+      uint32_t dec_hi;
+      Helpers::Assembly::umul64x32_96(frac, DEC8, dec_lo, dec_hi);
+
+      const base_t total_lo = dec_lo + curr_prod_lo;
+      const base_t carry = total_lo < dec_lo ? 1U : 0U;
+
+      digs = dec_hi + curr_prod_hi + static_cast<uint32_t>(carry);
+      frac = total_lo;
 
       Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
 
@@ -163,9 +168,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
     while(precision_missing >= 0 && frac != 0) // write all digits and change since they are needed for rounding
     {
-      const wide_t step_total = static_cast<wide_t>(frac) * DEC8;
-      digs = static_cast<unsigned>(step_total >> SHIFT_T);
-      frac = static_cast<base_t>(step_total);
+      Helpers::Assembly::umul64x32_96(frac, DEC8, frac, digs);
 
       Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], digs);
       len += 8;

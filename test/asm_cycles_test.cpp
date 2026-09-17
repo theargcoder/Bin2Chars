@@ -1,5 +1,6 @@
 
-#if (defined(__GNUG__) || defined(__GNUC__)) && defined(__x86_64__)
+#if (defined(__GNUG__) || defined(__GNUC__)) && defined(__x86_64__) && (defined(__AVX2__) || defined(__AVX512F__))
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
