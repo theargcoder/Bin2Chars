@@ -738,7 +738,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
         return true;
       }
 
-      const auto shift_internal = __builtin_clz(man) - EXPONENT_LEFT_OFFSET;
+      const auto shift_internal = std::countl_zero(man) - EXPONENT_LEFT_OFFSET;
 
       mantissa = static_cast<uint64_t>(man) << (shift_internal + MANTISSA_SHIFT);
       exponent = -shift_internal - DENORM_BIAS;
@@ -792,7 +792,7 @@ namespace Bin2Chars::Helpers::Math::IEEE754
         return true;
       }
 
-      const auto shift_internal = __builtin_clzl(man) - MANTISSA_SHIFT;
+      const auto shift_internal = std::countl_zero(man) - MANTISSA_SHIFT;
 
       mantissa = static_cast<uint64_t>(man) << (shift_internal + MANTISSA_SHIFT);
       exponent = -shift_internal - DENORM_BIAS;

@@ -385,6 +385,8 @@ if(IS_GCC OR IS_CLANG)
       add_link_options(-fsanitize=address -fsanitize=undefined
                        -fno-sanitize-recover=all)
 
+      add_compile_options(-Wno-invalid-feature-combination)
+
     endif()
 
     # ==========================================================
@@ -397,6 +399,10 @@ if(IS_GCC OR IS_CLANG)
       -O3 -DNDEBUG -fno-omit-frame-pointer ${NATIVE_ARCH_FLAGS}
       "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
       "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
+
+    if(IS_CLANG)
+      add_compile_options(-Wno-invalid-feature-combination)
+    endif()
 
     if(IS_GCC)
 
@@ -420,6 +426,10 @@ if(IS_GCC OR IS_CLANG)
       ${NATIVE_ARCH_FLAGS}
       "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
       "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
+
+    if(IS_CLANG)
+      add_compile_options(-Wno-invalid-feature-combination)
+    endif()
 
     # ==========================================================
     # Generic
