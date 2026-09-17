@@ -48,6 +48,11 @@ string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" SYSTEM_ARCH)
 
 find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
+get_target_property(BIN2CHARS_BOOST_HEADERS Boost::headers
+                    INTERFACE_INCLUDE_DIRECTORIES)
+message(STATUS "Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+message(STATUS "Boost::headers includes: ${BIN2CHARS_BOOST_HEADERS}")
+
 # ============================================================
 # Compiler detection
 # ============================================================

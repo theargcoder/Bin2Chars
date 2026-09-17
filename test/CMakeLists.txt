@@ -2,8 +2,10 @@ function(add_bin2chars_executable name src)
   add_executable(${name} ${src})
   target_link_libraries(${name} PRIVATE Bin2Chars Boost::unit_test_framework)
 
-  # Required on Linux when dynamically linking against system Boost binaries
-  target_compile_definitions(${name} PRIVATE BOOST_TEST_DYN_LINK)
+  # Required on Linux/Unix when dynamically linking against system Boost
+  if(NOT WIN32)
+    target_compile_definitions(${name} PRIVATE BOOST_TEST_DYN_LINK)
+  endif()
 endfunction()
 
 function(add_bin2chars_test name)
