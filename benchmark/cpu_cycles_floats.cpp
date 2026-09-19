@@ -108,8 +108,7 @@ namespace
             }
             else if(FMT == FORMAT::DECIMAL)
             {
-              len = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLen<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND, test_t>(
-                  &buff[0], current_num, PRECISION);
+              len = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStrWriteBuffReturnLen<test_t>(&buff[0], current_num, PRECISION);
             }
             // Force compiler to materialize the result
             asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "r"(len) : "memory");
@@ -123,7 +122,7 @@ namespace
             }
             else if constexpr(FMT == FORMAT::DECIMAL)
             {
-              bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(current_num, PRECISION);
+              bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr(current_num, PRECISION);
             }
             // Force compiler to materialize the result
             asm volatile("" : : "r"(bin2chars.data()) : "memory");

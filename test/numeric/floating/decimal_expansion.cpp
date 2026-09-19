@@ -55,7 +55,7 @@ namespace
 
       std::string bin2chars, std_format, ryu;
 
-      bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+      bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr(val, PRECISION);
 
       std_format = Bin2Chars::Numeric::Std::to_string<false>(val, PRECISION);
 
@@ -77,7 +77,7 @@ namespace
 
         log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
-        bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+        bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr(val, PRECISION);
 
         char buffer[1024];
         d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
@@ -107,7 +107,7 @@ namespace
       test_ct++;
       std::string bin2chars, std_format, ryu;
 
-      bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+      bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr(val, PRECISION);
 
       std_format = Bin2Chars::Numeric::Std::to_string<false>(val, PRECISION);
 
@@ -129,7 +129,7 @@ namespace
 
         log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
-        bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr<Bin2Chars::Numeric::Floating::DigitsPrecision::RoundingBehavior::ROUND>(val, PRECISION);
+        bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr(val, PRECISION);
 
         char buffer[1024];
         d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
