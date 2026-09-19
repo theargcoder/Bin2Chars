@@ -24,7 +24,6 @@ endfunction()
 add_bin2chars_executable(test_magic_math magic_math.cpp)
 add_bin2chars_executable(test_compute_exponent_decimal_expansion
                          compute_exponent_decimal_expansion.cpp)
-add_bin2chars_executable(test_asm asm_cycles_test.cpp)
 
 add_bin2chars_test(test_magic_math)
 add_bin2chars_test(test_compute_exponent_decimal_expansion)

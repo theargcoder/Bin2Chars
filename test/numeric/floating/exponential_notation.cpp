@@ -1,3 +1,6 @@
+#include <iostream>
+#include <locale>
+#include <string_view>
 #define BOOST_TEST_MODULE ExponentialNotationTest
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
@@ -27,8 +30,7 @@ using namespace Bin2Chars::Tests;
 namespace
 {
   template <typename Type>
-  void fuzzer_format_exponential(const Type & /*unused*/, const int &PRECISION, auto &bin2chars_took, auto &bin2chars_cycles, auto &std_fmt_took, auto &std_cycles, auto &ryu_took,
-                                 auto &ryu_cycles)
+  void fuzzer_format_exponential(const Type & /*unused*/, const int &PRECISION, uint64_t &test_ct, uint64_t &err_ct)
   {
 #ifdef NDEBUG
     const constexpr auto SAMPLES = 200'000;
@@ -48,31 +50,17 @@ namespace
 
     for(size_t i = 0; i < SAMPLES && errors < MAX_ERRORS; ++i)
     {
-      UIntType raw_bits = dist(rng);
-      Type val = std::bit_cast<Type>(raw_bits);
+      test_ct++;
+      const UIntType raw_bits = dist(rng);
+      const Type val = std::bit_cast<Type>(raw_bits);
 
       std::string bin2chars, std_format, ryu;
 
-      const auto st_bin2chars = Bin2Chars::Helpers::Assembly::timer_start();
       bin2chars = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
-      const auto en_bin2chars = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_std_fmt = Bin2Chars::Helpers::Assembly::timer_start();
       std_format = Bin2Chars::Numeric::Std::to_string<true>(val, PRECISION);
-      const auto en_std_fmt = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_ryu = Bin2Chars::Helpers::Assembly::timer_start();
       ryu = Bin2Chars::Numeric::Ryu::Exponential::ToStr(val, PRECISION);
-      const auto en_ryu = Bin2Chars::Helpers::Assembly::timer_end();
-
-      bin2chars_took
-          += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_bin2chars - st_bin2chars)));
-      bin2chars_cycles += en_bin2chars - st_bin2chars;
-      std_fmt_took
-          += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_std_fmt - st_std_fmt)));
-      std_cycles += en_std_fmt - st_std_fmt;
-      ryu_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_ryu - st_ryu)));
-      ryu_cycles += en_ryu - st_ryu;
 
       if(bin2chars != std_format)
       {
@@ -92,13 +80,13 @@ namespace
         d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
 
         errors++;
+        err_ct++;
       }
     }
   };
 
   template <typename Type>
-  void lopper_format_exponential(const int &PRECISION, const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_took, auto &bin2chars_cycles, auto &std_fmt_took,
-                                 auto &std_cycles, auto &ryu_took, auto &ryu_cycles)
+  void lopper_format_exponential(const int &PRECISION, const bool &PLUS, const Type &DELIM, const Type &JUMP, uint64_t &test_ct, uint64_t &err_ct)
   {
 #ifdef NDEBUG
     const constexpr auto SAMPLES = 100'000;
@@ -114,29 +102,14 @@ namespace
     for(Type val = DELIM, errors = 0, max_iter = 0; ((PLUS) ? val < DELIM + RANGE : val > DELIM - RANGE) && errors < MAX_ERRORS && max_iter < RANGE;
         (PLUS) ? val += JUMP : val -= JUMP, max_iter++)
     {
+      test_ct++;
       std::string bin2chars, std_format, ryu;
 
-      // if constexpr(std::is_same_v<Type, double>) { log = logger.format("{15}", i); } else { six in reality should be 5 log = logger.format("{6}", i); }
-      const auto st_bin2chars = Bin2Chars::Helpers::Assembly::timer_start();
       bin2chars = Bin2Chars::Numeric::Floating::ExponentialNotation::ToStr(val, PRECISION);
-      const auto en_bin2chars = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_std_fmt = Bin2Chars::Helpers::Assembly::timer_start();
       std_format = Bin2Chars::Numeric::Std::to_string<true>(val, PRECISION);
-      const auto en_std_fmt = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const auto st_ryu = Bin2Chars::Helpers::Assembly::timer_start();
       ryu = Bin2Chars::Numeric::Ryu::Exponential::ToStr(val, PRECISION);
-      const auto en_ryu = Bin2Chars::Helpers::Assembly::timer_end();
-
-      bin2chars_took
-          += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_bin2chars - st_bin2chars)));
-      bin2chars_cycles += en_bin2chars - st_bin2chars;
-      std_fmt_took
-          += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_std_fmt - st_std_fmt)));
-      std_cycles += en_std_fmt - st_std_fmt;
-      ryu_took += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(Bin2Chars::Helpers::Assembly::rdtsc_to_ns(en_ryu - st_ryu)));
-      ryu_cycles += en_ryu - st_ryu;
 
       if(bin2chars != std_format)
       {
@@ -155,6 +128,7 @@ namespace
         char buffer[1024];
         d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
         errors++;
+        err_ct++;
       }
     }
   };
@@ -166,77 +140,76 @@ namespace
     const constexpr auto MAX = std::numeric_limits<T>::max();
     const constexpr auto EPS = std::numeric_limits<T>::epsilon();
 
-    std::chrono::nanoseconds bin2chars_time{ 0 };
-    uint64_t bin2chars_cycles{ 0 };
-    std::chrono::nanoseconds std_fmt_time{ 0 };
-    uint64_t std_fmt_cycles{ 0 };
-    std::chrono::nanoseconds ryu_time{ 0 };
-    uint64_t ryu_cycles{ 0 };
+    uint64_t test_ct{ 0 }, err_ct{ 0 };
 
     // ---- small / subnormal region ----
-    lopper_format_exponential(PRECISION, true, T{ 0 }, DENORM, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, MIN, DENORM, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, true, T{ 0 }, DENORM, test_ct, err_ct);
+    lopper_format_exponential(PRECISION, true, MIN, DENORM, test_ct, err_ct);
 
     // ---- small normal numbers ----
-    lopper_format_exponential(PRECISION, true, MIN, EPS, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, MIN * T{ 10 }, EPS, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, true, MIN, EPS, test_ct, err_ct);
+    lopper_format_exponential(PRECISION, true, MIN * T{ 10 }, EPS, test_ct, err_ct);
 
     // ---- around powers of two ----
     for(int e = -20; e <= 20; ++e)
     {
       const T val = std::ldexp(T{ 1 }, e); // 2^e
-      lopper_format_exponential(PRECISION, true, val, EPS * val, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-      lopper_format_exponential(PRECISION, false, val, EPS * val, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+      lopper_format_exponential(PRECISION, true, val, EPS * val, test_ct, err_ct);
+      lopper_format_exponential(PRECISION, false, val, EPS * val, test_ct, err_ct);
     }
 
     // ---- around powers of ten ----
     for(int e = -20; e <= 20; ++e)
     {
       const T val = static_cast<T>(std::pow(static_cast<T>(10), e));
-      lopper_format_exponential(PRECISION, true, val, EPS * val, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-      lopper_format_exponential(PRECISION, false, val, EPS * val, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+      lopper_format_exponential(PRECISION, true, val, EPS * val, test_ct, err_ct);
+      lopper_format_exponential(PRECISION, false, val, EPS * val, test_ct, err_ct);
     }
 
     // ---- medium magnitude sweeps ----
-    lopper_format_exponential(PRECISION, true, static_cast<T>(1), EPS, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, static_cast<T>(100), EPS * static_cast<T>(100), bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
-                              ryu_cycles);
-    lopper_format_exponential(PRECISION, true, static_cast<T>(1e6), EPS * static_cast<T>(1e6), bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
-                              ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(1), EPS, test_ct, err_ct);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(100), EPS * static_cast<T>(100), test_ct, err_ct);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(1e6), EPS * static_cast<T>(1e6), test_ct, err_ct);
 
     // ---- large numbers ----
-    lopper_format_exponential(PRECISION, false, MAX, EPS * MAX, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, false, MAX / static_cast<T>(10), EPS * MAX, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, false, MAX / static_cast<T>(1000), EPS * MAX, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    lopper_format_exponential(PRECISION, false, MAX, EPS * MAX, test_ct, err_ct);
+    lopper_format_exponential(PRECISION, false, MAX / static_cast<T>(10), EPS * MAX, test_ct, err_ct);
+    lopper_format_exponential(PRECISION, false, MAX / static_cast<T>(1000), EPS * MAX, test_ct, err_ct);
 
     // ---- randomish mantissa coverage ----
-    lopper_format_exponential(PRECISION, true, static_cast<T>(1.234), static_cast<T>(0.0001), bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, static_cast<T>(123.456), static_cast<T>(0.01), bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, false, static_cast<T>(98765.4321), static_cast<T>(0.1), bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
-                              ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(1.234), static_cast<T>(0.0001), test_ct, err_ct);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(123.456), static_cast<T>(0.01), test_ct, err_ct);
+    lopper_format_exponential(PRECISION, false, static_cast<T>(98765.4321), static_cast<T>(0.1), test_ct, err_ct);
 
     // ---- randomish mantissa coverage ----
-    lopper_format_exponential(PRECISION, true, static_cast<T>(1.234), static_cast<T>(0.0001), bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, true, static_cast<T>(123.456), static_cast<T>(0.01), bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
-    lopper_format_exponential(PRECISION, false, static_cast<T>(98765.4321), static_cast<T>(0.1), bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time,
-                              ryu_cycles);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(1.234), static_cast<T>(0.0001), test_ct, err_ct);
+    lopper_format_exponential(PRECISION, true, static_cast<T>(123.456), static_cast<T>(0.01), test_ct, err_ct);
+    lopper_format_exponential(PRECISION, false, static_cast<T>(98765.4321), static_cast<T>(0.1), test_ct, err_ct);
 
     // ---- MASSIVE CHAOS FUZZER ----
     // purely random bit-patterns per precision level
-    fuzzer_format_exponential(bannana, PRECISION, bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    fuzzer_format_exponential(bannana, PRECISION, test_ct, err_ct);
 
-    return std::make_tuple(bin2chars_time, bin2chars_cycles, std_fmt_time, std_fmt_cycles, ryu_time, ryu_cycles);
+    return std::make_tuple(test_ct, err_ct);
   };
 
-  const auto test_and_benchmark_float = []<typename T>
+  template <typename T>
     requires std::is_floating_point_v<T>
-  (const T &, const int &PRECISION)
+  void test_and_benchmark_float(const T &, const int &PRECISION)
   {
-    const auto float_res = tester_format_exponential(static_cast<T>(0), PRECISION);
 
-    log_time_tables(static_cast<T>(0.0), "Exponential Formatting ", PRECISION, BenchResult("Bin2Chars", std::get<0>(float_res), std::get<1>(float_res)),
-                    BenchResult("std::to_chars", std::get<2>(float_res), std::get<3>(float_res)), BenchResult("ryu", std::get<4>(float_res), std::get<5>(float_res)));
-  };
+    constexpr std::string_view RESET = "\033[0m";
+    constexpr std::string_view GREEN = "\033[32m";
+    constexpr std::string_view RED = "\033[31m";
+
+    const auto [test_ct, err_ct] = tester_format_exponential(static_cast<T>(0), PRECISION);
+    const auto pretty_name = boost::typeindex::type_id<T>().pretty_name();
+
+    const std::locale us_locale("en_US.UTF-8");
+    std::cout << std::format(us_locale, "All {:L} exponential formatting tests {} {} {} for type '{}' with precision '{}'", test_ct, (err_ct == 0) ? GREEN : RED,
+                             (err_ct == 0) ? "passed" : "failed", RESET, pretty_name, PRECISION)
+              << "\n";
+  }
 
 } // namespace
 
@@ -249,20 +222,20 @@ BOOST_AUTO_TEST_CASE(test_all_floating_point_v)
   {
     test_and_benchmark_float(static_cast<float>(0), i);
   }
-  test_and_benchmark_float(static_cast<double>(0), 50);
-  test_and_benchmark_float(static_cast<double>(0), 60);
-  test_and_benchmark_float(static_cast<double>(0), 70);
-  test_and_benchmark_float(static_cast<double>(0), 80);
-  test_and_benchmark_float(static_cast<double>(0), 90);
-  test_and_benchmark_float(static_cast<double>(0), 100);
-  test_and_benchmark_float(static_cast<double>(0), 110);
-  test_and_benchmark_float(static_cast<double>(0), 120);
-  test_and_benchmark_float(static_cast<double>(0), 130);
-  test_and_benchmark_float(static_cast<double>(0), 140);
-  test_and_benchmark_float(static_cast<double>(0), 150);
-  test_and_benchmark_float(static_cast<double>(0), 160);
-  test_and_benchmark_float(static_cast<double>(0), 170);
-  test_and_benchmark_float(static_cast<double>(0), 180);
+  test_and_benchmark_float(static_cast<float>(0), 50);
+  test_and_benchmark_float(static_cast<float>(0), 60);
+  test_and_benchmark_float(static_cast<float>(0), 70);
+  test_and_benchmark_float(static_cast<float>(0), 80);
+  test_and_benchmark_float(static_cast<float>(0), 90);
+  test_and_benchmark_float(static_cast<float>(0), 100);
+  test_and_benchmark_float(static_cast<float>(0), 110);
+  test_and_benchmark_float(static_cast<float>(0), 120);
+  test_and_benchmark_float(static_cast<float>(0), 130);
+  test_and_benchmark_float(static_cast<float>(0), 140);
+  test_and_benchmark_float(static_cast<float>(0), 150);
+  test_and_benchmark_float(static_cast<float>(0), 160);
+  test_and_benchmark_float(static_cast<float>(0), 170);
+  test_and_benchmark_float(static_cast<float>(0), 180);
 
   // doubles // all good
   for(int i = 0; i <= 50; i++)
