@@ -58,14 +58,11 @@ namespace
     }
   }
 
-  template <FORMAT FMT, RETURN_TYPE RET, typename test_t>
+  template <size_t TRIALS, size_t BATCH, FORMAT FMT, RETURN_TYPE RET, typename test_t>
     requires std::is_floating_point_v<test_t>
-  void TestFloatingType(const int &PRECISION)
+  void TestFloatingType(CJParse::Types::JsonValue &json, const int &PRECISION)
   {
     Bin2Chars::Benchmark::Measurements::PmuTimer timer;
-
-    constexpr size_t TRIALS = 50'000;
-    constexpr size_t BATCH = 1'000;
 
     using base_t = std::conditional_t<std::is_same_v<test_t, float>, uint32_t, uint64_t>;
 
@@ -264,152 +261,185 @@ namespace
       std::this_thread::yield(); // so timer interrups 'can' (big enphasis on CAN) happen here instead of in the middle of measurements (hopefully)
     }
 
-    CJParse::CJParse json{ "null" };
-    json.JSON = CJParse::Types::Object{};
-
     Bin2Chars::Benchmark::PrintPmuResults(
-        test_t{}, json.JSON, "return <" + std::string(to_string(RET)) + "> - ftoa", PRECISION, BATCH,
+        test_t{}, json, std::string(to_string(RET)) + " ftoa", PRECISION, BATCH,
         Bin2Chars::Benchmark::PmuResult{
             .label = "BIN2CHARS", .tsc = simdy_tsc, .core = simdy_clk, .ref = simdy_ref, .empty_tsc = empty_tsc, .empty_core = empty_clk, .empty_ref = empty_ref },
         Bin2Chars::Benchmark::PmuResult{
             .label = "STD_LIB", .tsc = std_tsc, .core = std_clk, .ref = std_ref, .empty_tsc = empty_tsc, .empty_core = empty_clk, .empty_ref = empty_ref },
         Bin2Chars::Benchmark::PmuResult{
             .label = "RYU", .tsc = ryu_tsc, .core = ryu_clk, .ref = ryu_ref, .empty_tsc = empty_tsc, .empty_core = empty_clk, .empty_ref = empty_ref });
-
-    Bin2Chars::Benchmark::Store::File file{};
-
-    file.Store<to_string(RET), test_t>(json, FMT == FORMAT::EXPONENTIAL, PRECISION);
   }
 } // namespace
 
 int main(int /*unused*/, char ** /*unused*/)
 {
+
   try
   {
+    constexpr auto TRIALS = 100'000; // 100'000
+    constexpr auto BATCHES = 1'000;
+
+    // pin to a core to avoid cross-core TSC sync issues
     Bin2Chars::Benchmark::SystemInfo::cpu_id = 0;
-    // 1. Pin to a specific core to avoid cross-core TSC sync issues
     Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(Bin2Chars::Benchmark::SystemInfo::cpu_id);
+
+    Bin2Chars::Benchmark::Store::File file{};
+    CJParse::CJParse JSON{ "null" };
+
+    const auto cpu_freqs = Bin2Chars::Benchmark::SystemInfo::get_cpu_freqs();
+    const auto cpu_infos = Bin2Chars::Benchmark::SystemInfo::get_cpu_info();
+    CJParse::Types::Object cpu_stuff{};
+
+    cpu_stuff["model name"] = cpu_infos.model_name;
+    cpu_stuff["microcode"] = cpu_infos.microcode;
+    cpu_stuff["cache size"] = cpu_infos.cache_size;
+    cpu_stuff["cache alignment"] = cpu_infos.cache_aligment;
+    cpu_stuff["minimum frequency"] = cpu_freqs.min;
+    cpu_stuff["maximum frequency"] = cpu_freqs.max;
+    cpu_stuff["average frequency"] = cpu_freqs.avg;
+
+    JSON.JSON = CJParse::CJParse::JsonValue{};
+    auto &json = JSON.JSON;
+
+    json["cpu info"] = cpu_stuff;
+    json["trials"] = TRIALS;
+    json["batch size"] = BATCHES;
+
     // exponenetial buffered
     {
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(0);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(1);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(2);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(5);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(8);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(10);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(20);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(50);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, float>(100);
+      constexpr auto FMT = FORMAT::EXPONENTIAL;
+      constexpr auto STORAGE = RETURN_TYPE::BUFFERED;
 
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(0);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(1);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(2);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(5);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(8);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(10);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(15);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(16);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(17);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(18);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(20);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(50);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(100);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(200);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(300);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(400);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::BUFFERED, double>(500);
-    }
-    // exponenetial return std::string
-    {
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(0);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(1);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(2);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(5);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(8);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(10);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(20);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(50);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, float>(100);
+      json["format"] = (FMT == FORMAT::EXPONENTIAL) ? "exponential" : "decimal";
+      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std::string";
+      json["yields"] = CJParse::Types::Array{};
 
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(0);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(1);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(2);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(5);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(8);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(10);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(15);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(16);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(17);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(18);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(20);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(50);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(100);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(200);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(300);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(400);
-      TestFloatingType<FORMAT::EXPONENTIAL, RETURN_TYPE::STD_STRING, double>(500);
+      for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
+      {
+        CJParse::Types::Object this_pres;
+
+        TestFloatingType<TRIALS, BATCHES, FMT, STORAGE, float>(this_pres["precision " + std::to_string(precision)], precision);
+
+        json["yields"].as_array().emplace_back(this_pres);
+      }
+
+      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+
+      json["yields"] = CJParse::Types::Array{};
+
+      for(const auto &precision : { 0, 1, 2, 5, 8, 10, 15, 16, 17, 18, 20, 50, 100, 150, 200, 250, 300, 400, 500 })
+      {
+        CJParse::Types::Object this_pres;
+
+        TestFloatingType<TRIALS, BATCHES, FMT, STORAGE, double>(this_pres["precision " + std::to_string(precision)], precision);
+
+        json["yields"].as_array().emplace_back(this_pres);
+      }
+
+      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
 
-    // fixed (aka decimal expansion) buffered
+    // digits buffered
     {
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(0);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(1);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(2);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(5);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(8);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(10);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(20);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(50);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, float>(100);
+      constexpr auto FMT = FORMAT::DECIMAL;
+      constexpr auto STORAGE = RETURN_TYPE::BUFFERED;
 
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(0);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(1);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(2);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(5);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(8);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(10);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(15);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(16);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(17);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(18);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(20);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(50);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(100);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(200);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(300);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(400);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::BUFFERED, double>(500);
+      json["format"] = (FMT == FORMAT::EXPONENTIAL) ? "exponential" : "decimal";
+      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std::string";
+      json["yields"] = CJParse::Types::Array{};
+
+      for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
+      {
+        CJParse::Types::Object this_pres;
+
+        TestFloatingType<TRIALS, BATCHES, FMT, STORAGE, float>(this_pres["precision " + std::to_string(precision)], precision);
+
+        json["yields"].as_array().emplace_back(this_pres);
+      }
+
+      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+
+      json["yields"] = CJParse::Types::Array{};
+
+      for(const auto &precision : { 0, 1, 2, 5, 8, 10, 15, 16, 17, 18, 20, 50, 100, 150, 200, 250, 300, 400, 500 })
+      {
+        CJParse::Types::Object this_pres;
+
+        TestFloatingType<TRIALS, BATCHES, FMT, STORAGE, double>(this_pres["precision " + std::to_string(precision)], precision);
+
+        json["yields"].as_array().emplace_back(this_pres);
+      }
+
+      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
 
-    // fixed (aka decimal expansion) return std::string
+    // exponenetial std::string
     {
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(0);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(1);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(2);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(5);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(8);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(10);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(20);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(50);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, float>(100);
+      constexpr auto FMT = FORMAT::EXPONENTIAL;
+      constexpr auto STORAGE = RETURN_TYPE::STD_STRING;
 
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(0);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(1);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(2);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(5);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(8);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(10);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(15);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(16);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(17);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(18);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(20);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(50);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(100);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(200);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(300);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(400);
-      TestFloatingType<FORMAT::DECIMAL, RETURN_TYPE::STD_STRING, double>(500);
+      json["format"] = (FMT == FORMAT::EXPONENTIAL) ? "exponential" : "decimal";
+      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std::string";
+      json["yields"] = CJParse::Types::Array{};
+
+      for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
+      {
+        CJParse::Types::Object this_pres;
+
+        TestFloatingType<TRIALS, BATCHES, FMT, STORAGE, float>(this_pres["precision " + std::to_string(precision)], precision);
+
+        json["yields"].as_array().emplace_back(this_pres);
+      }
+
+      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+
+      json["yields"] = CJParse::Types::Array{};
+
+      for(const auto &precision : { 0, 1, 2, 5, 8, 10, 15, 16, 17, 18, 20, 50, 100, 150, 200, 250, 300, 400, 500 })
+      {
+        CJParse::Types::Object this_pres;
+
+        TestFloatingType<TRIALS, BATCHES, FMT, STORAGE, double>(this_pres["precision " + std::to_string(precision)], precision);
+
+        json["yields"].as_array().emplace_back(this_pres);
+      }
+
+      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+    }
+
+    // digits std::string
+    {
+      constexpr auto FMT = FORMAT::DECIMAL;
+      constexpr auto STORAGE = RETURN_TYPE::STD_STRING;
+
+      json["format"] = (FMT == FORMAT::EXPONENTIAL) ? "exponential" : "decimal";
+      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std::string";
+      json["yields"] = CJParse::Types::Array{};
+
+      for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
+      {
+        CJParse::Types::Object this_pres;
+
+        TestFloatingType<TRIALS, BATCHES, FMT, STORAGE, float>(this_pres["precision " + std::to_string(precision)], precision);
+
+        json["yields"].as_array().emplace_back(this_pres);
+      }
+
+      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+
+      json["yields"] = CJParse::Types::Array{};
+
+      for(const auto &precision : { 0, 1, 2, 5, 8, 10, 15, 16, 17, 18, 20, 50, 100, 150, 200, 250, 300, 400, 500 })
+      {
+        CJParse::Types::Object this_pres;
+
+        TestFloatingType<TRIALS, BATCHES, FMT, STORAGE, double>(this_pres["precision " + std::to_string(precision)], precision);
+
+        json["yields"].as_array().emplace_back(this_pres);
+      }
+
+      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
   }
   catch(std::exception &exept)

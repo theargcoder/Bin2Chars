@@ -49,14 +49,11 @@ namespace
     }
   }
 
-  template <RETURN_TYPE RET, typename test_t>
+  template <size_t TRIALS, size_t BATCH, RETURN_TYPE RET, typename test_t>
     requires std::is_integral_v<test_t>
-  void TestIntegralType()
+  void TestIntegralType(CJParse::Types::JsonValue &json)
   {
     Bin2Chars::Benchmark::Measurements::PmuTimer timer;
-
-    constexpr size_t TRIALS = 100'000;
-    constexpr size_t BATCH = 1'000;
 
     std::vector<uint64_t> simdy_tsc(TRIALS), simdy_clk(TRIALS), simdy_ref(TRIALS);
     std::vector<uint64_t> std_tsc(TRIALS), std_clk(TRIALS), std_ref(TRIALS);
@@ -166,19 +163,12 @@ namespace
       std::this_thread::yield(); // so timer interrups 'can' (big enphasis on CAN) happen here instead of in the middle of measurements (hopefully)
     }
 
-    CJParse::CJParse json{ "null" };
-    json.JSON = CJParse::Types::Object{};
-
     Bin2Chars::Benchmark::PrintPmuResults(
-        test_t{}, json.JSON, "return <" + std::string(to_string(RET)) + "> - itoa", 0, BATCH,
+        test_t{}, json, std::string(to_string(RET)) + " itoa", 0, BATCH,
         Bin2Chars::Benchmark::PmuResult{
             .label = "BIN2CHARS", .tsc = simdy_tsc, .core = simdy_clk, .ref = simdy_ref, .empty_tsc = empty_tsc, .empty_core = empty_clk, .empty_ref = empty_ref },
         Bin2Chars::Benchmark::PmuResult{
             .label = "STD_LIB", .tsc = std_tsc, .core = std_clk, .ref = std_ref, .empty_tsc = empty_tsc, .empty_core = empty_clk, .empty_ref = empty_ref });
-
-    Bin2Chars::Benchmark::Store::File file{};
-
-    file.Store<to_string(RET), test_t>(json, false, 0);
   }
 } // namespace
 
@@ -186,27 +176,59 @@ int main(int /*unused*/, char ** /*unused*/)
 {
   try
   {
+    constexpr auto TRIALS = 100'000; // 100'000
+    constexpr auto BATCHES = 1'000;
+
+    // pin to a core to avoid cross-core TSC sync issues
     Bin2Chars::Benchmark::SystemInfo::cpu_id = 0;
-    // 1. Pin to a specific core to avoid cross-core TSC sync issues
     Bin2Chars::Helpers::Assembly::pin_thread_to_cpu(Bin2Chars::Benchmark::SystemInfo::cpu_id);
 
-    TestIntegralType<RETURN_TYPE::BUFFERED, int8_t>();
-    TestIntegralType<RETURN_TYPE::BUFFERED, uint8_t>();
-    TestIntegralType<RETURN_TYPE::BUFFERED, int16_t>();
-    TestIntegralType<RETURN_TYPE::BUFFERED, uint16_t>();
-    TestIntegralType<RETURN_TYPE::BUFFERED, int32_t>();
-    TestIntegralType<RETURN_TYPE::BUFFERED, uint32_t>();
-    TestIntegralType<RETURN_TYPE::BUFFERED, int64_t>();
-    TestIntegralType<RETURN_TYPE::BUFFERED, uint64_t>();
+    Bin2Chars::Benchmark::Store::File file{};
+    CJParse::CJParse JSON{ "null" };
 
-    TestIntegralType<RETURN_TYPE::STD_STRING, int8_t>();
-    TestIntegralType<RETURN_TYPE::STD_STRING, uint8_t>();
-    TestIntegralType<RETURN_TYPE::STD_STRING, int16_t>();
-    TestIntegralType<RETURN_TYPE::STD_STRING, uint16_t>();
-    TestIntegralType<RETURN_TYPE::STD_STRING, int32_t>();
-    TestIntegralType<RETURN_TYPE::STD_STRING, uint32_t>();
-    TestIntegralType<RETURN_TYPE::STD_STRING, int64_t>();
-    TestIntegralType<RETURN_TYPE::STD_STRING, uint64_t>();
+    const auto cpu_freqs = Bin2Chars::Benchmark::SystemInfo::get_cpu_freqs();
+    const auto cpu_infos = Bin2Chars::Benchmark::SystemInfo::get_cpu_info();
+    CJParse::Types::Object cpu_stuff{};
+
+    cpu_stuff["model name"] = cpu_infos.model_name;
+    cpu_stuff["microcode"] = cpu_infos.microcode;
+    cpu_stuff["cache size"] = cpu_infos.cache_size;
+    cpu_stuff["cache alignment"] = cpu_infos.cache_aligment;
+    cpu_stuff["minimum frequency"] = cpu_freqs.min;
+    cpu_stuff["maximum frequency"] = cpu_freqs.max;
+    cpu_stuff["average frequency"] = cpu_freqs.avg;
+
+    JSON.JSON = CJParse::CJParse::JsonValue{};
+    auto &json = JSON.JSON;
+
+    json["cpu info"] = cpu_stuff;
+    json["trials"] = TRIALS;
+    json["batch size"] = BATCHES;
+    json["yields"] = CJParse::Types::Array{};
+
+    CJParse::Types::Object obj;
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, int8_t>(obj["int8_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, uint8_t>(obj["uint8_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, int16_t>(obj["int16_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, uint16_t>(obj["uint16_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, int32_t>(obj["int32_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, uint32_t>(obj["uint32_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, int64_t>(obj["uint64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, uint64_t>(obj["uint64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+
+    file.Store<to_string(RETURN_TYPE::BUFFERED), uint64_t>(JSON, false);
+    json["yields"] = CJParse::Types::Array{};
+
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, int8_t>(obj["int8_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, uint8_t>(obj["uint8_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, int16_t>(obj["int16_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, uint16_t>(obj["uint16_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, int32_t>(obj["int32_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, uint32_t>(obj["uint32_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, int64_t>(obj["uint64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, uint64_t>(obj["uint64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+
+    file.Store<to_string(RETURN_TYPE::STD_STRING), uint64_t>(JSON, false);
   }
   catch(std::exception &exept)
   {

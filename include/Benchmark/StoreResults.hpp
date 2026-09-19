@@ -15,6 +15,7 @@
 #include <boost/type_index.hpp>
 
 #include <CJParse/include/CJParse.hpp>
+#include <type_traits>
 
 namespace Bin2Chars::Benchmark::Store
 {
@@ -81,29 +82,41 @@ namespace Bin2Chars::Benchmark::Store
     };
 
     template <const char *Benchmark, typename T>
-    void Store(const CJParse::CJParse &json, const bool EXPONENTIAL_NOTATION, const int &PRECISION)
+    void Store(const CJParse::CJParse &json, bool EXPONENTIAL_NOTATION)
     {
       std::fstream file;
       const std::string dir = (std::is_integral_v<T>) ? std::string{ "integers" } : std::string{ "floats/" } + ((EXPONENTIAL_NOTATION) ? "exponential" : "decimal");
-      const std::string f_name = "/" + ((std::is_integral_v<T>) ? get_pretty_name<T>() + ".json" : get_pretty_name<T>() + "_precision_" + std::to_string(PRECISION) + ".json");
+      const std::string f_name = (std::is_integral_v<T>) ? "all_integers.json" : get_pretty_name<T>() + ".json";
+
       path /= dir;
       path /= Benchmark;
 
       std::filesystem::create_directories(path);
 
-      path += f_name;
+      path /= f_name;
       file.open(path, std::ios::out);
       path.remove_filename();
-      path = path.parent_path(), path = path.parent_path(), path = path.parent_path(); // go back to original
+      if constexpr(std::is_floating_point_v<T>)
+      {
+        for(int i = 0; i < 4; i++)
+        {
+          path = path.parent_path();
+        }
+      }
+      else
+      {
+        for(int i = 0; i < 3; i++)
+        {
+          path = path.parent_path();
+        }
+      }
 
       if(file.is_open())
       {
         std::mutex mutex;
         std::scoped_lock lock(mutex);
 
-        const auto json_str_pretty = json.Dump(true);
-
-        file.write(json_str_pretty.c_str(), static_cast<std::streamsize>(json_str_pretty.size() - 1));
+        file << json.Dump(true);
         file.flush();
         file.close();
       }

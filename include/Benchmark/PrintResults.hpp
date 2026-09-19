@@ -155,29 +155,6 @@ namespace Bin2Chars::Benchmark
     // JSON
     // --------------------------------------------------------------------------
 
-    const auto cpu_freqs = Bin2Chars::Benchmark::SystemInfo::get_cpu_freqs();
-    const auto cpu_infos = Bin2Chars::Benchmark::SystemInfo::get_cpu_info();
-
-    auto &type_json = JSON[type_name];
-
-    type_json["action"] = ACTION;
-    type_json["precision"] = PRECISION;
-    type_json["batch"] = BATCH;
-    type_json["trials"] = trials;
-    {
-      CJParse::Types::Object cpu_stuff{};
-
-      cpu_stuff["model name"] = cpu_infos.model_name;
-      cpu_stuff["microcode"] = cpu_infos.microcode;
-      cpu_stuff["cache size"] = cpu_infos.cache_size;
-      cpu_stuff["cache alignment"] = cpu_infos.cache_aligment;
-      cpu_stuff["minimum frequency"] = cpu_freqs.min;
-      cpu_stuff["maximum frequency"] = cpu_freqs.max;
-      cpu_stuff["average frequency"] = cpu_freqs.avg;
-
-      type_json["cpu info"] = cpu_stuff;
-    }
-
     const auto metric_to_json = [](const PmuMetricStats &metric) -> CJParse::Types::Object
     {
       CJParse::Types::Object json{};
@@ -193,7 +170,7 @@ namespace Bin2Chars::Benchmark
 
     for(const auto &result : stats)
     {
-      auto &implementation = type_json[result.label];
+      auto &implementation = JSON[result.label];
 
       implementation["tsc"] = metric_to_json(result.tsc);
       implementation["core"] = metric_to_json(result.core);
