@@ -83,7 +83,7 @@ namespace
         err_ct++;
       }
     }
-  };
+  }
 
   template <typename Type>
   void lopper_format_exponential(const int &PRECISION, const bool &PLUS, const Type &DELIM, const Type &JUMP, uint64_t &test_ct, uint64_t &err_ct)
@@ -131,9 +131,10 @@ namespace
         err_ct++;
       }
     }
-  };
+  }
 
-  const auto tester_format_exponential = []<typename T>(const T &bannana, const int &PRECISION)
+  template <typename T>
+  auto tester_format_exponential(const T &bannana, const int &PRECISION)
   {
     const constexpr auto MIN = std::numeric_limits<T>::min();
     const constexpr auto DENORM = std::numeric_limits<T>::denorm_min();
@@ -191,7 +192,7 @@ namespace
     fuzzer_format_exponential(bannana, PRECISION, test_ct, err_ct);
 
     return std::make_tuple(test_ct, err_ct);
-  };
+  }
 
   template <typename T>
     requires std::is_floating_point_v<T>

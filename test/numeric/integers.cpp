@@ -32,10 +32,11 @@ namespace
     // for debug tests take WAY too long so make em speedy
     const constexpr auto SAMPLES = 200'000;
 #endif
+    using cond_t = std::conditional_t<sizeof(Type) == 1, std::conditional_t<std::is_signed_v<Type>, int16_t, uint16_t>, Type>;
 
     // Fixed seed so test failures are 100% reproducible
     std::mt19937_64 rng(166'543'456);
-    std::uniform_int_distribution<Type> dist(0, std::numeric_limits<Type>::max());
+    std::uniform_int_distribution<cond_t> dist(0, std::numeric_limits<Type>::max());
 
     size_t errors = 0;
     const constexpr size_t MAX_ERRORS = 10;
@@ -44,7 +45,7 @@ namespace
     for(size_t i = 0; i < SAMPLES && errors < MAX_ERRORS; ++i)
     {
       test_ct++;
-      const Type val = dist(rng);
+      const Type val = static_cast<Type>(dist(rng));
 
       std_log = Bin2Chars::Numeric::Std::to_string<false, Type>(static_cast<Type>(val), 123);
       std_lib_to_str_log = std::to_string(static_cast<Type>(val));
@@ -63,7 +64,7 @@ namespace
         err_ct++;
       }
     }
-  };
+  }
 
   template <uint64_t N, typename Type>
   void looper_ints(const bool &PLUS, const Type &DELIM, const Type &JUMP, uint64_t &test_ct, uint64_t &err_ct)

@@ -49,7 +49,7 @@ namespace
         err_ct++;
       }
     }
-  };
+  }
 
   template <uint64_t N, typename Type>
   void looper_magic_modulus(const bool &PLUS, const Type &DELIM, const Type &JUMP, uint64_t &test_ct, uint64_t &err_ct)
@@ -79,7 +79,7 @@ namespace
         err_ct++;
       }
     }
-  };
+  }
 
   template <uint64_t N, typename T>
   auto tester_magic_division(const T &)

@@ -119,7 +119,7 @@ namespace Bin2Chars::Benchmark::SystemInfo
 
   constexpr std::string get_simd()
   {
-#if defined(__AVX512__)
+#if defined(__AVX512BW__) && defined(__AVX512VL__)
     return "AVX512";
 #elif defined(__AVX2__)
     return "AVX2";
