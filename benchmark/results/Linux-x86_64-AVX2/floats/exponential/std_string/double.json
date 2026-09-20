@@ -11,7 +11,7 @@
   },
   "format": "exponential",
   "trials": 100000,
-  "type": "std::string",
+  "type": "std_string",
   "yields": [
     {
       "precision 0": {

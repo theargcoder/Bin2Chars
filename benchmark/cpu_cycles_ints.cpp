@@ -213,7 +213,7 @@ int main(int /*unused*/, char ** /*unused*/)
     TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, uint16_t>(obj["uint16_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
     TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, int32_t>(obj["int32_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
     TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, uint32_t>(obj["uint32_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
-    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, int64_t>(obj["uint64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, int64_t>(obj["int64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
     TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::BUFFERED, uint64_t>(obj["uint64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
 
     file.Store<to_string(RETURN_TYPE::BUFFERED), uint64_t>(JSON, false);
@@ -225,7 +225,7 @@ int main(int /*unused*/, char ** /*unused*/)
     TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, uint16_t>(obj["uint16_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
     TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, int32_t>(obj["int32_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
     TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, uint32_t>(obj["uint32_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
-    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, int64_t>(obj["uint64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
+    TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, int64_t>(obj["int64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
     TestIntegralType<TRIALS, BATCHES, RETURN_TYPE::STD_STRING, uint64_t>(obj["uint64_t"]), json["yields"].as_array().emplace_back(obj), obj.clear();
 
     file.Store<to_string(RETURN_TYPE::STD_STRING), uint64_t>(JSON, false);

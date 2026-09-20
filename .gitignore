@@ -8,6 +8,9 @@
 # MacOS garbage
 .DS_Store
 
+# Python garbage
+**/__pycache__/
+
 # Prerequisites
 *.d
 

@@ -311,7 +311,7 @@ int main(int /*unused*/, char ** /*unused*/)
       constexpr auto STORAGE = RETURN_TYPE::BUFFERED;
 
       json["format"] = (FMT == FORMAT::EXPONENTIAL) ? "exponential" : "decimal";
-      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std::string";
+      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std_string";
       json["yields"] = CJParse::Types::Array{};
 
       for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
@@ -345,7 +345,7 @@ int main(int /*unused*/, char ** /*unused*/)
       constexpr auto STORAGE = RETURN_TYPE::BUFFERED;
 
       json["format"] = (FMT == FORMAT::EXPONENTIAL) ? "exponential" : "decimal";
-      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std::string";
+      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std_string";
       json["yields"] = CJParse::Types::Array{};
 
       for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
@@ -379,7 +379,7 @@ int main(int /*unused*/, char ** /*unused*/)
       constexpr auto STORAGE = RETURN_TYPE::STD_STRING;
 
       json["format"] = (FMT == FORMAT::EXPONENTIAL) ? "exponential" : "decimal";
-      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std::string";
+      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std_string";
       json["yields"] = CJParse::Types::Array{};
 
       for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
@@ -413,7 +413,7 @@ int main(int /*unused*/, char ** /*unused*/)
       constexpr auto STORAGE = RETURN_TYPE::STD_STRING;
 
       json["format"] = (FMT == FORMAT::EXPONENTIAL) ? "exponential" : "decimal";
-      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std::string";
+      json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std_string";
       json["yields"] = CJParse::Types::Array{};
 
       for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
