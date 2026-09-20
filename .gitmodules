@@ -1,3 +1,7 @@
 [submodule "ryu"]
 	path = ryu
 	url = git@github.com:ulfjack/ryu.git
+[submodule "CJParse"]
+	path = CJParse
+	url = https://github.com/theargcoder/CJParse.git
+	branch = main

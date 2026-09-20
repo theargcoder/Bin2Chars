@@ -67,7 +67,7 @@ The test suite covers:
 * Boundary values and type limits
 * Cross-checking against reference implementations
 
-### Testing and CI 
+## Testing and CI 
 
 
 The CI pipeline builds and executes the test suite on every relevant change.
@@ -82,7 +82,7 @@ A green CI result means the tested platform+platform: configuration, compilation
 
 ---
 
-### Performance and Benchmark results
+## Performance and Benchmark results
 
 Performance comparisons are made against the standard library implementation available on the tested platform, including the relevant `libstdc++`, `libc++`, or MSVC STL implementation.
 
@@ -93,42 +93,128 @@ More of the theory and detailed procedures for the benchmarks can be found in /b
 
 > Compiling in Release :
 
-| Type                        | Bin2Chars    | Standard library | Relative performance |
-| --------------------------- | ------------ | ---------------- | -------------------- |
-| `int8_t`                    | CI benchmark | CI benchmark     | CI benchmark         |
-| `uint8_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
-| `int16_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
-| `uint16_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
-| `int32_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
-| `uint32_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
-| `int64_t`                   | CI benchmark | CI benchmark     | CI benchmark         |
-| `uint64_t`                  | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 0`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 1`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 2`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 5`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 8`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 10`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 20`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 50`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `float`   `precision 100`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 0`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 1`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 2`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 5`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 8`     | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 10`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 15`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 16`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 17`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 18`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 20`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 50`    | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 100`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 200`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 300`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 400`   | CI benchmark | CI benchmark     | CI benchmark         |
-| `double`  `precision 500`   | CI benchmark | CI benchmark     | CI benchmark         |
+<!-- BENCHMARK_SUMMARY:START -->
+## Performance
+
+Benchmark summaries are generated directly from the benchmark JSON artifacts. Relative performance uses the **median core** measurement.
+
+<details>
+<summary><strong>Linux-x86_64-AVX2</strong> — Intel(R) Core(TM) i5-5250U CPU @ 1.60GHz</summary>
+
+<dl>
+<dd>
+
+<details>
+<summary><strong>CPU information</strong></summary>
+
+| Property | Value |
+| :--- | :--- |
+| CPU | `Intel(R) Core(TM) i5-5250U CPU @ 1.60GHz` |
+| Cache | `3072 KB` |
+| Cache alignment | `64` |
+| Microcode | `0x2f` |
+| Trials | `100000` |
+| Batch size | `1000` |
+
+</details>
+
+<details>
+<summary><strong>Integer</strong></summary>
+
+<dl>
+<dd>
+
+<a id="benchmark-linux-x86-64-avx2-integer-buffered"></a>
+#### Buffered
+
+| Baseline | Relative performance |
+| :--- | ---: |
+| Standard library | [1.688×](benchmark/README.md#benchmark-linux-x86-64-avx2-integer-buffered) Standard library |
+
+<a id="benchmark-linux-x86-64-avx2-integer-std-string"></a>
+#### `std::string`
+
+| Baseline | Relative performance |
+| :--- | ---: |
+| Standard library | [1.628×](benchmark/README.md#benchmark-linux-x86-64-avx2-integer-std-string) Standard library |
+
+</dd>
+</dl>
+
+</details>
+
+<details>
+<summary><strong>Floating point</strong></summary>
+
+<dl>
+<dd>
+
+<details>
+<summary><strong>Decimal notation</strong></summary>
+
+<dl>
+<dd>
+
+<a id="benchmark-linux-x86-64-avx2-floating-decimal-buffered"></a>
+#### Buffered
+
+| Type | 0–10 | 11–30 | 31–100 | 101–300 | 301–500 | 501+ |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `float` | [1.241×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Standard library<br>[1.000×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Ryu | [1.176×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Standard library<br>[0.969×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Ryu | [1.031×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Standard library<br>[0.912×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Ryu | — | — | — |
+| `double` | [0.708×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Standard library<br>[0.647×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Ryu | [0.703×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Standard library<br>[0.640×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Ryu | [0.708×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Standard library<br>[0.648×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Ryu | [0.701×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Standard library<br>[0.647×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Ryu | [0.683×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Standard library<br>[0.641×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-buffered) Ryu | — |
+
+<a id="benchmark-linux-x86-64-avx2-floating-decimal-std-string"></a>
+#### `std::string`
+
+| Type | 0–10 | 11–30 | 31–100 | 101–300 | 301–500 | 501+ |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `float` | [1.220×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Standard library<br>[0.992×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Ryu | [1.142×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Standard library<br>[0.963×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Ryu | [1.030×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Standard library<br>[0.921×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Ryu | — | — | — |
+| `double` | [0.722×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Standard library<br>[0.656×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Ryu | [0.732×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Standard library<br>[0.666×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Ryu | [0.738×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Standard library<br>[0.670×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Ryu | [0.719×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Standard library<br>[0.662×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Ryu | [0.704×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Standard library<br>[0.657×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-decimal-std-string) Ryu | — |
+
+</dd>
+</dl>
+
+</details>
+
+<details>
+<summary><strong>Exponential notation</strong></summary>
+
+<dl>
+<dd>
+
+<a id="benchmark-linux-x86-64-avx2-floating-exponential-buffered"></a>
+#### Buffered
+
+| Type | 0–10 | 11–30 | 31–100 | 101–300 | 301–500 | 501+ |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `float` | [1.250×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Standard library<br>[1.014×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Ryu | [1.178×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Standard library<br>[0.991×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Ryu | [1.194×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Standard library<br>[1.104×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Ryu | — | — | — |
+| `double` | [1.198×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Standard library<br>[0.934×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Ryu | [1.091×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Standard library<br>[0.880×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Ryu | [0.851×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Standard library<br>[0.746×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Ryu | [0.766×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Standard library<br>[0.713×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Ryu | [0.759×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Standard library<br>[0.733×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-buffered) Ryu | — |
+
+<a id="benchmark-linux-x86-64-avx2-floating-exponential-std-string"></a>
+#### `std::string`
+
+| Type | 0–10 | 11–30 | 31–100 | 101–300 | 301–500 | 501+ |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: |
+| `float` | [1.233×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Standard library<br>[1.023×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Ryu | [1.169×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Standard library<br>[0.989×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Ryu | [1.219×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Standard library<br>[1.105×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Ryu | — | — | — |
+| `double` | [1.183×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Standard library<br>[0.956×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Ryu | [1.096×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Standard library<br>[0.900×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Ryu | [0.899×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Standard library<br>[0.766×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Ryu | [0.770×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Standard library<br>[0.718×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Ryu | [0.762×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Standard library<br>[0.740×](benchmark/README.md#benchmark-linux-x86-64-avx2-floating-exponential-std-string) Ryu | — |
+
+</dd>
+</dl>
+
+</details>
+
+</dd>
+</dl>
+
+</details>
+
+</dd>
+</dl>
+
+[View complete benchmark data →](benchmark/README.md)
+
+</details>
+<!-- BENCHMARK_SUMMARY:END -->
 
 ---
 

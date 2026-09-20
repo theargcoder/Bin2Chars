@@ -3,16 +3,17 @@
 #include <boost/test/unit_test.hpp>
 #include <boost/test/unit_test_suite.hpp>
 
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
 #include <limits>
+#include <locale>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 #include <utility>
 
-#include "include/Helpers/Assembly.hpp"
 #include "include/Helpers/Math.hpp"
 #include "include/Helpers/Tests.hpp"
 
@@ -22,9 +23,9 @@ namespace
 {
 
   template <uint64_t N, typename Type>
-  void looper_magic_division(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles)
+  void looper_magic_division(const bool &PLUS, const Type &DELIM, const Type &JUMP, uint64_t &test_ct, uint64_t &err_ct)
   {
-    const constexpr auto WISHED_RANGE = 100'000;
+    const constexpr auto WISHED_RANGE = 1'000'000;
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
     const constexpr Type RANGE = WISHED_RANGE < MAX_NUM ? static_cast<Type>(WISHED_RANGE) : MAX_NUM;
     const constexpr Type MAX_ERRORS = 10;
@@ -34,18 +35,9 @@ namespace
     for(Type value = DELIM, errors = 0, max_iter = 0; ((PLUS) ? value < DELIM + RANGE : value > DELIM - RANGE) && errors < MAX_ERRORS && max_iter < RANGE;
         (PLUS) ? value = static_cast<Type>(value + JUMP) : value = static_cast<Type>(value - JUMP), max_iter++)
     {
-      const auto st_log = Bin2Chars::Helpers::Assembly::timer_start();
+      test_ct++;
       const Type our_div_10 = Bin2Chars::Helpers::Math::Magic::Division::div_by_10_pow_n<N>(value);
-      const auto en_log = Bin2Chars::Helpers::Assembly::timer_end();
-
-      const auto st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
       const Type regular_div_10 = static_cast<Type>(value / divisor);
-      const auto en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
-
-      bin2chars_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
-      bin2chars_cpu_cycles += en_log - st_log;
-      std_lib_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_std_to_str - st_std_to_str));
-      std_lib_cpu_cycles += en_std_to_str - st_std_to_str;
 
       if(our_div_10 != regular_div_10)
       {
@@ -54,14 +46,15 @@ namespace
                              LogHexStr("regular IDIV got", std::to_string(regular_div_10)));
 
         errors++;
+        err_ct++;
       }
     }
   };
 
   template <uint64_t N, typename Type>
-  void looper_magic_modulus(const bool &PLUS, const Type &DELIM, const Type &JUMP, auto &bin2chars_time, auto &bin2chars_cpu_cycles, auto &std_lib_time, auto &std_lib_cpu_cycles)
+  void looper_magic_modulus(const bool &PLUS, const Type &DELIM, const Type &JUMP, uint64_t &test_ct, uint64_t &err_ct)
   {
-    const constexpr auto WISHED_RANGE = 100'000;
+    const constexpr auto WISHED_RANGE = 1'000'000;
     const constexpr auto MAX_NUM = std::numeric_limits<Type>::max();
     const constexpr Type RANGE = WISHED_RANGE < MAX_NUM ? static_cast<Type>(WISHED_RANGE) : MAX_NUM;
     const constexpr Type MAX_ERRORS = 10;
@@ -71,18 +64,10 @@ namespace
     for(Type value = DELIM, errors = 0, max_iter = 0; ((PLUS) ? value < DELIM + RANGE : value > DELIM - RANGE) && errors < MAX_ERRORS && max_iter < RANGE;
         (PLUS) ? value = static_cast<Type>(value + JUMP) : value = static_cast<Type>(value - JUMP), max_iter++)
     {
-      const uint64_t st_log = Bin2Chars::Helpers::Assembly::timer_start();
+      test_ct++;
       const Type our_div_10 = Bin2Chars::Helpers::Math::Magic::Modulo::mod_by_10_pow_n<N>(value);
-      const uint64_t en_log = Bin2Chars::Helpers::Assembly::timer_end();
 
-      const uint64_t st_std_to_str = Bin2Chars::Helpers::Assembly::timer_start();
       const Type regular_div_10 = static_cast<Type>(value % divisor);
-      const uint64_t en_std_to_str = Bin2Chars::Helpers::Assembly::timer_end();
-
-      bin2chars_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_log - st_log));
-      bin2chars_cpu_cycles += en_log - st_log;
-      std_lib_time += std::chrono::duration_cast<std::chrono::nanoseconds>(static_cast<std::chrono::nanoseconds>(en_std_to_str - st_std_to_str));
-      std_lib_cpu_cycles += en_std_to_str - st_std_to_str;
 
       if(our_div_10 != regular_div_10)
       {
@@ -91,137 +76,164 @@ namespace
                              LogHexStr("regular IDIV got", std::to_string(regular_div_10)));
 
         errors++;
+        err_ct++;
       }
     }
   };
 
   template <uint64_t N, typename T>
-  auto tester_magic_division(const T &) -> auto
+  auto tester_magic_division(const T &)
   {
-    std::chrono::nanoseconds helpers_math_magic_took{ 0 };
-    std::chrono::nanoseconds regular_idiv_instruction_took{ 0 };
-    uint64_t helpers_math_cpu_cycles{ 0 };
-    uint64_t std_lib_cpu_cycles{ 0 };
+    uint64_t test_ct{ 0 }, err_ct{ 0 };
 
     const constexpr auto MIN = std::numeric_limits<T>::min();
     const constexpr auto MAX = std::numeric_limits<T>::max();
     const constexpr T UNIT = T{ 1 };
 
     // ---- Extremes and Zero Region ----
-    looper_magic_division<N, T>(true, MIN, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_division<N, T>(false, MAX, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_division<N, T>(true, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_division<N, T>(false, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_division<N, T>(true, MIN, UNIT, test_ct, err_ct);
+    looper_magic_division<N, T>(false, MAX, UNIT, test_ct, err_ct);
+    looper_magic_division<N, T>(true, T{ 0 }, UNIT, test_ct, err_ct);
+    looper_magic_division<N, T>(false, T{ 0 }, UNIT, test_ct, err_ct);
 
     // ---- Around powers of two (Bit boundaries) ----
     for(int e = 1; e < std::numeric_limits<T>::digits; ++e)
     {
       const T val = static_cast<T>(UNIT << e);
-      looper_magic_division<N, T>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_division<N, T>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_division<N, T>(true, val, UNIT, test_ct, err_ct);
+      looper_magic_division<N, T>(false, val, UNIT, test_ct, err_ct);
     }
 
     // ---- Around powers of ten (String length boundaries) ----
     for(T val = 10; val > 0 && val < static_cast<T>(MAX / 10); val = static_cast<T>(val * 10))
     {
-      looper_magic_division<N, T>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_division<N, T>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_division<N, T>(true, val, UNIT, test_ct, err_ct);
+      looper_magic_division<N, T>(false, val, UNIT, test_ct, err_ct);
     }
 
     // ---- Large magnitude sweeps (Sparse) ----
     if constexpr(sizeof(T) >= 4)
     {
-      looper_magic_division<N, T>(true, MIN / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_division<N, T>(false, MAX / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_division<N, T>(true, MIN / 2, T{ 123 }, test_ct, err_ct);
+      looper_magic_division<N, T>(false, MAX / 2, T{ 123 }, test_ct, err_ct);
     }
 
     // ---- Randomish coverage ----
-    looper_magic_division<N, T>(true, T{ MAX / T{ 10 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_division<N, T>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_division<N, T>(true, T{ MAX / T{ 10 } }, UNIT, test_ct, err_ct);
+    looper_magic_division<N, T>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, test_ct, err_ct);
 
-    return std::make_tuple(helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    return std::make_tuple(test_ct, err_ct);
   }
 
   template <uint64_t N, typename T>
   auto tester_magic_modulus(const T &) -> auto
   {
-    std::chrono::nanoseconds helpers_math_magic_took{ 0 };
-    std::chrono::nanoseconds regular_idiv_instruction_took{ 0 };
-    uint64_t helpers_math_cpu_cycles{ 0 };
-    uint64_t std_lib_cpu_cycles{ 0 };
+    uint64_t test_ct{ 0 }, err_ct{ 0 };
 
     const constexpr auto MIN = std::numeric_limits<T>::min();
     const constexpr auto MAX = std::numeric_limits<T>::max();
     const constexpr T UNIT = T{ 1 };
 
     // ---- Extremes and Zero Region ----
-    looper_magic_modulus<N, T>(true, MIN, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_modulus<N, T>(false, MAX, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_modulus<N, T>(true, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_modulus<N, T>(false, T{ 0 }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_modulus<N, T>(true, MIN, UNIT, test_ct, err_ct);
+    looper_magic_modulus<N, T>(false, MAX, UNIT, test_ct, err_ct);
+    looper_magic_modulus<N, T>(true, T{ 0 }, UNIT, test_ct, err_ct);
+    looper_magic_modulus<N, T>(false, T{ 0 }, UNIT, test_ct, err_ct);
 
     // ---- Around powers of two (Bit boundaries) ----
     for(int e = 1; e < std::numeric_limits<T>::digits; ++e)
     {
       const T val = static_cast<T>(UNIT << e);
-      looper_magic_modulus<N, T>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_modulus<N, T>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_modulus<N, T>(true, val, UNIT, test_ct, err_ct);
+      looper_magic_modulus<N, T>(false, val, UNIT, test_ct, err_ct);
     }
 
     // ---- Around powers of ten (String length boundaries) ----
     for(T val = 10; val > 0 && val < static_cast<T>(MAX / 10); val = static_cast<T>(val * 10))
     {
-      looper_magic_modulus<N, T>(true, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_modulus<N, T>(false, val, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_modulus<N, T>(true, val, UNIT, test_ct, err_ct);
+      looper_magic_modulus<N, T>(false, val, UNIT, test_ct, err_ct);
     }
 
     // ---- Large magnitude sweeps (Sparse) ----
     if constexpr(sizeof(T) >= 4)
     {
-      looper_magic_modulus<N, T>(true, MIN / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-      looper_magic_modulus<N, T>(false, MAX / 2, T{ 123 }, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+      looper_magic_modulus<N, T>(true, MIN / 2, T{ 123 }, test_ct, err_ct);
+      looper_magic_modulus<N, T>(false, MAX / 2, T{ 123 }, test_ct, err_ct);
     }
 
     // ---- Randomish coverage ----
-    looper_magic_modulus<N, T>(true, T{ MAX / T{ 10 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-    looper_magic_modulus<N, T>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
+    looper_magic_modulus<N, T>(true, T{ MAX / T{ 10 } }, UNIT, test_ct, err_ct);
+    looper_magic_modulus<N, T>(false, T{ MAX / T{ 10 } * T{ 9 } }, UNIT, test_ct, err_ct);
 
-    return std::make_tuple(helpers_math_magic_took, helpers_math_cpu_cycles, regular_idiv_instruction_took, std_lib_cpu_cycles);
-  };
+    return std::make_tuple(test_ct, err_ct);
+  }
 
-  template <typename T, size_t... I>
+  template <typename T, std::size_t... Is>
     requires std::is_integral_v<T>
-  void test_and_benchmark_div_magic_impl(std::index_sequence<I...>)
+  void test_and_benchmark_div_magic_impl(const T &, std::index_sequence<Is...>)
   {
-    auto res = tester_magic_division<1>(T{ 0 });
-    ((res = tester_magic_division<I + 1>(T{ 0 }), log_time_tables(T{ 0 }, "DIVISION", I + 1, BenchResult("div_by_10_denom", std::get<0>(res), std::get<1>(res)),
-                                                                  BenchResult("IDIV instr", std::get<2>(res), std::get<3>(res)))),
-     ...);
-  };
+    const auto exec = [](auto ichar)
+    {
+      constexpr std::string_view RESET = "\033[0m";
+      constexpr std::string_view GREEN = "\033[32m";
+      constexpr std::string_view RED = "\033[31m";
+
+      constexpr std::size_t idx = decltype(ichar)::value;
+
+      const auto [test_ct, error_ct] = tester_magic_division<idx, T>(static_cast<T>(0));
+
+      const auto pretty_name = boost::typeindex::type_id<T>().pretty_name();
+
+      const std::locale us_locale("en_US.UTF-8");
+
+      std::cout << std::format(us_locale, "All {:L} modulo by 10^{} tests {} {} {} for type '{}'", test_ct, idx, (error_ct == 0) ? GREEN : RED,
+                               (error_ct == 0) ? "passed" : "failed", RESET, pretty_name)
+                << "\n";
+    };
+
+    (exec(std::integral_constant<std::size_t, Is + 1>{}), ...);
+  }
+
+  template <typename T, std::size_t... Is>
+    requires std::is_integral_v<T>
+  void test_and_benchmark_mod_magic_impl(const T &, std::index_sequence<Is...>)
+  {
+    const auto exec = [](auto ichar)
+    {
+      constexpr std::string_view RESET = "\033[0m";
+      constexpr std::string_view GREEN = "\033[32m";
+      constexpr std::string_view RED = "\033[31m";
+
+      constexpr std::size_t idx = decltype(ichar)::value;
+
+      const auto [test_ct, error_ct] = tester_magic_modulus<idx, T>(static_cast<T>(0));
+
+      const auto pretty_name = boost::typeindex::type_id<T>().pretty_name();
+
+      const std::locale us_locale("en_US.UTF-8");
+
+      std::cout << std::format(us_locale, "All {:L} modulo by 10^{} tests {} {} {} for type '{}'", test_ct, idx, (error_ct == 0) ? GREEN : RED,
+                               (error_ct == 0) ? "passed" : "failed", RESET, pretty_name)
+                << "\n";
+    };
+
+    (exec(std::integral_constant<std::size_t, Is + 1>{}), ...);
+  }
 
   template <typename T>
     requires std::is_integral_v<T>
-  void test_and_benchmark_div_magic(T)
+  void test_and_benchmark_div_magic(const T &)
   {
-    test_and_benchmark_div_magic_impl<T>(std::make_index_sequence<std::numeric_limits<T>::digits10>{});
-  };
-
-  template <typename T, size_t... I>
-    requires std::is_integral_v<T>
-  void test_and_benchmark_mod_magic_impl(std::index_sequence<I...>)
-  {
-    auto res = tester_magic_modulus<1>(T{ 0 });
-    ((res = tester_magic_modulus<I + 1>(T{ 0 }), log_time_tables<T>(T{ 0 }, "MODULO", I + 1, BenchResult("mod_by_10_denom", std::get<0>(res), std::get<1>(res)),
-                                                                    BenchResult("IMOD instr", std::get<2>(res), std::get<3>(res)))),
-     ...);
-  };
+    test_and_benchmark_div_magic_impl<T>(static_cast<T>(0), std::make_index_sequence<std::numeric_limits<T>::digits10>{});
+  }
 
   template <typename T>
     requires std::is_integral_v<T>
-  void test_and_benchmark_mod_magic(T)
+  void test_and_benchmark_mod_magic(const T &)
   {
-    test_and_benchmark_mod_magic_impl<T>(std::make_index_sequence<std::numeric_limits<T>::digits10>{});
-  };
+    test_and_benchmark_mod_magic_impl<T>(static_cast<T>(0), std::make_index_sequence<std::numeric_limits<T>::digits10>{});
+  }
 } // namespace
 
 BOOST_AUTO_TEST_CASE(test_all_integegral_v)

@@ -27,6 +27,23 @@ namespace Bin2Chars::Numeric::Integral
 #endif
   }
 
+  template <typename T>
+    requires(std::is_integral_v<T> && std::is_signed_v<T>)
+  static uint32_t ToStrBufferedReturnLen(char *buff, const T &input)
+  {
+    const bool neg = input < 0;
+    using UT = Helpers::Templating::Types::make_unsigned_t<T>;
+
+    const UT val = neg ? static_cast<UT>(~static_cast<UT>(input) + UT{ 1 }) : static_cast<UT>(input);
+
+    *buff = '-';
+#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
+    return Helpers::Simd::x86_64::WriteCharsToPtrFowardReturnLength<UT>(buff + static_cast<unsigned>(neg), val) + static_cast<unsigned>(neg);
+#elif defined(__ARM_NEON) || defined(__aarch64__)
+    return Helpers::Simd::ARM64::WriteCharsToPtrFowardReturnLength<UT>(buff + static_cast<unsigned>(neg), val) + static_cast<unsigned>(neg);
+#endif
+  }
+
   template <size_t Num, typename T>
     requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
   static uint32_t ToStrBufferedNumChars(char *buff, const T &input)
