@@ -91,7 +91,7 @@ namespace
           const auto current_num = random_inputs[idx];
           const auto len = Bin2Chars::Numeric::Integral::ToStrBufferedReturnLen(&buff[0], current_num);
           // Force compiler to materialize the result
-          asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "r"(len) : "memory");
+          asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "m"(len) : "memory");
         }
         else if constexpr(RET == RETURN_TYPE::STD_STRING)
         {
@@ -126,7 +126,7 @@ namespace
           const auto current_num = random_inputs[idx];
           const auto len = std::to_chars(&buff[0], &buff[64], current_num);
           // Force compiler to materialize the result
-          asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "r"(len) : "memory");
+          asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "m"(len) : "memory");
         }
         else if constexpr(RET == RETURN_TYPE::STD_STRING)
         {
