@@ -162,7 +162,7 @@ namespace
               res = std::to_chars(&buff[0], &buff[2048], current_num, std::chars_format::fixed, PRECISION);
             }
             // Force compiler to materialize the result
-            asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "r"(res) : "memory");
+            asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "m"(res) : "memory");
           }
           else if constexpr(RET == RETURN_TYPE::STD_STRING)
           {
@@ -213,7 +213,7 @@ namespace
               res = d2fixed_buffered_n(static_cast<double>(current_num), static_cast<unsigned>(PRECISION), &buff[0]);
             }
             // Force compiler to materialize the result
-            asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "r"(res) : "memory");
+            asm volatile("" : : "m"(*reinterpret_cast<char (*)[64]>(buff)), "m"(res) : "memory");
           }
           else if constexpr(RET == RETURN_TYPE::STD_STRING)
           {
@@ -455,5 +455,3 @@ int main()
 }
 
 #endif
-
-#undef BIN2CHARS_ALWAYS_INLINE

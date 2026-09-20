@@ -244,5 +244,3 @@ int main()
 }
 
 #endif
-
-#undef BIN2CHARS_ALWAYS_INLINE
