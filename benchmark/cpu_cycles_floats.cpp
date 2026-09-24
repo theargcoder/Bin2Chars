@@ -1,4 +1,4 @@
-#if (defined(__GNUG__) || defined(__GNUC__)) && defined(__x86_64__) && (defined(__AVX2__) || defined(__AVX512F__))
+#if defined(__GNUC__) && defined(__x86_64__) && (defined(__AVX2__) || defined(__AVX512F__))
 
 #include <charconv>
 #include <cstdint>
@@ -43,6 +43,8 @@ namespace
 
   extern const char buffered[] = "buffered";
   extern const char std_string[] = "std_string";
+  extern const char exponential[] = "exponential";
+  extern const char decimal[] = "decimal";
 
   // Companion free function
   constexpr const char *to_string(RETURN_TYPE c)
@@ -55,6 +57,20 @@ namespace
       return std_string;
     default:
       return std_string;
+    }
+  }
+
+  // Companion free function
+  constexpr const char *to_string(FORMAT c)
+  {
+    switch(c)
+    {
+    case FORMAT::EXPONENTIAL:
+      return exponential;
+    case FORMAT::DECIMAL:
+      return decimal;
+    default:
+      return exponential;
     }
   }
 
@@ -93,6 +109,8 @@ namespace
         {
           Bin2Chars::Helpers::Assembly::prefetch_elements<2048>(&buff[0]);
         }
+
+        Bin2Chars::Helpers::Assembly::prefetch_elements<BATCH>(&random_inputs[i]);
 
         const auto begin = timer.start();
 
@@ -145,6 +163,8 @@ namespace
           Bin2Chars::Helpers::Assembly::prefetch_elements<2048>(&buff[0]);
         }
 
+        Bin2Chars::Helpers::Assembly::prefetch_elements<BATCH>(&random_inputs[i]);
+
         const auto begin = timer.start();
 
         for(size_t j = 0, idx = i * BATCH; j < BATCH; j++, idx++)
@@ -195,6 +215,8 @@ namespace
         {
           Bin2Chars::Helpers::Assembly::prefetch_elements<2048>(&buff[0]);
         }
+
+        Bin2Chars::Helpers::Assembly::prefetch_elements<BATCH>(&random_inputs[i]);
 
         const auto begin = timer.start();
 
@@ -261,7 +283,7 @@ namespace
     }
 
     Bin2Chars::Benchmark::PrintPmuResults(
-        test_t{}, json, std::string(to_string(RET)) + " ftoa", PRECISION, BATCH,
+        test_t{}, json, std::string(to_string(RET)) + " " + to_string(FMT) + " ftoa", PRECISION, BATCH,
         Bin2Chars::Benchmark::PmuResult{
             .label = "BIN2CHARS", .tsc = simdy_tsc, .core = simdy_clk, .ref = simdy_ref, .empty_tsc = empty_tsc, .empty_core = empty_clk, .empty_ref = empty_ref },
         Bin2Chars::Benchmark::PmuResult{
@@ -276,7 +298,7 @@ int main(int /*unused*/, char ** /*unused*/)
 
   try
   {
-    constexpr auto TRIALS = 100'000; // 100'000
+    constexpr auto TRIALS = 25'000; // 100'000
     constexpr auto BATCHES = 1'000;
 
     // pin to a core to avoid cross-core TSC sync issues
@@ -305,6 +327,7 @@ int main(int /*unused*/, char ** /*unused*/)
     json["trials"] = TRIALS;
     json["batch size"] = BATCHES;
 
+    /*
     // exponenetial buffered
     {
       constexpr auto FMT = FORMAT::EXPONENTIAL;
@@ -323,7 +346,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+      // file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
 
       json["yields"] = CJParse::Types::Array{};
 
@@ -336,8 +359,9 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+      // file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
+    */
 
     // digits buffered
     {
@@ -348,6 +372,7 @@ int main(int /*unused*/, char ** /*unused*/)
       json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std_string";
       json["yields"] = CJParse::Types::Array{};
 
+      /*
       for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
       {
         CJParse::Types::Object this_pres;
@@ -356,8 +381,9 @@ int main(int /*unused*/, char ** /*unused*/)
 
         json["yields"].as_array().emplace_back(this_pres);
       }
+      */
 
-      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+      // file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
 
       json["yields"] = CJParse::Types::Array{};
 
@@ -370,7 +396,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+      // file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
 
     // exponenetial std::string
@@ -391,7 +417,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+      // file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
 
       json["yields"] = CJParse::Types::Array{};
 
@@ -404,7 +430,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+      // file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
 
     // digits std::string
@@ -425,7 +451,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+      // file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
 
       json["yields"] = CJParse::Types::Array{};
 
@@ -438,7 +464,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+      // file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
   }
   catch(std::exception &exept)

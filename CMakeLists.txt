@@ -430,7 +430,7 @@ if(IS_GCC OR IS_CLANG)
   elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
 
     add_compile_options(
-      -O2
+      -O3
       -g3
       -DNDEBUG
       -fno-omit-frame-pointer

@@ -1,4 +1,4 @@
-#if (defined(__GNUG__) || defined(__GNUC__)) && defined(__x86_64__) && (defined(__AVX2__) || defined(__AVX512F__))
+#if defined(__GNUC__) && defined(__x86_64__) && (defined(__AVX2__) || defined(__AVX512F__))
 
 #include <cstdint>
 #include <cstdio>
@@ -82,6 +82,8 @@ namespace
         Bin2Chars::Helpers::Assembly::prefetch_elements<64>(&buff[0]);
       }
 
+      Bin2Chars::Helpers::Assembly::prefetch_elements<BATCH>(&random_inputs[i]);
+
       const auto begin_simd = timer.start();
 
       for(size_t j = 0, idx = i * BATCH; j < BATCH; j++, idx++)
@@ -117,6 +119,7 @@ namespace
         Bin2Chars::Helpers::Assembly::prefetch_elements<64>(&buff[0]);
       }
 
+      Bin2Chars::Helpers::Assembly::prefetch_elements<BATCH>(&random_inputs[i]);
       const auto begin_std = timer.start();
 
       for(size_t j = 0, idx = i * BATCH; j < BATCH; j++, idx++)

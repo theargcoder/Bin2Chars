@@ -855,9 +855,6 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m256i prod = _mm256_mul_epu32(VAL, M_MAGIC_u64);
 
-      const unsigned len = calculate_len(input);
-      const unsigned lead_z = std::min(10U - len, MIN_LEAD_Z);
-
       const __m256i shifted = _mm256_srlv_epi64(prod, M_SHIFTS_u64);
       const __m128i shifted_64 = _mm256_castsi256_si128(_mm256_permutevar8x32_epi32(shifted, PERMUTE_SHF_64));
 
@@ -896,7 +893,7 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m128i ZERO_NUMS = _mm_setzero_si128();
       const __m128i ZERO_CHAR = _mm_set1_epi8('0');
-      const __m128i LEAD_Z_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z));
+      const __m128i LEAD_Z_LANES = _mm_set1_epi8(static_cast<int8_t>(MIN_LEAD_Z));
 
       const __m128i res_shf_blen_top = _mm_blend_epi16(res_shifted_top_x10, ZERO_NUMS, 0b0101'0101);
       const __m128i res_shf_blen_bot = _mm_blend_epi16(res_shifted_bot_x10, ZERO_NUMS, 0b0101'0101);
@@ -917,7 +914,7 @@ namespace Bin2Chars::Helpers::Simd
 
       _mm_storeu_si16(reinterpret_cast<void *>(buff + 8), top_top);
 
-      return std::max(len, MIN_LEN);
+      return MIN_LEN;
     }
 
 #else

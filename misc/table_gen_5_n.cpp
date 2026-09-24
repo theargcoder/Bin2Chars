@@ -2172,22 +2172,23 @@ int __main()
 #endif
 #endif
 
-int printer_arr_MSB_8_digs()
-// int main()
+// int printer_arr_MSB_9_digs()
+int main()
 {
   std::string accesors = "#include <cstdint> \n\n";
-  accesors += " constexpr uint32_t K_TO_POW_5_BOUNDARIES[] =  {\n";
-  std::string cache = " constexpr uint32_t POW_5_CACHE[] = { \n";
+  accesors += " constexpr uint16_t INDICES[] =  {\n";
+  std::string cache = " constexpr uint32_t TABLE[] = { \n";
 
-  constexpr unsigned NUM_WORDS = 96;
+  // 5^1074 has ~751 decimal digits. This requires 84 words in base-10^9.
+  // Using 85 for safety.
+  constexpr unsigned NUM_WORDS = 85;
+  constexpr uint32_t MOD_10E9 = 1'000'000'000U;
 
   unsigned k = 0, st_idx = 0;
   for(; k <= 1074; k++)
   {
     std::array<uint32_t, NUM_WORDS> NEW_ARR = { 0 };
     NEW_ARR[0] = 1; // Initialize 5^0 = 1
-    constexpr uint64_t MAGIC_10E8 = 1441151881ULL;
-    constexpr int SHIFT_10E8 = 57;
 
     // Main loop: Process in steps of 5^2 = 25 (halves total loop iterations)
     const uint32_t pairs = k / 2; // 537 passes of x25
@@ -2196,14 +2197,14 @@ int printer_arr_MSB_8_digs()
       uint32_t carry = 0;
       for(unsigned int &w : NEW_ARR)
       {
-        // Max pp = 99,999,999 * 25 + 24 = 2,499,999,999 (fits safely in 32-bit uint)
-        uint64_t pp = (uint64_t)w * 25U + carry;
+        // Max pp = 999,999,999 * 25 + 24 = ~2.5 * 10^10 (requires 64-bit uint)
+        uint64_t pp = static_cast<uint64_t>(w) * 25U + carry;
 
-        // Fast division by 10^8
-        carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
+        // Let the compiler synthesize the optimal 128-bit magic multiplication
+        carry = static_cast<uint32_t>(pp / MOD_10E9);
 
-        // Fast remainder: pp % 10^8
-        w = (uint32_t)(pp - carry * 100'000'000U);
+        // Fast remainder
+        w = static_cast<uint32_t>(pp - carry * MOD_10E9);
       }
     }
 
@@ -2213,9 +2214,9 @@ int printer_arr_MSB_8_digs()
       uint32_t carry = 0;
       for(unsigned int &w : NEW_ARR)
       {
-        uint64_t pp = (uint64_t)w * 5U + carry;
-        carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
-        w = (uint32_t)(pp - carry * 100'000'000U);
+        uint64_t pp = static_cast<uint64_t>(w) * 5U + carry;
+        carry = static_cast<uint32_t>(pp / MOD_10E9);
+        w = static_cast<uint32_t>(pp - carry * MOD_10E9);
       }
     }
 

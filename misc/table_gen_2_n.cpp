@@ -751,33 +751,35 @@ int not_main()
 #error "this algorithm is not supported for this architecture; this architecture is too old (pre __AVX2__)"
 #endif
 
-int printer_arr_MSB_8_digit()
-// int main()
+// int printer_arr_MSB_9_digit()
+int main()
 {
-  // 308 decimal digits require 39 base-10^8 words
-  constexpr unsigned NUM_WORDS = 39;
-  constexpr uint64_t MAGIC_10E8 = 1441151881ULL;
-  constexpr int SHIFT_10E8 = 57;
+  // 308 decimal digits require 35 base-10^9 words
+  constexpr unsigned NUM_WORDS = 35;
+  constexpr uint32_t MOD_10E9 = 1'000'000'000U;
 
   std::string accesors = "#include <cstdint> \n\n";
-  accesors += " constexpr uint16_t K_TO_POW_2_BOUNDARIES[] =  {\n";
-  std::string cache = " constexpr uint32_t POW_2_CACHE[] = { \n";
+  accesors += "static constexpr uint16_t INDICES[] =  {\n";
+  std::string cache = "static constexpr uint32_t TABLE[] = { \n";
 
-  int k = 0, st_idx = 0;
+  unsigned k = 0, st_idx = 0;
   for(; k <= 1024; k++)
   {
     std::array<uint32_t, NUM_WORDS> NEW_ARR = { 0 };
     NEW_ARR[0] = 1; // initialize 2^0 = 1
+
     // Loop k times (multiply by 32 in each iteration)
     unsigned i;
-    for(i = 0; i + 5 < k; i += 5)
+    for(i = 0; i + 5U < k; i += 5)
     {
       uint32_t carry = 0;
       for(unsigned int &w : NEW_ARR)
       {
-        uint64_t pp = ((uint64_t)w << 5U) + carry;
-        carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
-        w = (uint32_t)(pp - carry * 100'000'000U);
+        uint64_t pp = (static_cast<uint64_t>(w) << 5U) + carry;
+
+        // Let the compiler synthesize the optimal 128-bit magic multiplication
+        carry = static_cast<uint32_t>(pp / MOD_10E9);
+        w = static_cast<uint32_t>(pp - carry * MOD_10E9);
       }
     }
 
@@ -785,21 +787,21 @@ int printer_arr_MSB_8_digit()
     uint32_t carry = 0;
     for(unsigned int &w : NEW_ARR)
     {
-      uint64_t pp = ((uint64_t)w << miss) + carry;
-      carry = (uint32_t)((pp * MAGIC_10E8) >> SHIFT_10E8);
-      w = (uint32_t)(pp - carry * 100'000'000U);
+      uint64_t pp = (static_cast<uint64_t>(w) << miss) + carry;
+      carry = static_cast<uint32_t>(pp / MOD_10E9);
+      w = static_cast<uint32_t>(pp - carry * MOD_10E9);
     }
 
     // Find most significant non-zero chunk
     int top_word = NUM_WORDS - 1;
-    while(top_word > 0 && NEW_ARR[top_word] == 0)
+    while(top_word > 0 && NEW_ARR[static_cast<unsigned>(top_word)] == 0U)
     {
       --top_word;
     }
 
     accesors += std::to_string(st_idx);
     accesors += ", ";
-    st_idx += top_word + 1;
+    st_idx += static_cast<unsigned>(top_word + 1);
 
     cache += " // ";
     cache += " k = ";
@@ -824,7 +826,7 @@ int printer_arr_MSB_8_digit()
         }
         xx = 0, yy++;
       }
-      cache += std::to_string(NEW_ARR[w]);
+      cache += std::to_string(NEW_ARR[static_cast<unsigned>(w)]);
       cache += ", ";
       xx++;
     }
@@ -833,6 +835,7 @@ int printer_arr_MSB_8_digit()
     cache += " - anotherone \n";
     cache += "\n";
   }
+
   accesors += std::to_string(st_idx);
   accesors += "};\n";
   cache += "};\n";
