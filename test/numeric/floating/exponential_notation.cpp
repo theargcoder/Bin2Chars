@@ -1,20 +1,19 @@
-#include <iostream>
-#include <locale>
-#include <string_view>
 #define BOOST_TEST_MODULE ExponentialNotationTest
 #include <boost/test/tools/old/interface.hpp>
 #include <boost/test/unit_test.hpp>
 #include <boost/test/unit_test_suite.hpp>
 
 #include <bit>
-#include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <iostream>
 #include <limits>
+#include <locale>
 #include <random>
 #include <string>
+#include <string_view>
 #include <tuple>
 #include <type_traits>
 

@@ -1,0 +1,2 @@
+## for floats benchmark
+sudo perf record -e cycles,cache-misses,branch-misses -e sched:sched_switch -C 0 --switch-events --sample-cpu -m 8M --aio -z --call-graph dwarf ./benchmark/cpu_cycles_benchmark_floats

@@ -12,7 +12,6 @@
 #include "include/Algos/Integer.hpp"
 #include "include/Helpers/Assembly.hpp"
 #include "include/Helpers/Math.hpp"
-#include "include/Helpers/Simd.hpp"
 #include "include/Helpers/Templating.hpp"
 
 #include "include/Tables/array_2n.hpp"
@@ -24,14 +23,14 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
   static unsigned ToStrWriteBuffReturnLen(char *buff, const T &input, int PRECISION)
   {
-    if(PRECISION < 0) // UB if negative precision
+    if(PRECISION < 0) [[unlikely]] // UB if negative precision
     {
       std::terminate();
     }
 
     using base_t = uint64_t;
 
-    const constexpr unsigned DEC8 = 100'000'000U;
+    const constexpr unsigned DEC9 = 1'000'000'000U;
 
     unsigned len = 0;
     uint8_t sign;
@@ -66,33 +65,24 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     }
 
     const int abs_exp = std::abs(exp);
-    const int pos_exp = (exp >= 0) ? exp : 0;
+    const bool is_pos = exp >= 0;
 
-    const uint32_t neg_idx_beg = Bin2Chars::Tables::NegativeExponent::INDICES[abs_exp];
-    const uint32_t neg_idx_end = Bin2Chars::Tables::NegativeExponent::INDICES[abs_exp + 1];
+    const uint16_t *idx_ptr = (is_pos) ? Bin2Chars::Tables::PositiveExponent::INDICES : Bin2Chars::Tables::NegativeExponent::INDICES;
+    const uint32_t *table_ptr = (is_pos) ? Bin2Chars::Tables::PositiveExponent::TABLE : Bin2Chars::Tables::NegativeExponent::TABLE;
+    const uint32_t idx_beg = *(idx_ptr + abs_exp);
+    const uint32_t idx_end = *(idx_ptr + abs_exp + 1);
 
-    const uint32_t pos_idx_beg = Bin2Chars::Tables::PositiveExponent::INDICES[pos_exp];
-    const uint32_t pos_idx_end = Bin2Chars::Tables::PositiveExponent::INDICES[pos_exp + 1];
-
-    const uint32_t *it_beg = (exp < 0) ? &Bin2Chars::Tables::NegativeExponent::TABLE[neg_idx_beg] : &Bin2Chars::Tables::PositiveExponent::TABLE[pos_idx_beg];
-    const uint32_t *it_end = (exp < 0) ? &Bin2Chars::Tables::NegativeExponent::TABLE[neg_idx_end] : &Bin2Chars::Tables::PositiveExponent::TABLE[pos_idx_end];
-
+    const uint32_t *it_beg = table_ptr + idx_beg;
+    const uint32_t *it_end = table_ptr + idx_end;
     const uint32_t *it = it_end - 1;
 
-    // prefetch both to avoid branching and since it will only ocuppy ~7 cache lines its fine
-    Helpers::Assembly::prefetch_elements<96>(&Bin2Chars::Tables::NegativeExponent::TABLE[neg_idx_beg]);
-    Helpers::Assembly::prefetch_elements<39>(&Bin2Chars::Tables::PositiveExponent::TABLE[pos_idx_beg]);
-
-    unsigned start_idx = 0;
-    if(sign != 0)
-    {
-      buff[len++] = '-';
-      start_idx++;
-    }
+    unsigned start_idx = sign;
+    buff[len] = '-';
+    len += sign;
 
     const int n_limbs = static_cast<int>(it_end - it_beg - 1);
 
-    int exp_base_10 = (n_limbs << 3U) - (exp < 0 ? abs_exp : 0) - 1;
+    int exp_base_10 = (n_limbs * 9) - (exp < 0 ? abs_exp : 0) - 1;
 
     uint32_t digs;
     base_t frac;
@@ -102,7 +92,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     exp_base_10 += actual_digits;
 
     int precision_missing;
-    unsigned rem, len_written, int_len;
+    unsigned len_written, int_len;
 
     if(exp_base_10 >= 0)
     {
@@ -131,7 +121,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
         base_t dec_lo;
         uint32_t dec_hi;
-        Helpers::Assembly::umul64x32_96(frac, DEC8, dec_lo, dec_hi);
+        Helpers::Assembly::umul64x32_96(frac, DEC9, dec_lo, dec_hi);
 
         const base_t total_lo = dec_lo + curr_prod_lo;
         const base_t carry = total_lo < dec_lo ? 1U : 0U;
@@ -139,9 +129,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         digs = dec_hi + curr_prod_hi + static_cast<uint32_t>(carry);
         frac = total_lo;
 
-        Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
-
-        if(digs != 0)
+        if(digs > 999'999'999)
         {
           int i = static_cast<int>(len) - 1;
           const int ST = static_cast<int>(start_idx);
@@ -160,17 +148,16 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
           if(i < ST) // rippled all the way to hell
           {
-            std::memmove(&buff[ST + 1], &buff[ST], len - start_idx); // move the full expansion down 1 slot
-            buff[start_idx] = '1';                                   // add the leading zero
-            len++;
+            buff[len++] = '0';     // one digit more
+            buff[start_idx] = '1'; // add the leading zero
             exp_base_10++;
             int_len++;
           }
         }
 
-        Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], rem);
-        len += 8;
-        precision_missing -= 8;
+        Bin2Chars::Numeric::Integral::ToStrBufferedExactlyNumChars<9>(&buff[len], digs);
+        len += 9;
+        precision_missing -= 9;
       }
 
       if(PRECISION > 0)
@@ -183,25 +170,18 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     }
     else
     {
-      if(PRECISION <= 0)
+      if(PRECISION == 0)
       {
         buff[len++] = '0';
         return len;
       }
+
       int_len = 1;
       buff[len++] = '.';
 
       precision_missing = 1 + PRECISION;
 
       const auto exp_base_10_ABS = static_cast<unsigned>(std::abs(exp_base_10));
-
-      if(exp_base_10_ABS > static_cast<unsigned>(precision_missing + 3))
-      {
-        std::memset(&buff[len], '0', static_cast<size_t>(precision_missing));
-
-        std::swap(buff[start_idx], buff[start_idx + 1]);
-        return len + static_cast<unsigned>(precision_missing);
-      }
 
       std::memset(&buff[len], '0', exp_base_10_ABS);
       precision_missing -= static_cast<int>(exp_base_10_ABS);
@@ -215,7 +195,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       std::swap(buff[start_idx], buff[start_idx + 1]);
     }
 
-    for(; it >= it_beg && precision_missing >= -8; it--) // 8 extra chars (1 chungk) should suffice for rounding purposes ... right??
+    for(; it >= it_beg && precision_missing >= -9; it--) // 9 extra chars (1 chungk) should suffice for rounding purposes ... right??
     {
       base_t curr_prod_lo;
       uint32_t curr_prod_hi;
@@ -223,7 +203,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
       base_t dec_lo;
       uint32_t dec_hi;
-      Helpers::Assembly::umul64x32_96(frac, DEC8, dec_lo, dec_hi);
+      Helpers::Assembly::umul64x32_96(frac, DEC9, dec_lo, dec_hi);
 
       const base_t total_lo = dec_lo + curr_prod_lo;
       const base_t carry = total_lo < dec_lo ? 1U : 0U;
@@ -231,9 +211,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
       digs = dec_hi + curr_prod_hi + static_cast<uint32_t>(carry);
       frac = total_lo;
 
-      Helpers::Math::Magic::Modulo::mod_by_10_pow_n_void<8>(digs, rem);
-
-      if(digs != 0)
+      if(digs > 999'999'999)
       {
         int i = static_cast<int>(len) - 1;
         const int ST = static_cast<int>(start_idx);
@@ -252,26 +230,25 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
 
         if(i < ST) // rippled all the way to hell
         {
-          std::memmove(&buff[ST + 1], &buff[ST], len - start_idx); // move the full expansion down 1 slot
-          buff[start_idx] = '1';                                   // add the leading zero
-          len++;
+          buff[len++] = '0';     // one digit more
+          buff[start_idx] = '1'; // add the leading zero
           exp_base_10++;
           int_len++;
         }
       }
 
-      Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], rem);
-      len += 8;
-      precision_missing -= 8;
+      Bin2Chars::Numeric::Integral::ToStrBufferedExactlyNumChars<9>(&buff[len], digs);
+      len += 9;
+      precision_missing -= 9;
     }
 
     while(precision_missing >= 0 && frac != 0) // write all digits and change since they are needed for rounding
     {
-      Helpers::Assembly::umul64x32_96(frac, DEC8, frac, digs);
+      Helpers::Assembly::umul64x32_96(frac, DEC9, frac, digs);
 
-      Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<8>(&buff[len], digs);
-      len += 8;
-      precision_missing -= 8;
+      Bin2Chars::Numeric::Integral::ToStrBufferedExactlyNumChars<9>(&buff[len], digs);
+      len += 9;
+      precision_missing -= 9;
     }
 
     if(precision_missing > 0)
@@ -284,9 +261,9 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     const size_t MAX = len;
     len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
 
-    bool round_up = false;
     if(MAX > len)
     {
+      bool round_up = false;
       const char next_digit = buff[len];
       if(next_digit > '5')
       {
@@ -319,35 +296,35 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
           round_up = true;
         }
       }
-    }
 
-    if(round_up)
-    {
-      int i = static_cast<int>(len) - 1;
-      const int ST = static_cast<int>(start_idx);
-      for(; i >= ST; i--)
+      if(round_up)
       {
-        if(buff[i] == '.')
+        int i = static_cast<int>(len) - 1;
+        const int ST = static_cast<int>(start_idx);
+        for(; i >= ST; i--)
         {
-          continue;
+          if(buff[i] == '.')
+          {
+            continue;
+          }
+
+          if(buff[i] == '9')
+          {
+            buff[i] = '0';
+          }
+          else
+          {
+            buff[i]++;
+            break;
+          }
         }
 
-        if(buff[i] == '9')
+        if(i < ST)
         {
-          buff[i] = '0';
+          std::memmove(&buff[ST + 1], &buff[ST], len - start_idx);
+          buff[start_idx] = '1';
+          len++;
         }
-        else
-        {
-          buff[i]++;
-          break;
-        }
-      }
-
-      if(i < ST)
-      {
-        std::memmove(&buff[ST + 1], &buff[ST], len - start_idx);
-        buff[start_idx] = '1';
-        len++;
       }
     }
 
