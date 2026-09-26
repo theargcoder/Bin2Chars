@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(test_all_2_pow_range_up_to_double)
     if(COMPUTATION != TABLE)
     {
 #ifdef BIN2CHARS_CIBUILD
-      BOOST_REQUIRE(TABLE == REGULAR);
+      BOOST_REQUIRE(TABLE == COMPUTATION);
 #else
       BOOST_CHECK(TABLE == COMPUTATION);
 #endif
