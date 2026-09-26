@@ -451,8 +451,7 @@ if(IS_GCC OR IS_CLANG)
   elseif(CMAKE_BUILD_TYPE STREQUAL "Generic")
 
     add_compile_options(
-      -O3 -DNDEBUG ${GENERIC_ARCH_FLAGS}
-      "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
+      -O0 -g3 ${GENERIC_ARCH_FLAGS} "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
       "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
 
   endif()
