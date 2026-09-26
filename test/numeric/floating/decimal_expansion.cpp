@@ -80,7 +80,7 @@ namespace
         bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr(val, PRECISION);
 
         char buffer[1024];
-        d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
+        d2fixed_buffered_n(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
 
         errors++;
         err_ct++;
@@ -130,9 +130,6 @@ namespace
         log_str_and_into_hex(LogHexStr("bin2chars", bin2chars), LogHexStr("std::format", std_format), LogHexStr("ryu", ryu));
 
         bin2chars = Bin2Chars::Numeric::Floating::DigitsPrecision::ToStr(val, PRECISION);
-
-        char buffer[1024];
-        d2exp_buffered(static_cast<double>(val), static_cast<uint32_t>(PRECISION), &buffer[0]);
 
         errors++;
         err_ct++;

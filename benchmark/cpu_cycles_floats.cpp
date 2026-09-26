@@ -327,7 +327,6 @@ int main(int /*unused*/, char ** /*unused*/)
     json["trials"] = TRIALS;
     json["batch size"] = BATCHES;
 
-    /*
     // exponenetial buffered
     {
       constexpr auto FMT = FORMAT::EXPONENTIAL;
@@ -346,7 +345,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      // file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
 
       json["yields"] = CJParse::Types::Array{};
 
@@ -359,9 +358,8 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      // file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
-    */
 
     // digits buffered
     {
@@ -372,7 +370,6 @@ int main(int /*unused*/, char ** /*unused*/)
       json["type"] = (STORAGE == RETURN_TYPE::BUFFERED) ? "buffered" : "std_string";
       json["yields"] = CJParse::Types::Array{};
 
-      /*
       for(const auto &precision : { 0, 1, 2, 5, 8, 10, 20, 50, 100 })
       {
         CJParse::Types::Object this_pres;
@@ -381,9 +378,8 @@ int main(int /*unused*/, char ** /*unused*/)
 
         json["yields"].as_array().emplace_back(this_pres);
       }
-      */
 
-      // file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
 
       json["yields"] = CJParse::Types::Array{};
 
@@ -396,7 +392,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      // file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
 
     // exponenetial std::string
@@ -417,7 +413,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      // file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
 
       json["yields"] = CJParse::Types::Array{};
 
@@ -430,7 +426,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      // file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
 
     // digits std::string
@@ -451,7 +447,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      // file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
+      file.Store<to_string(STORAGE), float>(JSON, FMT == FORMAT::EXPONENTIAL);
 
       json["yields"] = CJParse::Types::Array{};
 
@@ -464,7 +460,7 @@ int main(int /*unused*/, char ** /*unused*/)
         json["yields"].as_array().emplace_back(this_pres);
       }
 
-      // file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
+      file.Store<to_string(STORAGE), double>(JSON, FMT == FORMAT::EXPONENTIAL);
     }
   }
   catch(std::exception &exept)

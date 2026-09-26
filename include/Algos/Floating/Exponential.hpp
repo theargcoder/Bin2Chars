@@ -137,9 +137,8 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
         if(i < ST) // rippled all the way to hell
         {
-          std::memmove(&buff[ST + 1], &buff[ST], len - start_idx); // move the full expansion down 1 slot
-          buff[start_idx] = '1';                                   // add the leading zero
-          len++;
+          buff[len++] = '0';     // one digit more
+          buff[start_idx] = '1'; // add the leading 1
           exp_base_10++;
           precision_missing--;
         }
@@ -169,9 +168,9 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     const size_t MAX = len;
     len = static_cast<unsigned>(static_cast<int>(len) + precision_missing);
 
-    bool round_up = false;
     if(MAX > len)
     {
+      bool round_up = false;
       const char next_digit = buff[len];
       if(next_digit > '5')
       {
@@ -204,35 +203,29 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
           round_up = true;
         }
       }
-    }
 
-    if(round_up)
-    {
-      int i = static_cast<int>(len) - 1;
-      const int ST = static_cast<int>(start_idx);
-      for(; i >= ST; i--)
+      if(round_up)
       {
-        if(buff[i] == '.')
+        int i = static_cast<int>(len) - 1;
+        const int ST = static_cast<int>(start_idx);
+        for(; i >= ST; i--)
         {
-          continue;
+          if(buff[i] == '9')
+          {
+            buff[i] = '0';
+          }
+          else
+          {
+            buff[i]++;
+            break;
+          }
         }
 
-        if(buff[i] == '9')
+        if(i < ST)
         {
-          buff[i] = '0';
+          buff[start_idx] = '1';
+          exp_base_10++; // round up all the way to hell increases exponent
         }
-        else
-        {
-          buff[i]++;
-          break;
-        }
-      }
-
-      if(i < ST)
-      {
-        std::memmove(&buff[ST + 1], &buff[ST], len - start_idx);
-        buff[start_idx] = '1';
-        exp_base_10++; // round up all the way to hell increases exponent
       }
     }
 
