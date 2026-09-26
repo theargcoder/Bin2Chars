@@ -16,7 +16,7 @@
 #if ALL_DIGITS_CALCULATED_NO_LOOP_EXTRACTION_NEEDED != 0
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
 
-int main()
+int not_main()
 {
   constexpr uint16_t POW_5_E[] = { 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024 };
   constexpr uint32_t POW_5_CACHE[] = {
@@ -1423,7 +1423,7 @@ int not_main()
 #else
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
 
-int main()
+int not_main()
 {
   constexpr uint32_t POW_5_CORRECTION[] = { 1, 10, 100, 1'000, 10'000, 100'000, 1'000'000, 10'000'000, 100'000'000 };
   constexpr uint8_t POW_5_IDX[] = { 0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240 };
@@ -1731,7 +1731,7 @@ int main()
 
 #elif defined(__AVX2__)
 
-int __main()
+int not_main()
 {
   constexpr uint32_t POW_5_CORRECTION[] = { 1, 10, 100, 1'000, 10'000, 100'000, 1'000'000, 10'000'000, 100'000'000 };
   constexpr uint8_t POW_5_IDX[] = { 0, 24, 48, 72, 96, 120, 144, 168, 192, 216, 240 };
@@ -2222,14 +2222,14 @@ int main()
 
     // Find most significant non-zero chunk
     int top_word = NUM_WORDS - 1;
-    while(top_word > 0 && NEW_ARR[top_word] == 0)
+    while(top_word > 0 && NEW_ARR[static_cast<unsigned>(top_word)] == 0)
     {
       --top_word;
     }
 
     accesors += std::to_string(st_idx);
     accesors += ", ";
-    st_idx += top_word + 1;
+    st_idx += static_cast<unsigned>(top_word + 1);
 
     cache += " // ";
     cache += " k = ";
@@ -2254,7 +2254,7 @@ int main()
         }
         xx = 0, yy++;
       }
-      cache += std::to_string(NEW_ARR[w]);
+      cache += std::to_string(NEW_ARR[static_cast<unsigned>(w)]);
       cache += ", ";
       xx++;
     }

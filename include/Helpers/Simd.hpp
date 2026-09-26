@@ -984,7 +984,6 @@ namespace Bin2Chars::Helpers::Simd
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
 
-      const unsigned len = calculate_len(input);
       std::memset(buff, '0', MIN_LEN);
       unsigned pos = MIN_LEN - 1;
       auto val = input;
