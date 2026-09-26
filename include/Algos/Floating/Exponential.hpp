@@ -9,7 +9,6 @@
 #include <type_traits>
 #include <utility>
 
-#include "include/Algos/Compute/ExponentDecimalExpansion.hpp"
 #include "include/Algos/Floating/DecimalExpansion.hpp"
 #include "include/Algos/Integer.hpp"
 #include "include/Helpers/Assembly.hpp"
@@ -20,7 +19,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 {
   template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  static unsigned ToStrCharArray(char *buff, const T &input, int PRECISION = Algos::Compute::DecimalExpansion::Traits<T>::MAX_DIGITS10)
+  static unsigned ToStrCharArray(char *buff, const T &input, int PRECISION)
   {
     if(PRECISION < 0) [[unlikely]] // UB if negative precision
     {
@@ -246,7 +245,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
 
   template <typename T>
     requires std::is_floating_point_v<T> && (Helpers::Templating::Assert::at_most_64_bit_double_radix_2<T>())
-  static std::string ToStr(const T &input, const int &PRECISION = Algos::Compute::DecimalExpansion::Traits<T>::MAX_DIGITS10)
+  static std::string ToStr(const T &input, const int &PRECISION)
   {
     const auto size = static_cast<size_t>(PRECISION) + 30;
 

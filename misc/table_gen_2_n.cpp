@@ -10,7 +10,7 @@
 
 #if defined(__AVX512BW__) && defined(__AVX512VL__)
 
-int main()
+int not_main()
 {
   constexpr uint16_t POW_2_E[] = { 0, 64, 128, 192, 256, 320, 384, 448, 512, 576, 640, 704, 768, 832, 896, 960, 1024 };
   constexpr uint32_t POW_2_CACHE[] = {
