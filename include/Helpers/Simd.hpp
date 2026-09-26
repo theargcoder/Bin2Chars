@@ -1,5 +1,6 @@
 #pragma once
 
+#include "include/Helpers/Math.hpp"
 #include <algorithm>
 #include <array>
 #include <bit>
@@ -987,7 +988,7 @@ namespace Bin2Chars::Helpers::Simd
       std::memset(buff, '0', MIN_LEN);
       unsigned pos = MIN_LEN - 1;
       auto val = input;
-      while(val >= 100)
+      while(val >= 100 && pos >= 1)
       {
         auto const num = (val % 100) * 2;
         val /= 100;
@@ -1000,7 +1001,10 @@ namespace Bin2Chars::Helpers::Simd
       {
         auto const num = val * 2;
         buff[pos] = digits[num + 1];
-        buff[pos - 1] = digits[num];
+        if(pos >= 1)
+        {
+          buff[pos - 1] = digits[num];
+        }
       }
       else
       {
