@@ -46,12 +46,23 @@ namespace Bin2Chars::Numeric::Integral
 
   template <size_t Num, typename T>
     requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
-  static uint32_t ToStrBufferedNumChars(char *buff, const T &input)
+  static uint32_t ToStrBufferedExactlyNumChars(char *buff, const T &input)
   {
 #if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
-    return Helpers::Simd::x86_64::WriteNumCharsToPtrFowardReturnLength<Num>(buff, input);
+    return Helpers::Simd::x86_64::WriteExactlyNumCharsToPtrFowardReturnLength<Num>(buff, input);
 #elif defined(__ARM_NEON) || defined(__aarch64__)
-    return Helpers::Simd::ARM64::WriteNumCharsToPtrFowardReturnLength<Num>(buff, input);
+    return Helpers::Simd::ARM64::WriteExactlyNumCharsToPtrFowardReturnLength<Num>(buff, input);
+#endif
+  }
+
+  template <size_t Num, typename T>
+    requires(std::is_integral_v<T> && std::is_unsigned_v<T>)
+  static uint32_t ToStrBufferedAtLeastNumChars(char *buff, const T &input)
+  {
+#if defined(_MSC_VER) || defined(__x86_64__) || defined(__i386__)
+    return Helpers::Simd::x86_64::WriteAtLeastNumCharsToPtrFowardReturnLength<Num>(buff, input);
+#elif defined(__ARM_NEON) || defined(__aarch64__)
+    return Helpers::Simd::ARM64::WriteAtLeastNumCharsToPtrFowardReturnLength<Num>(buff, input);
 #endif
   }
 

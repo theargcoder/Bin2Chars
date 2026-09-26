@@ -369,7 +369,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
+    uint32_t WriteExactlyNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
     {
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -386,11 +386,11 @@ namespace Bin2Chars::Helpers::Simd
       const unsigned div_8 = (static_cast<uint64_t>(input) * 0x51EB851FULL) >> 37U;
       const unsigned div_9 = (static_cast<uint64_t>(input) * 0xCCCCCCCDULL) >> 35U;
 
-      const unsigned len = std::max(MIN_LEN, calculate_len(input));
-      const unsigned lead_z_top = 10U - len;
+      constexpr unsigned len = MIN_LEN;
+      constexpr unsigned lead_z_top = 10U - len;
 
-      const unsigned lead_z_bot = (len >= 2U) ? 0U : 2U - len;
-      const unsigned bot_offset = (len < 2U) ? 0U : 8U - lead_z_top;
+      constexpr unsigned lead_z_bot = (len >= 2U) ? 0U : 2U - len;
+      constexpr unsigned bot_offset = (len < 2U) ? 0U : 8U - lead_z_top;
 
       const uint64_t dig_2 = div_2 - ((dig_1 << 1) + (dig_1 << 3));
       const uint64_t dig_3 = div_3 - ((div_2 << 1) + (div_2 << 3));
@@ -418,7 +418,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint16_t &input) noexcept
+    uint32_t WriteAtLeastNumCharsToPtrFowardReturnLength(char *buff, const uint16_t &input) noexcept
     {
       static_assert(Num <= 5, "uint16_t has AT MOST 5 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -608,7 +608,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
+    uint32_t WriteExactlyNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
     {
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -623,9 +623,6 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m512i prod = umul_hi_32x16(val, M_MAGIC_10_0);
 
-      const unsigned len = calculate_len(input);
-      const unsigned lead_z = std::min(10U - len, MIN_LEAD_Z);
-
       const __m512i n_sub_t = _mm512_sub_epi32(val, prod);
       const __m512i n_sub_t_shf = _mm512_srli_epi32(n_sub_t, 1);
       const __m512i n_sub_t_shf_add_t = _mm512_add_epi32(n_sub_t_shf, prod);
@@ -633,7 +630,7 @@ namespace Bin2Chars::Helpers::Simd
 
       const __m512i res_vec = _mm512_mask_blend_epi32(0x0200, shifted_32, val);
 
-      const __m128i LEAD_Z_LANES = _mm_set1_epi8(static_cast<int8_t>(lead_z));
+      const __m128i LEAD_Z_LANES = _mm_set1_epi8(static_cast<int8_t>(MIN_LEAD_Z));
       const __m128i ASCII_ZERO = _mm_set1_epi8('0');
 
       const __m512i res_times_2 = _mm512_slli_epi32(res_vec, 1);
@@ -657,7 +654,7 @@ namespace Bin2Chars::Helpers::Simd
 
       _mm_storeu_si16(reinterpret_cast<void *>(buff + 8), top_top);
 
-      return std::max(len, MIN_LEN);
+      return MIN_LEN;
     }
 
 #elif defined(__AVX2__)
@@ -839,7 +836,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
+    uint32_t WriteExactlyNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
     {
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
@@ -982,14 +979,14 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
+    uint32_t WriteExactlyNumCharsToPtrFowardReturnLength(char *buff, const uint32_t &input) noexcept
     {
       static_assert(Num <= 10, "uint32_t has AT MOST 10 digits");
       constexpr unsigned MIN_LEN = Num;
 
       const unsigned len = calculate_len(input);
       std::memset(buff, '0', MIN_LEN);
-      unsigned pos = std::max(MIN_LEN - 1, len - 1U);
+      unsigned pos = MIN_LEN - 1;
       auto val = input;
       while(val >= 100)
       {
@@ -1011,7 +1008,7 @@ namespace Bin2Chars::Helpers::Simd
         buff[pos] = static_cast<char>('0' + val);
       }
 
-      return std::max(len, MIN_LEN);
+      return MIN_LEN;
     }
 
 #endif
@@ -1070,7 +1067,7 @@ namespace Bin2Chars::Helpers::Simd
     }
 
     template <size_t Num>
-    uint32_t WriteNumCharsToPtrFowardReturnLength(char *buff, const uint16_t &input) noexcept
+    uint32_t WriteAtLeastNumCharsToPtrFowardReturnLength(char *buff, const uint16_t &input) noexcept
     {
       static_assert(Num <= 5, "uint16_t has AT MOST 5 digits");
       constexpr unsigned MIN_LEN = Num;

@@ -14,7 +14,6 @@
 #include "include/Algos/Integer.hpp"
 #include "include/Helpers/Assembly.hpp"
 #include "include/Helpers/Math.hpp"
-#include "include/Helpers/Simd.hpp"
 #include "include/Helpers/Templating.hpp"
 
 namespace Bin2Chars::Numeric::Floating::ExponentialNotation
@@ -144,7 +143,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
         }
       }
 
-      Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<9>(&buff[len], digs);
+      Bin2Chars::Numeric::Integral::ToStrBufferedExactlyNumChars<9>(&buff[len], digs);
       len += 9;
       precision_missing -= 9;
     }
@@ -153,7 +152,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     {
       Helpers::Assembly::umul64x32_96(frac, DEC9, frac, digs);
 
-      Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<9>(&buff[len], digs);
+      Bin2Chars::Numeric::Integral::ToStrBufferedExactlyNumChars<9>(&buff[len], digs);
       len += 9;
       precision_missing -= 9;
     }
@@ -238,7 +237,7 @@ namespace Bin2Chars::Numeric::Floating::ExponentialNotation
     buff[len++] = (exp_base_10 < 0) ? '-' : '+';
 
     // minimum of 2 digits for exp; if there is 3 then 3 digits
-    len += Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<2>(&buff[len], static_cast<uint16_t>(std::abs(exp_base_10)));
+    len += Bin2Chars::Numeric::Integral::ToStrBufferedAtLeastNumChars<2>(&buff[len], static_cast<uint16_t>(std::abs(exp_base_10)));
 
     buff[len] = '\0';
 

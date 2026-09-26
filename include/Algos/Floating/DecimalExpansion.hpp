@@ -12,7 +12,6 @@
 #include "include/Algos/Integer.hpp"
 #include "include/Helpers/Assembly.hpp"
 #include "include/Helpers/Math.hpp"
-#include "include/Helpers/Simd.hpp"
 #include "include/Helpers/Templating.hpp"
 
 #include "include/Tables/array_2n.hpp"
@@ -156,7 +155,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
           }
         }
 
-        Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<9>(&buff[len], digs);
+        Bin2Chars::Numeric::Integral::ToStrBufferedExactlyNumChars<9>(&buff[len], digs);
         len += 9;
         precision_missing -= 9;
       }
@@ -238,7 +237,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
         }
       }
 
-      Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<9>(&buff[len], digs);
+      Bin2Chars::Numeric::Integral::ToStrBufferedExactlyNumChars<9>(&buff[len], digs);
       len += 9;
       precision_missing -= 9;
     }
@@ -247,7 +246,7 @@ namespace Bin2Chars::Numeric::Floating::DigitsPrecision
     {
       Helpers::Assembly::umul64x32_96(frac, DEC9, frac, digs);
 
-      Bin2Chars::Numeric::Integral::ToStrBufferedNumChars<9>(&buff[len], digs);
+      Bin2Chars::Numeric::Integral::ToStrBufferedExactlyNumChars<9>(&buff[len], digs);
       len += 9;
       precision_missing -= 9;
     }
