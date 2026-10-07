@@ -1145,6 +1145,7 @@ def render_platform(
             f" — {html.escape(str(cpu_name))}"
             "</summary>"
         ),
+        "<p></p>",
         "",
         # Platform-level indentation.
         "<dl>",
@@ -1153,6 +1154,7 @@ def render_platform(
         # CPU information sits directly under the platform.
         "<details>",
         "<summary><strong>CPU information</strong></summary>",
+        "<p></p>",
         "",
         *render_cpu_info(metadata),
         "",
@@ -1175,6 +1177,7 @@ def render_platform(
             [
                 "<details>",
                 (f"<summary><strong>{category_display}</strong></summary>"),
+                "<p></p>",
                 "",
                 "<dl>",
                 "<dd>",
@@ -1202,6 +1205,7 @@ def render_platform(
                             f"{html.escape(notation_display(notation))}"
                             "</strong></summary>"
                         ),
+                        "<p></p>",
                         "",
                         "<dl>",
                         "<dd>",
@@ -1249,6 +1253,7 @@ def render_platform(
                         ),
                         "<details>",
                         (f"<summary><strong>{return_type_heading}</strong></summary>"),
+                        "<p></p>",
                         "",
                         render_table(
                             group,
@@ -1315,6 +1320,7 @@ def render_results(
 
     sections = [
         "## Benchmark Results",
+        "<dl><dd>",
         "",
         (
             "Headline values use the "

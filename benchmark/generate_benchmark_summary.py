@@ -510,6 +510,7 @@ def render_platform_summary(
             f" — {html.escape(str(cpu_name))}"
             "</summary>"
         ),
+        "<p></p>",
         "",
         # Platform level indentation.
         "<dl>",
@@ -519,6 +520,7 @@ def render_platform_summary(
         # as Integer / Floating point.
         "<details>",
         "<summary><strong>CPU information</strong></summary>",
+        "<p></p>",
         "",
         *render_cpu_info(metadata),
         "",
@@ -544,6 +546,7 @@ def render_platform_summary(
             [
                 "<details>",
                 (f"<summary><strong>{category_display}</strong></summary>"),
+                "<p></p>",
                 "",
                 "<dl>",
                 "<dd>",
@@ -578,6 +581,7 @@ def render_platform_summary(
                             f"{html.escape(notation_display(notation))}"
                             "</strong></summary>"
                         ),
+                        "<p></p>",
                         "",
                         "<dl>",
                         "<dd>",
@@ -772,6 +776,8 @@ def main() -> int:
 
     sections = [
         "## Performance",
+        "<dl>",
+        "   <dd>",
         "",
         (
             "Benchmark summaries are generated directly from the "

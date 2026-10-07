@@ -119,9 +119,6 @@ endfunction()
 
 # ============================================================
 # C warnings
-#
-# These warnings are intended for YOUR C code. They are applied only to C
-# sources.
 # ============================================================
 
 set(C_WARNINGS
@@ -201,8 +198,6 @@ set(C_WARNINGS
 
 # ============================================================
 # C++ warnings
-#
-# Start with C warnings, then add C++-specific diagnostics.
 # ============================================================
 
 set(CXX_WARNINGS
@@ -249,9 +244,6 @@ endif()
 
 # ============================================================
 # Filter unsupported warnings
-#
-# At this point every warning has been defined. Each language is checked
-# independently.
 # ============================================================
 
 filter_supported_flags(C_WARNINGS C_WARNINGS_SUPPORTED C)
@@ -303,14 +295,6 @@ endif()
 
 # ============================================================
 # External libraries
-#
-# IMPORTANT:
-#
-# Ryu is external/reference code.
-#
-# DO NOT add project compile options before this point. Anything added with
-# add_compile_options() above a child add_subdirectory() can propagate into that
-# child.
 # ============================================================
 
 add_subdirectory(ryu)
@@ -333,9 +317,6 @@ if(IS_GCC OR IS_CLANG)
 
   # ==========================================================
   # Debug
-  #
-  # Goal: - Excellent CodeLLDB experience - Maximum diagnostics - Runtime UB
-  # detection - Memory corruption detection
   # ==========================================================
 
   if(CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -423,8 +404,6 @@ if(IS_GCC OR IS_CLANG)
 
     # ==========================================================
     # RelWithDebInfo
-    #
-    # Optimized but still pleasant in CodeLLDB.
     # ==========================================================
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
@@ -444,14 +423,12 @@ if(IS_GCC OR IS_CLANG)
 
     # ==========================================================
     # Generic
-    #
-    # Aggressively optimized, architecture-baseline distribution.
     # ==========================================================
 
   elseif(CMAKE_BUILD_TYPE STREQUAL "Generic")
 
     add_compile_options(
-      -O0 -g3 ${GENERIC_ARCH_FLAGS} "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
+      -O3 ${GENERIC_ARCH_FLAGS} "$<$<COMPILE_LANGUAGE:C>:${C_WARNINGS}>"
       "$<$<COMPILE_LANGUAGE:CXX>:${CXX_WARNINGS}>")
 
   endif()
@@ -496,9 +473,7 @@ if((IS_GCC OR IS_CLANG)
 endif()
 
 # ============================================================
-# Tests
-#
-# This is YOUR source tree. Everything configured above applies here.
+# Tests & Benchmarks
 # ============================================================
 
 enable_testing()

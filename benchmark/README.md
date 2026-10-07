@@ -7,6 +7,8 @@ Performance comparisons are made against the standard library implementation ava
 
 ### `x86-64`
 
+<dl> <dd>
+
 References for all statements are from intel manual [^1] 
 
 * Benchmarks in `x86-64` machines are done using the `PMU` [^2]. in the following fashion:
@@ -20,8 +22,11 @@ References for all statements are from intel manual [^1]
 
 it should be a perfect `cycle accurate` benchmark counting both `core` cpu cycles and `ref` cycles as well as `tsc` (timestamp clock) cycles
 
+</dd> </dl>
 
 ### `ARM64` 
+
+<dl> <dd>
 
 References for all statements are from arm64 manuals [^7] [^8].
 
@@ -36,12 +41,11 @@ References for all statements are from arm64 manuals [^7] [^8].
 
 it should be a perfect `cycle accurate` benchmark if `PMCCNTR` is allowed, counting both `core` cpu cycles `tsc` freq clk ticks.
 
-
-
-> Compiling in Release :
+</dd> </dl>
 
 <!-- BENCHMARK_RESULTS:START -->
 ## Benchmark Results
+<dl><dd>
 
 Headline values use the **median core cycles** recorded in the benchmark JSON files.
 
@@ -51,12 +55,14 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 <details>
 <summary><strong>Linux-x86_64-AVX2</strong> — Intel(R) Core(TM) i5-5250U CPU @ 1.60GHz</summary>
+<p></p>
 
 <dl>
 <dd>
 
 <details>
 <summary><strong>CPU information</strong></summary>
+<p></p>
 
 | Property | Value |
 | :--- | :---: |
@@ -71,6 +77,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 <details>
 <summary><strong>Integer</strong></summary>
+<p></p>
 
 <dl>
 <dd>
@@ -78,6 +85,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx2-integer-buffered"></a>
 <details>
 <summary><strong>Buffered</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Relative performance |
 | :--- | :---: | :---: | :---: |
@@ -95,6 +103,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx2-integer-std-string"></a>
 <details>
 <summary><strong>`std::string`</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Relative performance |
 | :--- | :---: | :---: | :---: |
@@ -116,12 +125,14 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 <details>
 <summary><strong>Floating point</strong></summary>
+<p></p>
 
 <dl>
 <dd>
 
 <details>
 <summary><strong>Decimal notation</strong></summary>
+<p></p>
 
 <dl>
 <dd>
@@ -129,6 +140,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx2-floating-decimal-buffered"></a>
 <details>
 <summary><strong>Buffered</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Ryu | Relative performance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -166,6 +178,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx2-floating-decimal-std-string"></a>
 <details>
 <summary><strong>`std::string`</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Ryu | Relative performance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -207,6 +220,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 <details>
 <summary><strong>Exponential notation</strong></summary>
+<p></p>
 
 <dl>
 <dd>
@@ -214,6 +228,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx2-floating-exponential-buffered"></a>
 <details>
 <summary><strong>Buffered</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Ryu | Relative performance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -251,6 +266,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx2-floating-exponential-std-string"></a>
 <details>
 <summary><strong>`std::string`</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Ryu | Relative performance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -305,12 +321,14 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 <details>
 <summary><strong>Linux-x86_64-AVX512</strong> — AMD Ryzen 5 9600X 6-Core Processor</summary>
+<p></p>
 
 <dl>
 <dd>
 
 <details>
 <summary><strong>CPU information</strong></summary>
+<p></p>
 
 | Property | Value |
 | :--- | :---: |
@@ -325,6 +343,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 <details>
 <summary><strong>Integer</strong></summary>
+<p></p>
 
 <dl>
 <dd>
@@ -332,6 +351,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx512-integer-buffered"></a>
 <details>
 <summary><strong>Buffered</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Relative performance |
 | :--- | :---: | :---: | :---: |
@@ -349,6 +369,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx512-integer-std-string"></a>
 <details>
 <summary><strong>`std::string`</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Relative performance |
 | :--- | :---: | :---: | :---: |
@@ -370,12 +391,14 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 <details>
 <summary><strong>Floating point</strong></summary>
+<p></p>
 
 <dl>
 <dd>
 
 <details>
 <summary><strong>Decimal notation</strong></summary>
+<p></p>
 
 <dl>
 <dd>
@@ -383,6 +406,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx512-floating-decimal-buffered"></a>
 <details>
 <summary><strong>Buffered</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Ryu | Relative performance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -420,6 +444,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx512-floating-decimal-std-string"></a>
 <details>
 <summary><strong>`std::string`</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Ryu | Relative performance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -461,6 +486,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 <details>
 <summary><strong>Exponential notation</strong></summary>
+<p></p>
 
 <dl>
 <dd>
@@ -468,6 +494,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx512-floating-exponential-buffered"></a>
 <details>
 <summary><strong>Buffered</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Ryu | Relative performance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -505,6 +532,7 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 <a id="benchmark-linux-x86-64-avx512-floating-exponential-std-string"></a>
 <details>
 <summary><strong>`std::string`</strong></summary>
+<p></p>
 
 | Type | Bin2Chars | Standard library | Ryu | Relative performance |
 | :--- | :---: | :---: | :---: | :---: |
@@ -554,6 +582,8 @@ Expand any benchmark cell to inspect the complete recorded mean, median, minimum
 
 </details>
 <!-- BENCHMARK_RESULTS:END -->
+
+</dd> </dl>
 
 
 [^1]: [intel architecture and software development manual](https://cdrdv2.intel.com/v1/dl/getContent/671200)
