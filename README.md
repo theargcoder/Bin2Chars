@@ -8,7 +8,7 @@ The project focuses on **low-latency conversion, predictable behavior, avoiding 
 
 For summary benchmark results go to [Performance Results Summary](#performance)
 
-> Note that benchmark results are platform specific see [Build](#build) for the technicalities.
+> Note that benchmark results are platform specific see [Builds](#builds) for the technicalities.
 
 [![CI](https://github.com/theargcoder/Bin2Chars/actions/workflows/cmake-multi-platform.yml/badge.svg)](https://github.com/theargcoder/Bin2Chars/actions/workflows/cmake-multi-platform.yml)
 [![C++23](https://img.shields.io/badge/C%2B%2B-23-blue.svg)](https://en.cppreference.com/w/cpp/23)
@@ -71,7 +71,7 @@ The test suite covers:
 - Decimal-exponent table validation (for the table used in floating conversion)
 - Integer arithmetic and magic-division algorithms
 
-Always checking against reference implementations, more on that in [Performance and Benchmark Results](#performance-and-benchmark-results)
+Always checking against reference implementations, more on that in [Performance and Benchmark Results](#benchmarkingperformance-guidelinines)
 
 </dd> </dl>
 
@@ -97,7 +97,7 @@ A green CI result means the tested platform+platform: configuration, compilation
 
 Performance comparisons are made against the standard library implementation available on the tested platform, including the relevant `libstdc++`, `libc++`, or MSVC STL implementation.
 
-Also peroformance comparasions are done **exclusively** in Release build type (more on that in [Build](#build)).
+Also peroformance comparasions are done **exclusively** in Release build type (more on that in [Builds](#builds)).
 
 - Benchmarks in `x86-64` machines are done as specified in [x86_64 - Bin2Chars Benchmark Guidelines](https://github.com/theargcoder/Bin2Chars/tree/main/benchmark#x86-64) leveraging the hardware's `PMU` for perfect cycle-accurate benchmarks.
 - Benchmarks in `aarch64` (ARM64) machines are are done as specified in [ARM64 - Bin2Chars Benchmark Guidelines](https://github.com/theargcoder/Bin2Chars/tree/main/benchmark#ARM64) leveraging (when available) the hardware's `PMCCNTR` and `CNTVCT_EL0` for perfect cycle-accurate benchmarks.
@@ -527,7 +527,7 @@ Options:
   </dd>
 </dl>
 
-This can be specified when building, check [How to build it]($how_to_build_it) for more info.
+This can be specified when building, check [How to build it]($how-to-build-it) for more info.
 
 Every build features all the Static Analysis checks supported by the used compiler
 
