@@ -6,7 +6,7 @@ Bin2Chars converts numeric values directly into character sequences using specia
 
 The project focuses on **low-latency conversion, predictable behavior, avoiding unnecessary work and minimizing/eliminating branching**, with architecture-specific optimizations for x86-64 and ARM64.
 
-For summary benchmark results go to [Performance Results Summary](#performance)
+For summary benchmark results go to [Performance Results Summary](#performance) section.
 
 > Note that benchmark results are platform specific see [Builds](#builds) for the technicalities.
 
@@ -527,7 +527,7 @@ Options:
   </dd>
 </dl>
 
-This can be specified when building, check [How to build it]($how-to-build-it) for more info.
+This can be specified when building, check [How to build it](#how-to-build-it) for more info.
 
 Every build features all the Static Analysis checks supported by the used compiler
 
